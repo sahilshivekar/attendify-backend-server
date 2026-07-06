@@ -30,6 +30,8 @@ module.exports = {
             { firstName: "Varsha", lastName: "Jogalekar", gender: "Female", role: "Teacher" },
             { firstName: "Ranjana", lastName: "Singh", gender: "Female", role: "Head of Department" },
             { firstName: "Rahul", lastName: "Jinturkar", gender: "Male", role: "Teacher" },
+            { firstName: "Dhananjay", lastName: "Raut", gender: "Male", role: "Teacher" },
+            { firstName: "Rucha", lastName: "Patwardhan", gender: "Female", role: "Teacher" },
         ];
 
         // The .map is synchronous here since bcrypt.hash is awaited beforehand

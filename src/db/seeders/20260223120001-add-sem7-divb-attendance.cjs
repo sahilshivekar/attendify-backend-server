@@ -13,45 +13,45 @@ module.exports = {
         const compBranchId = branches.find(b => b.branch_name === 'Computer Engineering')?.branch_id;
         if (!compBranchId) throw new Error('Computer Engineering branch not found.');
 
-        const semesters = await queryInterface.sequelize.query(
-            `SELECT semester_id, start_date FROM semesters
-             WHERE branch_id = '${compBranchId}' AND semester_number = 8
-               AND academic_start_year = 2025 AND academic_end_year = 2026;`,
-            { type: queryInterface.sequelize.QueryTypes.SELECT }
-        );
-        const semester8 = semesters[0];
-        if (!semester8) throw new Error('Semester 8 (Comp, 2025-26) not found.');
+                const semesters = await queryInterface.sequelize.query(
+                        `SELECT semester_id, start_date FROM semesters
+                         WHERE branch_id = '${compBranchId}' AND semester_number = 7
+                             AND academic_start_year = 2026 AND academic_end_year = 2027;`,
+                        { type: queryInterface.sequelize.QueryTypes.SELECT }
+                );
+                const semester7 = semesters[0];
+                if (!semester7) throw new Error('Semester 7 (Comp, 2026-27) not found.');
 
-        // ── 2. Resolve Division A ─────────────────────────────────────────────
+        // ── 2. Resolve Division B ─────────────────────────────────────────────
         const divisions = await queryInterface.sequelize.query(
             `SELECT division_id FROM divisions
-             WHERE semester_id = '${semester8.semester_id}' AND division_code = 'A';`,
+             WHERE semester_id = '${semester7.semester_id}' AND division_code = 'B';`,
             { type: queryInterface.sequelize.QueryTypes.SELECT }
         );
-        const divisionA = divisions[0];
-        if (!divisionA) throw new Error('Division A of Semester 8 not found.');
+        const divisionB = divisions[0];
+        if (!divisionB) throw new Error('Division B of Semester 7 not found.');
 
-        // ── 3. Fetch all classes for Division A's timetable ───────────────────
+        // ── 3. Fetch all classes for Division B's timetable ───────────────────
         const classes = await queryInterface.sequelize.query(
             `SELECT c.class_id, c.day_of_week, c.active_from, c.active_till, c.batch_id
              FROM classes c
              INNER JOIN timetables t ON c.timetable_id = t.timetable_id
-             WHERE t.division_id = '${divisionA.division_id}';`,
+             WHERE t.division_id = '${divisionB.division_id}';`,
             { type: queryInterface.sequelize.QueryTypes.SELECT }
         );
-        if (classes.length === 0) throw new Error('No classes found for Division A. Run the classes seeder first.');
+        if (classes.length === 0) throw new Error('No classes found for Division B. Run the classes seeder first.');
 
-        // ── 4. Fetch students in Division A (for lectures) ────────────────────
+        // ── 4. Fetch students in Division B (for lectures) ────────────────────
         const divStudents = await queryInterface.sequelize.query(
-            `SELECT student_id FROM students_divisions WHERE division_id = '${divisionA.division_id}';`,
+            `SELECT student_id FROM students_divisions WHERE division_id = '${divisionB.division_id}';`,
             { type: queryInterface.sequelize.QueryTypes.SELECT }
         );
         const divisionStudentIds = divStudents.map(s => s.student_id);
-        if (divisionStudentIds.length === 0) throw new Error('No students found in Division A.');
+        if (divisionStudentIds.length === 0) throw new Error('No students found in Division B.');
 
         // ── 5. Fetch students per batch (for labs) ────────────────────────────
         const batches = await queryInterface.sequelize.query(
-            `SELECT batch_id, batch_code FROM batches WHERE division_id = '${divisionA.division_id}';`,
+            `SELECT batch_id, batch_code FROM batches WHERE division_id = '${divisionB.division_id}';`,
             { type: queryInterface.sequelize.QueryTypes.SELECT }
         );
 
@@ -70,7 +70,8 @@ module.exports = {
             Thursday: 4, Friday: 5, Saturday: 6
         };
 
-        const today = new Date('2026-04-09');
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
 
         const getMatchingDates = (dayOfWeek, activeFrom) => {
             const targetDay = dayNameToNum[dayOfWeek];

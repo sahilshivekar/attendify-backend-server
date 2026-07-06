@@ -40,16 +40,16 @@ module.exports = {
         
         // 3. Define all the groups
         const groups = [
-            { semesterNumber: 2, branchId: compBranchId, divisionCode: 'A' },
-            { semesterNumber: 2, branchId: compBranchId, divisionCode: 'B' },
-            { semesterNumber: 4, branchId: compBranchId, divisionCode: 'A' },
-            { semesterNumber: 4, branchId: compBranchId, divisionCode: 'B' },
-            { semesterNumber: 6, branchId: compBranchId, divisionCode: 'A' },
-            { semesterNumber: 6, branchId: compBranchId, divisionCode: 'B' },
-            { semesterNumber: 8, branchId: compBranchId, divisionCode: 'A' },
-            { semesterNumber: 8, branchId: compBranchId, divisionCode: 'B' },
-            { semesterNumber: 2, branchId: civilBranchId, divisionCode: 'A' },
-            { semesterNumber: 2, branchId: civilBranchId, divisionCode: 'B' },
+            { semesterNumber: 1, branchId: compBranchId, divisionCode: 'A' },
+            { semesterNumber: 1, branchId: compBranchId, divisionCode: 'B' },
+            { semesterNumber: 3, branchId: compBranchId, divisionCode: 'A' },
+            { semesterNumber: 3, branchId: compBranchId, divisionCode: 'B' },
+            { semesterNumber: 5, branchId: compBranchId, divisionCode: 'A' },
+            { semesterNumber: 5, branchId: compBranchId, divisionCode: 'B' },
+            { semesterNumber: 7, branchId: compBranchId, divisionCode: 'A' },
+            { semesterNumber: 7, branchId: compBranchId, divisionCode: 'B' },
+            { semesterNumber: 1, branchId: civilBranchId, divisionCode: 'A' },
+            { semesterNumber: 1, branchId: civilBranchId, divisionCode: 'B' },
         ];
         
         const allStudentBatchEntries = [];
@@ -65,7 +65,7 @@ module.exports = {
                         student_batch_id: uuidv4(),
                         student_id: students[i],
                         batch_id: i < 15 ? batches[0] : batches[1], // First 15 students to first batch, next 15 to second
-                        start_date: '2026-01-08',
+                        start_date: '2026-07-06',
                         created_at: new Date(),
                         updated_at: new Date(),
                     });

@@ -51,14 +51,13 @@ module.exports = {
                 .filter(ss => ss.semester_id === semester.semester_id)
                 .map(ss => students.find(s => s.student_id === ss.student_id))
                 .filter(Boolean); // Filter out any undefined students
-
             studentsInSemester.forEach((student, index) => {
                 allEntries.push({
                     student_division_id: uuidv4(),
                     student_id: student.student_id,
                     division_id: index < 30 ? divisionA_Id : divisionB_Id, // First 30 to Div A, next to Div B
                     roll_no: index + 1, // Roll numbers unique within this semester across its divisions
-                    start_date: '2026-01-08',
+                    start_date: '2026-07-06',
                     created_at: new Date(),
                     updated_at: new Date()
                 });
@@ -66,11 +65,11 @@ module.exports = {
         };
         
         // Process for each group of students
-        processStudentsForSemester(2, compBranchId);
-        processStudentsForSemester(4, compBranchId);
-        processStudentsForSemester(6, compBranchId);
-        processStudentsForSemester(8, compBranchId);
-        processStudentsForSemester(2, civilBranchId);
+        processStudentsForSemester(1, compBranchId);
+        processStudentsForSemester(3, compBranchId);
+        processStudentsForSemester(5, compBranchId);
+        processStudentsForSemester(7, compBranchId);
+        processStudentsForSemester(1, civilBranchId);
 
         if (allEntries.length > 0) {
             await queryInterface.bulkInsert("students_divisions", allEntries, {});

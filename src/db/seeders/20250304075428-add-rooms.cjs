@@ -16,7 +16,7 @@ module.exports = {
         };
 
         const classroomNumbers = ['001', '002', '003', '402', '404', '301', '302', '304'];
-        const labNumbers = ['501', '109', '108', '201', '704', '202', '105'];
+        const labNumbers = ['501', '109', '108', '201', '704', '202', '105', '701', '702'];
 
         classroomNumbers.forEach((roomNumber) => {
             rooms.push({

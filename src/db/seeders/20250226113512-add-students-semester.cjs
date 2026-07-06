@@ -32,20 +32,20 @@ module.exports = {
             let branchId;
 
             // Determine semester and branch based on student naming convention
-            if (firstName[0] === 'F' && lastName[1] === 'o' && admissionYear === 2025) { // FE Comp
-                semesterNumber = 2;
+            if (firstName[0] === 'F' && lastName[1] === 'o' && admissionYear === 2026) { // FE Comp
+                semesterNumber = 1;
                 branchId = compBranchId;
-            } else if (firstName[0] === 'S' && lastName[1] === 'o' && admissionYear === 2024) { // SE Comp
-                semesterNumber = 4;
+            } else if (firstName[0] === 'S' && lastName[1] === 'o' && admissionYear === 2025) { // SE Comp
+                semesterNumber = 3;
                 branchId = compBranchId;
-            } else if (firstName[0] === 'T' && lastName[1] === 'o' && admissionYear === 2023) { // TE Comp
-                semesterNumber = 6;
+            } else if (firstName[0] === 'T' && lastName[1] === 'o' && admissionYear === 2024) { // TE Comp
+                semesterNumber = 5;
                 branchId = compBranchId;
-            } else if (firstName[0] === 'B' && lastName[1] === 'o' && admissionYear === 2022) { // BE Comp
-                semesterNumber = 8;
+            } else if (firstName[0] === 'B' && lastName[1] === 'o' && admissionYear === 2023) { // BE Comp
+                semesterNumber = 7;
                 branchId = compBranchId;
-            } else if (firstName[0] === 'F' && lastName[1] === 'i' && admissionYear === 2025) { // FE Civil
-                semesterNumber = 2;
+            } else if (firstName[0] === 'F' && lastName[1] === 'i' && admissionYear === 2026) { // FE Civil
+                semesterNumber = 1;
                 branchId = civilBranchId;
             }
 

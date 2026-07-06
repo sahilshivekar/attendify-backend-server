@@ -16,41 +16,41 @@ module.exports = {
         const semesters = await queryInterface.sequelize.query(
             `SELECT semester_id, semester_number, branch_id, start_date, end_date
              FROM semesters
-             WHERE branch_id = '${compBranchId}' AND semester_number = 8
-               AND academic_start_year = 2025 AND academic_end_year = 2026;`,
+             WHERE branch_id = '${compBranchId}' AND semester_number = 7
+               AND academic_start_year = 2026 AND academic_end_year = 2027;`,
             { type: queryInterface.sequelize.QueryTypes.SELECT }
         );
-        const semester8 = semesters[0];
-        if (!semester8) throw new Error('Semester 8 (Comp, 2025-26) not found.');
+        const semester7 = semesters[0];
+        if (!semester7) throw new Error('Semester 7 (Comp, 2026-27) not found.');
 
-        const activeFrom = semester8.start_date; // YYYY-MM-DD
-        const activeTill = semester8.end_date;   // YYYY-MM-DD
+        const activeFrom = semester7.start_date; // YYYY-MM-DD
+        const activeTill = semester7.end_date;   // YYYY-MM-DD
 
-        // ── 2. Resolve Division A of Semester 8 ──────────────────────────────
+        // ── 2. Resolve Division B of Semester 7 ──────────────────────────────
         const divisions = await queryInterface.sequelize.query(
-            `SELECT division_id, division_code FROM divisions WHERE semester_id = '${semester8.semester_id}';`,
+            `SELECT division_id, division_code FROM divisions WHERE semester_id = '${semester7.semester_id}';`,
             { type: queryInterface.sequelize.QueryTypes.SELECT }
         );
 
-        const divisionA = divisions.find(d => d.division_code === 'A');
-        if (!divisionA) throw new Error('Division A of Semester 8 not found.');
+        const divisionB = divisions.find(d => d.division_code === 'B');
+        if (!divisionB) throw new Error('Division B of Semester 7 not found.');
 
-        // ── 3. Resolve batches BA1 & BA2 ─────────────────────────────────────
+        // ── 3. Resolve batches BB1 & BB2 ─────────────────────────────────────
         const batches = await queryInterface.sequelize.query(
-            `SELECT batch_id, batch_code FROM batches WHERE division_id = '${divisionA.division_id}';`,
+            `SELECT batch_id, batch_code FROM batches WHERE division_id = '${divisionB.division_id}';`,
             { type: queryInterface.sequelize.QueryTypes.SELECT }
         );
 
-        const ba1 = batches.find(b => b.batch_code === 'BA1');
-        const ba2 = batches.find(b => b.batch_code === 'BA2');
-        if (!ba1 || !ba2) throw new Error('Batches BA1 / BA2 not found for Division A.');
+        const bb1 = batches.find(b => b.batch_code === 'BB1');
+        const bb2 = batches.find(b => b.batch_code === 'BB2');
+        if (!bb1 || !bb2) throw new Error('Batches BB1 / BB2 not found for Division B.');
 
         // ── 4. Resolve courses by name ────────────────────────────────────────
         const courseNames = [
-            'Digital Forensic', 'Social Media Analytics',
-            'Environmental Management', 'Distributed Computing',
-            'Digital Forensic Lab', 'Social Media Analytics Lab',
-            'Distributed Computing Lab'
+            'Natural Language Processing', 'Natural Language Processing Lab', 
+            'Block Chain', 'Block Chain Lab', 'Cyber Security and Laws',
+            'Big Data Analytics Lab', 'Machine Learning Lab', 'Big Data Analytics',
+            'Machine Learning'
         ];
         const coursesRaw = await queryInterface.sequelize.query(
             `SELECT course_id, course_name FROM courses WHERE course_name IN (${courseNames.map(n => `'${n}'`).join(', ')});`,
@@ -64,8 +64,8 @@ module.exports = {
         // ── 5. Resolve specific teachers for each course ──────────────────────
         const teacherRows = await queryInterface.sequelize.query(
             `SELECT teacher_id, first_name, last_name FROM teacher
-             WHERE (first_name = 'Nilesh'        AND last_name = 'Meheta')
-                OR (first_name = 'Varsha'        AND last_name = 'Jogalekar')
+             WHERE (first_name = 'Dhananjay'        AND last_name = 'Raut')
+                OR (first_name = 'Rucha' AND last_name = 'Patwardhan')
                 OR (first_name = 'Renuka'        AND last_name = 'Sanga')
                 OR (first_name = 'Sandeep'       AND last_name = 'More');`,
             { type: queryInterface.sequelize.QueryTypes.SELECT }
@@ -82,13 +82,15 @@ module.exports = {
         };
 
         const teacherMap = {
-            'Digital Forensic': teacherByName('Nilesh', 'Meheta'),
-            'Digital Forensic Lab': teacherByName('Nilesh', 'Meheta'),
-            'Environmental Management': teacherByName('Varsha', 'Jogalekar'),
-            'Social Media Analytics': teacherByName('Renuka', 'Sanga'),
-            'Social Media Analytics Lab': teacherByName('Renuka', 'Sanga'),
-            'Distributed Computing': teacherByName('Sandeep', 'More'),
-            'Distributed Computing Lab': teacherByName('Sandeep', 'More')
+            'Machine Learning': teacherByName('Dhananjay', 'Raut'),
+            'Machine Learning Lab': teacherByName('Dhananjay', 'Raut'),
+            'Cyber Security and Laws': teacherByName('Rucha', 'Patwardhan'),
+            'Block Chain': teacherByName('Renuka', 'Sanga'),
+            'Block Chain Lab': teacherByName('Renuka', 'Sanga'),
+            'Big Data Analytics': teacherByName('Sandeep', 'More'),
+            'Big Data Analytics Lab': teacherByName('Sandeep', 'More'),
+            'Natural Language Processing': teacherByName('Rucha', 'Patwardhan'),
+            'Natural Language Processing Lab': teacherByName('Rucha', 'Patwardhan'),
         };
 
         // ── 5a. Register teacher–course assignments in teacher_teaches_course ─
@@ -118,15 +120,15 @@ module.exports = {
 
         // ── 6. Resolve rooms ──────────────────────────────────────────────────
         const classroomsRaw = await queryInterface.sequelize.query(
-            `SELECT room_id FROM rooms WHERE room_type = 'Classroom' AND room_number = '402' LIMIT 1;`,
+            `SELECT room_id FROM rooms WHERE room_type = 'Classroom' AND room_number = '404' LIMIT 1;`,
             { type: queryInterface.sequelize.QueryTypes.SELECT }
         );
         const labRoomsRaw = await queryInterface.sequelize.query(
             `SELECT room_id, room_number FROM rooms 
-             WHERE room_type = 'Lab' AND room_number IN ('201', '108', '501');`,
+             WHERE room_type = 'Lab' AND room_number IN ('702', '701', '501', '704');`,
             { type: queryInterface.sequelize.QueryTypes.SELECT }
         );
-        if (classroomsRaw.length === 0) throw new Error('No Classroom room with number 402 found.');
+        if (classroomsRaw.length === 0) throw new Error('No Classroom room with number 404 found.');
         if (labRoomsRaw.length < 3) throw new Error('Not enough Lab rooms found (need 201, 108, 501).');
 
         const lectureRoomId = classroomsRaw[0].room_id;
@@ -140,14 +142,15 @@ module.exports = {
         };
 
         const labRoomMap = {
-            'Distributed Computing Lab': getLabRoomId('201'),
-            'Digital Forensic Lab': getLabRoomId('108'),
-            'Social Media Analytics Lab': getLabRoomId('501')
+            'Natural Language Processing Lab': getLabRoomId('501'),
+            'Block Chain Lab': getLabRoomId('702'),
+            'Machine Learning Lab': getLabRoomId('704'),
+            'Big Data Analytics Lab': getLabRoomId('701')
         };
 
-        // ── 7. Ensure a timetable exists for Division A ───────────────────────
+        // ── 7. Ensure a timetable exists for Division B ───────────────────────
         const existingTimetables = await queryInterface.sequelize.query(
-            `SELECT timetable_id FROM timetables WHERE division_id = '${divisionA.division_id}';`,
+            `SELECT timetable_id FROM timetables WHERE division_id = '${divisionB.division_id}';`,
             { type: queryInterface.sequelize.QueryTypes.SELECT }
         );
         let timetableId;
@@ -157,7 +160,7 @@ module.exports = {
             timetableId = uuidv4();
             await queryInterface.bulkInsert('timetables', [{
                 timetable_id: timetableId,
-                division_id: divisionA.division_id,
+                division_id: divisionB.division_id,
                 timetable_version: 1,
                 created_at: new Date(),
                 updated_at: new Date()
@@ -170,74 +173,77 @@ module.exports = {
         // Lecture schedule: same course at same slot every day Mon-Sat
         const lectures = [
             // MONDAY
-            { day: "Monday", courseName: "Environmental Management", start: "10:00:00", end: "11:00:00" },
-            { day: "Monday", courseName: "Social Media Analytics", start: "11:00:00", end: "12:00:00" },
-            { day: "Monday", courseName: "Distributed Computing", start: "14:45:00", end: "15:45:00" },
+            { day: "Monday", courseName: "Big Data Analytics", start: "10:00:00", end: "11:00:00" },
+            { day: "Monday", courseName: "Cyber Security and Laws", start: "11:00:00", end: "12:00:00" },
+            { day: "Monday", courseName: "Block Chain", start: "14:45:00", end: "15:45:00" },
+            { day: "Monday", courseName: "Natural Language Processing", start: "12:30:00", end: "13:30:00" },
 
             // TUESDAY
-            { day: "Tuesday", courseName: "Distributed Computing", start: "12:30:00", end: "13:30:00" },
-            { day: "Tuesday", courseName: "Digital Forensic", start: "13:30:00", end: "14:30:00" },
+            { day: "Tuesday", courseName: "Machine Learning", start: "10:00:00", end: "11:00:00" },
+            { day: "Tuesday", courseName: "Cyber Security and Laws", start: "11:00:00", end: "12:00:00" },
+            { day: "Tuesday", courseName: "Big Data Analytics", start: "12:30:00", end: "13:30:00" },
+            { day: "Tuesday", courseName: "Block Chain", start: "14:45:00", end: "15:45:00" },
+            { day: "Tuesday", courseName: "Natural Language Processing", start: "13:30:00", end: "14:30:00" },
 
             // WEDNESDAY
-            // (only labs, no lecture)
+            { day: "Wednesday", courseName: "Big Data Analytics", start: "10:00:00", end: "11:00:00" },
+            { day: "Wednesday", courseName: "Cyber Security and Laws", start: "11:00:00", end: "12:00:00" },
+            { day: "Wednesday", courseName: "Block Chain", start: "14:45:00", end: "15:45:00" },
 
             // THURSDAY
-            { day: "Thursday", courseName: "Digital Forensic", start: "10:00:00", end: "11:00:00" },
-            { day: "Thursday", courseName: "Environmental Management", start: "11:00:00", end: "12:00:00" },
-            { day: "Thursday", courseName: "Social Media Analytics", start: "12:30:00", end: "13:30:00" },
+            { day: "Thursday", courseName: "Natural Language Processing", start: "10:00:00", end: "11:00:00" },
+            { day: "Thursday", courseName: "Machine Learning", start: "11:00:00", end: "12:00:00" },
+            { day: "Thursday", courseName: "Block Chain", start: "14:45:00", end: "15:45:00" },
 
             // FRIDAY
-            { day: "Friday", courseName: "Digital Forensic", start: "10:00:00", end: "11:00:00" },
-            { day: "Friday", courseName: "Distributed Computing", start: "11:00:00", end: "12:00:00" },
-            { day: "Friday", courseName: "Environmental Management", start: "12:30:00", end: "13:30:00" },
-            { day: "Friday", courseName: "Social Media Analytics", start: "13:30:00", end: "14:30:00" },
+            { day: "Friday", courseName: "Machine Learning", start: "14:45:00", end: "15:45:00" },
         ];
 
         const labs = [
-            // MONDAY LAB
+            // WEDNESDAY LAB
             {
-                day: "Monday",
-                courseName: "Distributed Computing Lab",
-                batch: ba1.batch_id,
-                start: "12:30:00",
-                end: "14:30:00"
-            },
-            {
-                day: "Monday",
-                courseName: "Digital Forensic Lab",
-                batch: ba2.batch_id,
+                day: "Wednesday",
+                courseName: "Natural Language Processing Lab",
+                batch: bb1.batch_id,
                 start: "12:30:00",
                 end: "14:30:00"
             },
 
-            // TUESDAY LAB
+            // THURSDAY LABS
             {
-                day: "Tuesday",
-                courseName: "Social Media Analytics Lab",
-                batch: ba1.batch_id,
-                start: "10:00:00",
-                end: "12:00:00"
-            },
-
-            // WEDNESDAY LABS
-            {
-                day: "Wednesday",
-                courseName: "Social Media Analytics Lab",
-                batch: ba2.batch_id,
-                start: "10:00:00",
-                end: "12:00:00"
-            },
-            {
-                day: "Wednesday",
-                courseName: "Distributed Computing Lab",
-                batch: ba2.batch_id,
+                day: "Thursday",
+                courseName: "Machine Learning Lab",
+                batch: bb1.batch_id,
                 start: "12:30:00",
                 end: "14:30:00"
             },
             {
-                day: "Wednesday",
-                courseName: "Digital Forensic Lab",
-                batch: ba1.batch_id,
+                day: "Thursday",
+                courseName: "Block Chain Lab",
+                batch: bb2.batch_id,
+                start: "12:30:00",
+                end: "14:30:00"
+            },
+
+            // FRIDAY LABS
+            {
+                day: "Friday",
+                courseName: "Big Data Analytics Lab",
+                batch: bb2.batch_id,
+                start: "10:00:00",
+                end: "12:00:00"
+            },
+            {
+                day: "Friday",
+                courseName: "Machine Learning Lab",
+                batch: bb2.batch_id,
+                start: "12:30:00",
+                end: "14:30:00"
+            },
+            {
+                day: "Friday",
+                courseName: "Block Chain Lab",
+                batch: bb1.batch_id,
                 start: "12:30:00",
                 end: "14:30:00"
             }

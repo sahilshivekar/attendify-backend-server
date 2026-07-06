@@ -44,13 +44,13 @@ module.exports = {
             throw new Error('Required branches or schemes not found for student seeding.');
         }
 
-        // Find semester: Sem 8, academic year 2024-2025, Comp Engg
+        // Find semester: Sem 7, academic year 2026-2027, Comp Engg
         const compBranchId = branchIdMap['Computer Engineering'];
         const semester = semesters.find(s => 
             s.branch_id === compBranchId && 
-            s.semester_number === 8 && 
-            s.academic_start_year === 2025 && 
-            s.academic_end_year === 2026
+            s.semester_number === 7 && 
+            s.academic_start_year === 2026 && 
+            s.academic_end_year === 2027
         );
         if (!semester) {
             throw new Error('Required semester not found.');
@@ -97,7 +97,7 @@ module.exports = {
             branch_id: compBranchId,
             created_at: new Date(),
             updated_at: new Date(),
-            admission_year: 2023,
+            admission_year: 2024,
             admission_type: 'DSE'
         };
 
@@ -136,7 +136,7 @@ module.exports = {
             student_id: studentId,
             division_id: division.division_id,
             roll_no: maxRollNo + 1,
-            start_date: '2026-01-08',
+            start_date: '2026-07-06',
             end_date: null,
             created_at: new Date(),
             updated_at: new Date()
@@ -147,7 +147,7 @@ module.exports = {
             student_batch_id: uuidv4(),
             student_id: studentId,
             batch_id: batch.batch_id,
-            start_date: '2026-01-08',
+            start_date: '2026-07-06',
             end_date: null,
             created_at: new Date(),
             updated_at: new Date()

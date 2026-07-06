@@ -159,7 +159,7 @@ module.exports = {
                 scheme_id: schemeId,
                 created_at: new Date(),
                 updated_at: new Date(),
-                admission_year: 2025 - (year === 'FE' ? 0 : (year === 'SE' ? 1 : (year === 'TE' ? 2 : 3))),
+                admission_year: 2026 - (year === 'FE' ? 0 : (year === 'SE' ? 1 : (year === 'TE' ? 2 : 3))),
                 admission_type: admissionType,
                 branch_id: branchId
             };

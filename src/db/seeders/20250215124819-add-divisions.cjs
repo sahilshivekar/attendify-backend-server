@@ -31,17 +31,17 @@ module.exports = {
         // 2. Prepare the division data for insertion
         const divisionsToInsert = [
             // Comp Divisions
-            { division_code: 'A', semester_id: getSemesterId(compBranchId, 8) },
-            { division_code: 'B', semester_id: getSemesterId(compBranchId, 8) },
-            { division_code: 'A', semester_id: getSemesterId(compBranchId, 6) },
-            { division_code: 'B', semester_id: getSemesterId(compBranchId, 6) },
-            { division_code: 'A', semester_id: getSemesterId(compBranchId, 4) },
-            { division_code: 'B', semester_id: getSemesterId(compBranchId, 4) },
-            { division_code: 'A', semester_id: getSemesterId(compBranchId, 2) },
-            { division_code: 'B', semester_id: getSemesterId(compBranchId, 2) },
+            { division_code: 'A', semester_id: getSemesterId(compBranchId, 7) },
+            { division_code: 'B', semester_id: getSemesterId(compBranchId, 7) },
+            { division_code: 'A', semester_id: getSemesterId(compBranchId, 5) },
+            { division_code: 'B', semester_id: getSemesterId(compBranchId, 5) },
+            { division_code: 'A', semester_id: getSemesterId(compBranchId, 3) },
+            { division_code: 'B', semester_id: getSemesterId(compBranchId, 3) },
+            { division_code: 'A', semester_id: getSemesterId(compBranchId, 1) },
+            { division_code: 'B', semester_id: getSemesterId(compBranchId, 1) },
             // Civil Divisions
-            { division_code: 'A', semester_id: getSemesterId(civilBranchId, 2) },
-            { division_code: 'B', semester_id: getSemesterId(civilBranchId, 2) },
+            { division_code: 'A', semester_id: getSemesterId(civilBranchId, 1) },
+            { division_code: 'B', semester_id: getSemesterId(civilBranchId, 1) },
         ].map(div => ({
             division_id: uuidv4(),
             ...div,

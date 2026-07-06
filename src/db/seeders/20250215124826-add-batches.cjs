@@ -37,30 +37,30 @@ module.exports = {
         // 3. Define the batches to be created
         const batchesData = [
             // Comp Sem 8
-            { batch_code: 'BA1', division_id: getDivisionId(compBranchId, 8, 'A') },
-            { batch_code: 'BA2', division_id: getDivisionId(compBranchId, 8, 'A') },
-            { batch_code: 'BB1', division_id: getDivisionId(compBranchId, 8, 'B') },
-            { batch_code: 'BB2', division_id: getDivisionId(compBranchId, 8, 'B') },
+            { batch_code: 'BA1', division_id: getDivisionId(compBranchId, 7, 'A') },
+            { batch_code: 'BA2', division_id: getDivisionId(compBranchId, 7, 'A') },
+            { batch_code: 'BB1', division_id: getDivisionId(compBranchId, 7, 'B') },
+            { batch_code: 'BB2', division_id: getDivisionId(compBranchId, 7, 'B') },
             // Comp Sem 6
-            { batch_code: 'TA1', division_id: getDivisionId(compBranchId, 6, 'A') },
-            { batch_code: 'TA2', division_id: getDivisionId(compBranchId, 6, 'A') },
-            { batch_code: 'TB1', division_id: getDivisionId(compBranchId, 6, 'B') },
-            { batch_code: 'TB2', division_id: getDivisionId(compBranchId, 6, 'B') },
+            { batch_code: 'TA1', division_id: getDivisionId(compBranchId, 5, 'A') },
+            { batch_code: 'TA2', division_id: getDivisionId(compBranchId, 5, 'A') },
+            { batch_code: 'TB1', division_id: getDivisionId(compBranchId, 5, 'B') },
+            { batch_code: 'TB2', division_id: getDivisionId(compBranchId, 5, 'B') },
             // Comp Sem 4
-            { batch_code: 'SA1', division_id: getDivisionId(compBranchId, 4, 'A') },
-            { batch_code: 'SA2', division_id: getDivisionId(compBranchId, 4, 'A') },
-            { batch_code: 'SB1', division_id: getDivisionId(compBranchId, 4, 'B') },
-            { batch_code: 'SB2', division_id: getDivisionId(compBranchId, 4, 'B') },
+            { batch_code: 'SA1', division_id: getDivisionId(compBranchId, 3, 'A') },
+            { batch_code: 'SA2', division_id: getDivisionId(compBranchId, 3, 'A') },
+            { batch_code: 'SB1', division_id: getDivisionId(compBranchId, 3, 'B') },
+            { batch_code: 'SB2', division_id: getDivisionId(compBranchId, 3, 'B') },
             // Comp Sem 2
-            { batch_code: 'FA1', division_id: getDivisionId(compBranchId, 2, 'A') },
-            { batch_code: 'FA2', division_id: getDivisionId(compBranchId, 2, 'A') },
-            { batch_code: 'FB1', division_id: getDivisionId(compBranchId, 2, 'B') },
-            { batch_code: 'FB2', division_id: getDivisionId(compBranchId, 2, 'B') },
+            { batch_code: 'FA1', division_id: getDivisionId(compBranchId, 1, 'A') },
+            { batch_code: 'FA2', division_id: getDivisionId(compBranchId, 1, 'A') },
+            { batch_code: 'FB1', division_id: getDivisionId(compBranchId, 1, 'B') },
+            { batch_code: 'FB2', division_id: getDivisionId(compBranchId, 1, 'B') },
             // Civil Sem 2
-            { batch_code: 'FA1', division_id: getDivisionId(civilBranchId, 2, 'A') },
-            { batch_code: 'FA2', division_id: getDivisionId(civilBranchId, 2, 'A') },
-            { batch_code: 'FB1', division_id: getDivisionId(civilBranchId, 2, 'B') },
-            { batch_code: 'FB2', division_id: getDivisionId(civilBranchId, 2, 'B') },
+            { batch_code: 'FA1', division_id: getDivisionId(civilBranchId, 1, 'A') },
+            { batch_code: 'FA2', division_id: getDivisionId(civilBranchId, 1, 'A') },
+            { batch_code: 'FB1', division_id: getDivisionId(civilBranchId, 1, 'B') },
+            { batch_code: 'FB2', division_id: getDivisionId(civilBranchId, 1, 'B') },
         ];
 
         const batchesToInsert = batchesData
