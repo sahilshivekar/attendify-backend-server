@@ -23,7 +23,6 @@ import StudentBatch from '../db/models/studentBatch.model.js';
 import TeacherTeachesCourse from '../db/models/teacherTeachesCourse.model.js';
 import httpStatus from 'http-status';
 import { getDateStringFromObj } from '../utils/date.js';
-// removed logger import as per request to remove logs
 import sequelize from '../config/db.connection.js';
 import fs from 'fs';
 import csv from 'csv-parser';
@@ -162,7 +161,7 @@ const addClass = asyncHandler(async (req, res) => {
     if (!checkCourseAvailableForSpecificSemester) {
         throw new ApiError(httpStatus.BAD_REQUEST, `Course '${course.name}' is not in syllabus for semester ${semester.semesterNumber} of branch ${branch.name}`)
     }
-    
+
     // Check if dates are in bounds of semester dates
     if (activeFrom < semester.startDate || activeFrom > semester.endDate) {
         throw new ApiError(httpStatus.BAD_REQUEST, `Active from date is out of bounds because semester start date is ${semester.startDate} and semester end date is ${semester.endDate}`)
@@ -1029,7 +1028,33 @@ const addExtraClass = asyncHandler(async (req, res) => {
     if (activeTill > semester.endDate || activeTill < semester.startDate) {
         throw new ApiError(httpStatus.BAD_REQUEST, `Active till date is out of bounds because semester start date is ${semester.startDate} and semester end date is ${semester.endDate}`)
     }
+    const extraClassConflict = await Class.findOne({
+        where: {
+            [Op.and]: [
+                { isExtraClass: true },
+                { dayOfWeek: dayOfWeek },
+                {
+                    [Op.or]: [
+                        { startTime: { [Op.gt]: startTime, [Op.lt]: endTime } },
+                        { endTime: { [Op.gt]: startTime, [Op.lt]: endTime } },
+                        { startTime: { [Op.lte]: startTime }, endTime: { [Op.gte]: endTime } }
+                    ]
+                },
+                {
+                    [Op.or]: [
+                        { activeFrom: { [Op.gte]: activeFrom, [Op.lte]: activeTill } },
+                        { activeTill: { [Op.gte]: activeFrom, [Op.lte]: activeTill } },
+                        { activeFrom: { [Op.lte]: activeFrom }, activeTill: { [Op.gte]: activeTill } }
+                    ]
+                }
+            ]
+        }
+    })
 
+    if (extraClassConflict) {
+        const msg = await getThrowableConflictMessage(extraClassConflict, "Another extra class is scheduled at this time: ")
+        throw new ApiError(httpStatus.CONFLICT, msg)
+    }
     // Check for teacher conflict
     const teacherConflict = await Class.findOne({
         where: {
@@ -1481,7 +1506,7 @@ const bulkCreateClasses = asyncHandler(async (req, res) => {
 
         await transaction.commit();
 
-    // logging removed
+        // logging removed
 
         res.status(httpStatus.CREATED).json(
             new ApiResponse(
@@ -1500,8 +1525,8 @@ const bulkCreateClasses = asyncHandler(async (req, res) => {
 
     } catch (error) {
         // Make sure transaction is rolled back if still active
-        try { await transaction.rollback(); } catch (_) {}
-    // logging removed
+        try { await transaction.rollback(); } catch (_) { }
+        // logging removed
         // If it's already an ApiError (like 404/409), rethrow as-is
         if (error instanceof ApiError) {
             throw error;
@@ -1560,7 +1585,7 @@ const bulkDeleteClasses = asyncHandler(async (req, res) => {
 
         await transaction.commit();
 
-    // logging removed
+        // logging removed
 
         res.status(httpStatus.OK).json(
             new ApiResponse(
@@ -1575,7 +1600,7 @@ const bulkDeleteClasses = asyncHandler(async (req, res) => {
 
     } catch (error) {
         await transaction.rollback();
-    // logging removed
+        // logging removed
         throw error;
     }
 });
@@ -1590,7 +1615,7 @@ const bulkCreateClassesFromCSV = asyncHandler(async (req, res) => {
 
     const csvFilePath = req.file.path;
     const classes = [];
-    
+
     try {
         // Parse CSV file
         const parseCSV = () => {
@@ -1633,9 +1658,9 @@ const bulkCreateClassesFromCSV = asyncHandler(async (req, res) => {
                 const classData = classes[i];
                 try {
                     // Validate required fields
-                    if (!classData.teacherId || !classData.startTime || !classData.endTime || 
-                        !classData.dayOfWeek || !classData.roomId || !classData.activeFrom || 
-                        !classData.activeTill || !classData.courseId || 
+                    if (!classData.teacherId || !classData.startTime || !classData.endTime ||
+                        !classData.dayOfWeek || !classData.roomId || !classData.activeFrom ||
+                        !classData.activeTill || !classData.courseId ||
                         !classData.timetableId) {
                         errors.push({ row: i + 1, error: "Missing required fields" });
                         continue;
@@ -1733,7 +1758,7 @@ const bulkCreateClassesFromCSV = asyncHandler(async (req, res) => {
         if (fs.existsSync(csvFilePath)) {
             fs.unlinkSync(csvFilePath);
         }
-    // logging removed
+        // logging removed
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Bulk class creation from CSV failed");
     }
 });
