@@ -21,7 +21,13 @@ const getSchemes = asyncHandler(async (req, res) => {
     }
 
     const schemes = await Scheme.findAll({
-        where: searchClause
+        where: searchClause,
+        include: [
+            {
+                model: University,
+                duplicating: false
+            },
+        ]
     });
 
     res

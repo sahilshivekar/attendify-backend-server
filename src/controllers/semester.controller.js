@@ -513,10 +513,22 @@ const getSemesterById = asyncHandler(async (req, res) => {
             {
                 model: Branch,
                 required: true,
+                duplicating: false,
             },
             {
                 model: Scheme,
                 required: true,
+                duplicating: false,
+            },
+            {
+                model: Division,
+                duplicating: false,
+                include: [
+                    {
+                        model: Batch,
+                        duplicating: false,
+                    }
+                ]
             }
         ]
     });

@@ -1393,6 +1393,76 @@ const groupPhotoScan = asyncHandler(async (req, res) => {
     );
 });
 
+const markAllPresent = asyncHandler(async (req, res) => {
+    const { attendanceId } = req.body;
+
+    const attendance = await Attendance.findByPk(attendanceId);
+    if (!attendance) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Attendance not found");
+    }
+
+    const transaction = await sequelize.transaction();
+    try {
+        const [affectedRows] = await AttendanceStudent.update(
+            { attendanceStatus: true },
+            {
+                where: { attendanceId: attendanceId },
+                transaction
+            }
+        );
+
+        await transaction.commit();
+
+        res.status(httpStatus.OK).json(
+            new ApiResponse(
+                httpStatus.OK,
+                `${affectedRows} students successfully marked as present`,
+                { updatedCount: affectedRows }
+            )
+        );
+    } catch (error) {
+        if (!transaction.finished) {
+            await transaction.rollback();
+        }
+        throw error;
+    }
+});
+
+const markAllAbsent = asyncHandler(async (req, res) => {
+    const { attendanceId } = req.body;
+
+    const attendance = await Attendance.findByPk(attendanceId);
+    if (!attendance) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Attendance not found");
+    }
+
+    const transaction = await sequelize.transaction();
+    try {
+        const [affectedRows] = await AttendanceStudent.update(
+            { attendanceStatus: false },
+            {
+                where: { attendanceId: attendanceId },
+                transaction
+            }
+        );
+
+        await transaction.commit();
+
+        res.status(httpStatus.OK).json(
+            new ApiResponse(
+                httpStatus.OK,
+                `${affectedRows} students successfully marked as absent`,
+                { updatedCount: affectedRows }
+            )
+        );
+    } catch (error) {
+        if (!transaction.finished) {
+            await transaction.rollback();
+        }
+        throw error;
+    }
+});
+
 export {
     removeAttendance,
     updateStudentAttendance,
@@ -1405,5 +1475,7 @@ export {
     getAttendanceById,
     getAttendances,
     getActiveAttendanceSheet,
-    groupPhotoScan
+    groupPhotoScan,
+    markAllPresent,
+    markAllAbsent
 }

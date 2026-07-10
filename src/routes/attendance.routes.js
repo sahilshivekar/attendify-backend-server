@@ -11,7 +11,9 @@ import {
     getAttendanceById,
     getAttendances,
     getActiveAttendanceSheet,
-    groupPhotoScan
+    groupPhotoScan,
+    markAllPresent,
+    markAllAbsent
 } from '../controllers/attendance.controller.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
 import { ROLES } from '../config/roles.js';
@@ -71,6 +73,20 @@ router.route('/bulk/update')
         validate(attendanceValidation.bulkUpdateStudentAttendance),
         verifyJWT([ROLES.ADMIN, ROLES.TEACHER]),
         bulkUpdateStudentAttendance
+    );
+
+router.route('/bulk/mark-all-present')
+    .put(
+        validate(attendanceValidation.markAllPresentOrAbsent),
+        verifyJWT([ROLES.ADMIN, ROLES.TEACHER]),
+        markAllPresent
+    );
+
+router.route('/bulk/mark-all-absent')
+    .put(
+        validate(attendanceValidation.markAllPresentOrAbsent),
+        verifyJWT([ROLES.ADMIN, ROLES.TEACHER]),
+        markAllAbsent
     );
 
 // Get single attendance by ID (must be LAST to avoid catching named routes)
