@@ -1,4 +1,4 @@
-import { Op } from 'sequelize';
+import { Op, fn, col, where, literal } from 'sequelize';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import fs from 'fs';
 import { randomUUID } from 'crypto';
@@ -89,17 +89,59 @@ const getStudents = asyncHandler(async (req, res) => {
 
     let searchClause = {};
 
-    if (searchQuery) {
-        searchClause = {
-            [Op.or]: [
-                { firstName: { [Op.iLike]: `%${searchQuery}%` } },
-                { lastName: { [Op.iLike]: `%${searchQuery}%` } },
-                { email: { [Op.iLike]: `%${searchQuery}%` } },
-                { phoneNumber: { [Op.iLike]: `%${searchQuery}%` } },
-                { prn: { [Op.iLike]: `%${searchQuery}%` } },
-            ]
-        };
-    }
+if (searchQuery) {
+    const normalizedSearch = searchQuery.trim().replace(/\s+/g, " ");
+
+    searchClause = {
+        [Op.or]: [
+            { firstName: { [Op.iLike]: `%${normalizedSearch}%` } },
+            { middleName: { [Op.iLike]: `%${normalizedSearch}%` } },
+            { lastName: { [Op.iLike]: `%${normalizedSearch}%` } },
+            { email: { [Op.iLike]: `%${normalizedSearch}%` } },
+            { phoneNumber: { [Op.iLike]: `%${normalizedSearch}%` } },
+            { prn: { [Op.iLike]: `%${normalizedSearch}%` } },
+
+            // First + Last
+            where(
+                literal(`
+                    trim(
+                        concat(
+                            coalesce("Student"."first_name", ''),
+                            ' ',
+                            coalesce("Student"."last_name", '')
+                        )
+                    )
+                `),
+                {
+                    [Op.iLike]: `%${normalizedSearch}%`,
+                }
+            ),
+
+            // First + Middle + Last
+            where(
+                literal(`
+                    regexp_replace(
+                        trim(
+                            concat(
+                                coalesce("Student"."first_name", ''),
+                                ' ',
+                                coalesce("Student"."middle_name", ''),
+                                ' ',
+                                coalesce("Student"."last_name", '')
+                            )
+                        ),
+                        '\\s+',
+                        ' ',
+                        'g'
+                    )
+                `),
+                {
+                    [Op.iLike]: `%${normalizedSearch}%`,
+                }
+            ),
+        ],
+    };
+}
 
     let admissionYearFilterClause = {};
     let admissionTypeFilterClause = {};
@@ -2081,7 +2123,7 @@ const bulkCreateStudentsFromCSV = asyncHandler(async (req, res) => {
 
     // Validate if the CSV headers include all required columns
     const requiredColumns = [
-        'prn', 'firstName', 'lastName', 'email', 'phoneNumber', 
+        'prn', 'firstName', 'lastName', 'email', 'phoneNumber',
         'gender', 'scheme', 'admissionYear', 'admissionType', 'branch'
     ];
     const actualColumns = Object.keys(rows[0] || {});
@@ -2144,7 +2186,7 @@ const bulkCreateStudentsFromCSV = asyncHandler(async (req, res) => {
             const emails = validatedStudents.map(s => s.email.toLowerCase());
             const prns = validatedStudents.map(s => s.prn);
             const phoneNumbers = validatedStudents.map(s => s.phoneNumber);
-    
+
             // Check for duplicate emails within CSV
             const emailSet = new Map();
             for (const student of validatedStudents) {
@@ -2155,7 +2197,7 @@ const bulkCreateStudentsFromCSV = asyncHandler(async (req, res) => {
                     emailSet.set(lowerEmail, student.rowNumber);
                 }
             }
-    
+
             // Check for duplicate PRNs within CSV
             const prnSet = new Map();
             for (const student of validatedStudents) {
@@ -2165,35 +2207,35 @@ const bulkCreateStudentsFromCSV = asyncHandler(async (req, res) => {
                     prnSet.set(student.prn, student.rowNumber);
                 }
             }
-    
+
             // Validate all schemes exist
             const schemes = await Scheme.findAll({
                 where: { name: { [Op.in]: schemeNames } },
                 transaction
             });
             schemeMap = new Map(schemes.map(s => [s.name, s.id]));
-    
+
             // Validate all branches exist
             const branches = await Branch.findAll({
                 where: { name: { [Op.in]: branchNames } },
                 transaction
             });
             branchMap = new Map(branches.map(b => [b.name, b.id]));
-    
+
             // Check for existing emails in database
             const existingStudentsByEmail = await Student.findAll({
                 where: { email: { [Op.in]: emails } },
                 transaction
             });
             const existingEmailSet = new Set(existingStudentsByEmail.map(s => s.email.toLowerCase()));
-    
+
             // Check for existing PRNs in database
             const existingStudentsByPrn = await Student.findAll({
                 where: { prn: { [Op.in]: prns } },
                 transaction
             });
             const existingPrnSet = new Set(existingStudentsByPrn.map(s => s.prn));
-    
+
             // Check for existing phone numbers in database
             const existingStudentsByPhone = await Student.findAll({
                 where: { phoneNumber: { [Op.in]: phoneNumbers } },
@@ -2259,7 +2301,7 @@ const bulkCreateStudentsFromCSV = asyncHandler(async (req, res) => {
 
             throw new ApiError(httpStatus.BAD_REQUEST, errorMessage.trim());
         }
-    
+
         // Prepare student data for bulk create
         const studentsToCreate = validatedStudents.map(student => {
             return {
@@ -2386,7 +2428,7 @@ const getStudentBiometrics = asyncHandler(async (req, res) => {
         ? await getStudentPresignedUrls(student.faceImageKeys)
         : [];
     presignedUrls = presignedUrls.map(urlObj => urlObj.url)
-    
+
     res.status(httpStatus.OK).json(
         new ApiResponse(
             httpStatus.OK,
