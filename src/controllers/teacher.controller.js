@@ -3,6 +3,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiResponse } from '../utils/ApiResponse.js'
 import { ApiError } from '../utils/ApiError.js'
 import { Op } from 'sequelize'
+import Sequelize from 'sequelize';
 import { uploadOnCloudinary, deleteFromCloudinary } from '../utils/cloudinary.js';
 import fs from "fs"
 import csvParser from 'csv-parser';
@@ -49,37 +50,21 @@ const getTeacher = asyncHandler(async (req, res) => {
 
     let searchClause = {};
 
-    if (searchQuery) {
-        searchClause = {
+    const normalizedSearch = searchQuery.trim().replace(/\s+/g, " ");
+    const terms = normalizedSearch.split(" ");
+
+    searchClause = {
+        [Op.and]: terms.map(term => ({
             [Op.or]: [
-                {
-                    firstName: {
-                        [Op.iLike]: `%${searchQuery}%`
-                    }
-                },
-                {
-                    email: {
-                        [Op.iLike]: `%${searchQuery}%`
-                    }
-                },
-                {
-                    lastName: {
-                        [Op.iLike]: `%${searchQuery}%`
-                    }
-                },
-                {
-                    highestQualification: {
-                        [Op.iLike]: `%${searchQuery}%`
-                    }
-                },
-                {
-                    phoneNumber: {
-                        [Op.iLike]: `%${searchQuery}%`
-                    }
-                }
-            ]
-        };
-    }
+                { firstName: { [Op.iLike]: `%${term}%` } },
+                { middleName: { [Op.iLike]: `%${term}%` } },
+                { lastName: { [Op.iLike]: `%${term}%` } },
+                { email: { [Op.iLike]: `%${term}%` } },
+                { phoneNumber: { [Op.iLike]: `%${term}%` } },
+                { highestQualification: { [Op.iLike]: `%${term}%` } },
+            ],
+        })),
+    };
 
     let courseIdFilterClause = {}
     let includeClause = []
@@ -111,7 +96,7 @@ const getTeacher = asyncHandler(async (req, res) => {
         ...(limit && !isGetAll ? { limit: parseInt(limit, 10) } : {}),
         distinct: true,
     });
-    
+
     res
         .status(httpStatus.OK)
         .json(
@@ -400,10 +385,10 @@ const removeTeacher = asyncHandler(async (req, res) => {
                 throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Some issue occured while deleting the image")
             }
         }
-        
+
         await teacher.destroy({ transaction });
         await transaction.commit();
-        
+
         res
             .status(httpStatus.OK)
             .json(
@@ -441,7 +426,7 @@ const addTeachingCourse = asyncHandler(async (req, res) => {
             },
             transaction
         });
-        if(alreadyAssigned) {
+        if (alreadyAssigned) {
             throw new ApiError(httpStatus.BAD_REQUEST, "Course is already assigned to this teacher member")
         }
         const teacherTeachesCourseEntry = await TeacherTeachesCourse.create({
@@ -542,7 +527,7 @@ const bulkCreateTeachers = asyncHandler(async (req, res) => {
         throw new ApiError(httpStatus.BAD_REQUEST, "Teachers array is required and must not be empty");
     }
 
-    
+
 
     const transaction = await sequelize.transaction();
     try {
@@ -553,8 +538,8 @@ const bulkCreateTeachers = asyncHandler(async (req, res) => {
             const teacherData = teachers[i];
             try {
                 // Validate required fields
-                if (!teacherData.firstName || !teacherData.lastName || 
-                    !teacherData.email || !teacherData.phoneNumber || 
+                if (!teacherData.firstName || !teacherData.lastName ||
+                    !teacherData.email || !teacherData.phoneNumber ||
                     !teacherData.gender || !teacherData.role) {
                     errors.push({ index: i, error: "Missing required fields" });
                     continue;
@@ -592,7 +577,7 @@ const bulkCreateTeachers = asyncHandler(async (req, res) => {
 
         await transaction.commit();
 
-        
+
 
         res.status(httpStatus.CREATED).json(
             new ApiResponse(
@@ -624,7 +609,7 @@ const bulkDeleteTeachers = asyncHandler(async (req, res) => {
         throw new ApiError(httpStatus.BAD_REQUEST, "Teacher IDs array is required and must not be empty");
     }
 
-    
+
 
     const transaction = await sequelize.transaction();
     try {
@@ -643,7 +628,7 @@ const bulkDeleteTeachers = asyncHandler(async (req, res) => {
             try {
                 await deleteFromCloudinary(teacher.teacherImagePublicId);
             } catch (error) {
-                
+
             }
         }
 
@@ -654,7 +639,7 @@ const bulkDeleteTeachers = asyncHandler(async (req, res) => {
 
         await transaction.commit();
 
-        
+
 
         res.status(httpStatus.OK).json(
             new ApiResponse(
