@@ -608,7 +608,7 @@ const getStudentsUpcomingClasses = asyncHandler(async (req, res) => {
                 activeFrom: classObj.activeFrom,
                 activeTill: classObj.activeTill,
                 todayDate,
-                currentTime
+                currentTime: '00:00:00'
             });
 
             if (!nextClassDate) {
@@ -715,7 +715,7 @@ const getTeachersUpcomingClasses = asyncHandler(async (req, res) => {
                 activeFrom: classObj.activeFrom,
                 activeTill: classObj.activeTill,
                 todayDate,
-                currentTime
+                currentTime: '00:00:00'
             });
 
             if (!nextClassDate) {
