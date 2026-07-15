@@ -8,9 +8,9 @@ const getDivisions = {
 			.messages({ 'number.base': 'Semester number must be a number', 'number.min': 'Semester number must be at least 1', 'number.max': 'Semester number cannot exceed 20' }),
 		branchId: uuid.allow(null).messages({ 'string.guid': 'Branch ID must be a valid UUID' }),
 		semesterId: uuid.allow(null).messages({ 'string.guid': 'Semester ID must be a valid UUID' }),
-		academicStartYear: Joi.number().integer().min(1900).max(3000).allow(null)
+		academicStartYear: Joi.number().integer().allow(null)
 			.messages({ 'number.base': 'Academic start year must be a number' }),
-		academicEndYear: Joi.number().integer().min(1900).max(3000).allow(null)
+		academicEndYear: Joi.number().integer().allow(null)
 			.messages({ 'number.base': 'Academic end year must be a number' }),
 		searchQuery: Joi.string().allow('', null).default('')
 			.messages({ 'string.base': 'Search query must be a string' }),

@@ -5,8 +5,8 @@ const uuid = Joi.string().guid({ version: ['uuidv4', 'uuidv5'] });
 const getTimetables = {
 	query: Joi.object().keys({
 		semesterNumber: Joi.number().integer().min(1).max(20).allow(null).messages({ 'number.base': 'Semester number must be a number' }),
-		academicStartYearOfSemester: Joi.number().integer().min(1900).max(3000).allow(null).messages({ 'number.base': 'Academic start year must be a number' }),
-		academicEndYearOfSemester: Joi.number().integer().min(1900).max(3000).allow(null).messages({ 'number.base': 'Academic end year must be a number' }),
+		academicStartYearOfSemester: Joi.number().integer().allow(null).messages({ 'number.base': 'Academic start year must be a number' }),
+		academicEndYearOfSemester: Joi.number().integer().allow(null).messages({ 'number.base': 'Academic end year must be a number' }),
 		page: Joi.number().integer().min(1).default(1).messages({ 'number.base': 'Page must be a number', 'number.min': 'Page must be at least 1' }),
 		limit: Joi.number().integer().min(1).max(100).default(10).messages({ 'number.base': 'Limit must be a number', 'number.min': 'Limit must be at least 1', 'number.max': 'Limit cannot exceed 100' })
 	})

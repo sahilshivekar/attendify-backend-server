@@ -6,9 +6,9 @@ const getSemesters = {
 	query: Joi.object().keys({
 		semesterNumber: Joi.number().integer().min(1).max(20).allow(null)
 			.messages({ 'number.base': 'Semester number must be a number', 'number.min': 'Semester number must be at least 1', 'number.max': 'Semester number cannot exceed 20' }),
-		academicStartYear: Joi.number().integer().min(1900).max(3000).allow(null)
+		academicStartYear: Joi.number().integer().allow(null)
 			.messages({ 'number.base': 'Academic start year must be a number' }),
-		academicEndYear: Joi.number().integer().min(1900).max(3000).allow(null)
+		academicEndYear: Joi.number().integer().allow(null)
 			.messages({ 'number.base': 'Academic end year must be a number' }),
 		branchId: uuid.allow(null).messages({ 'string.guid': 'Branch ID must be a valid UUID' }),
 		schemeId: uuid.allow(null).messages({ 'string.guid': 'Scheme ID must be a valid UUID' }),

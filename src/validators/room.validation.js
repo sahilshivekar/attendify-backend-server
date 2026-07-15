@@ -23,8 +23,8 @@ const getRooms = {
 		limit: Joi.number().integer().min(1).max(100).default(10).messages({ 'number.base': 'Limit must be a number', 'number.min': 'Limit must be at least 1', 'number.max': 'Limit cannot exceed 100' }),
 		getAll: Joi.boolean().default(false).messages({ 'boolean.base': 'getAll must be a boolean' }),
 		type: Joi.string().valid('Classroom', 'Lab', 'Office').messages({ 'any.only': 'type must be one of Classroom, Lab, Office' }),
-		minCapacity: Joi.number().integer().min(1).max(1000).messages({ 'number.base': 'minCapacity must be a number', 'number.min': 'minCapacity must be at least 1', 'number.max': 'minCapacity cannot exceed 1000' }),
-		maxCapacity: Joi.number().integer().min(1).max(1000).messages({ 'number.base': 'maxCapacity must be a number', 'number.min': 'maxCapacity must be at least 1', 'number.max': 'maxCapacity cannot exceed 1000' })
+		minCapacity: Joi.number().integer().allow(null).messages({ 'number.base': 'minCapacity must be a number' }),
+		maxCapacity: Joi.number().integer().allow(null).messages({ 'number.base': 'maxCapacity must be a number' })
 	}).and('freeBetweenStartTime', 'freeBetweenEndTime', 'dayOfWeek')
 };
 
