@@ -533,7 +533,6 @@ const getAttendanceOfAllForSemesterDivisionBatchCourse = asyncHandler(async (req
 })
 
 
-
 // ! query only
 const getAttendanceOfStudentForSpecificCourseInSemesterQuery = async (
     studentId,
@@ -549,9 +548,24 @@ const getAttendanceOfStudentForSpecificCourseInSemesterQuery = async (
     branchId,
     schemeId
 ) => {
+    // Create a replacements object containing all potential parameters.
+    // Sequelize will only bind the ones that actually appear in the generated query string.
+    const replacements = {
+        studentId,
+        courseId,
+        semesterId,
+        divisionId,
+        batchId,
+        startDate,
+        endDate,
+        semesterNumber,
+        academicStartYear,
+        academicEndYear,
+        branchId,
+        schemeId
+    };
 
     // for getting total and attended lectures of a student for a specific course
-
     // in the query include the join of batches only if batchId is provided 
     // bcz as the one division have many batches its adding duplicate rows
     const aggregatedAttendance = await sequelize.query(
@@ -570,23 +584,24 @@ const getAttendanceOfStudentForSpecificCourseInSemesterQuery = async (
         ${batchId ? `INNER JOIN batches ON batches.division_id = divisions.division_id` : ''}
         INNER JOIN semesters ON semesters.semester_id = divisions.semester_id
         WHERE 
-        attendance_students.student_id = '${studentId}'
-        AND courses.course_id = '${courseId}'
-        ${semesterId ? `AND semesters.semester_id = '${semesterId}'` : ''}
-        ${semesterNumber != null ? `AND semesters.semester_number = ${semesterNumber}` : ''}
-        ${academicStartYear != null ? `AND semesters.academic_start_year = ${academicStartYear}` : ''}
-        ${academicEndYear != null ? `AND semesters.academic_end_year = ${academicEndYear}` : ''}
-        ${branchId ? `AND semesters.branch_id = '${branchId}'` : ''}
-        ${schemeId ? `AND semesters.scheme_id = '${schemeId}'` : ''}
-        ${divisionId ? `AND divisions.division_id = '${divisionId}'` : ''}
-        ${batchId ? `AND batches.batch_id = '${batchId}'` : ''}
-        ${startDate ? `AND attendances.attendance_date >= '${startDate}'` : ''}
-        ${endDate ? `AND attendances.attendance_date <= '${endDate}'` : ''}
+        attendance_students.student_id = :studentId
+        AND courses.course_id = :courseId
+        ${semesterId ? `AND semesters.semester_id = :semesterId` : ''}
+        ${semesterNumber != null ? `AND semesters.semester_number = :semesterNumber` : ''}
+        ${academicStartYear != null ? `AND semesters.academic_start_year = :academicStartYear` : ''}
+        ${academicEndYear != null ? `AND semesters.academic_end_year = :academicEndYear` : ''}
+        ${branchId ? `AND semesters.branch_id = :branchId` : ''}
+        ${schemeId ? `AND semesters.scheme_id = :schemeId` : ''}
+        ${divisionId ? `AND divisions.division_id = :divisionId` : ''}
+        ${batchId ? `AND batches.batch_id = :batchId` : ''}
+        ${startDate ? `AND attendances.attendance_date >= :startDate` : ''}
+        ${endDate ? `AND attendances.attendance_date <= :endDate` : ''}
         GROUP BY 
         courses.course_id,
         courses.course_name;
-        `
-    )
+        `,
+        { replacements }
+    );
 
     // for getting detail with each attendance_id and status
     const detailedAttendance = await sequelize.query(
@@ -604,28 +619,29 @@ const getAttendanceOfStudentForSpecificCourseInSemesterQuery = async (
         ${batchId ? `INNER JOIN batches ON batches.division_id = divisions.division_id` : ''}
         INNER JOIN semesters ON semesters.semester_id = divisions.semester_id
         WHERE 
-        attendance_students.student_id = '${studentId}'
-        AND courses.course_id = '${courseId}'
-        ${semesterId ? `AND semesters.semester_id = '${semesterId}'` : ''}
-        ${semesterNumber != null ? `AND semesters.semester_number = ${semesterNumber}` : ''}
-        ${academicStartYear != null ? `AND semesters.academic_start_year = ${academicStartYear}` : ''}
-        ${academicEndYear != null ? `AND semesters.academic_end_year = ${academicEndYear}` : ''}
-        ${branchId ? `AND semesters.branch_id = '${branchId}'` : ''}
-        ${schemeId ? `AND semesters.scheme_id = '${schemeId}'` : ''}
-        ${divisionId ? `AND divisions.division_id = '${divisionId}'` : ''}
-        ${batchId ? `AND batches.batch_id = '${batchId}'` : ''}
-        ${startDate ? `AND attendances.attendance_date >= '${startDate}'` : ''}
-        ${endDate ? `AND attendances.attendance_date <= '${endDate}'` : ''}
+        attendance_students.student_id = :studentId
+        AND courses.course_id = :courseId
+        ${semesterId ? `AND semesters.semester_id = :semesterId` : ''}
+        ${semesterNumber != null ? `AND semesters.semester_number = :semesterNumber` : ''}
+        ${academicStartYear != null ? `AND semesters.academic_start_year = :academicStartYear` : ''}
+        ${academicEndYear != null ? `AND semesters.academic_end_year = :academicEndYear` : ''}
+        ${branchId ? `AND semesters.branch_id = :branchId` : ''}
+        ${schemeId ? `AND semesters.scheme_id = :schemeId` : ''}
+        ${divisionId ? `AND divisions.division_id = :divisionId` : ''}
+        ${batchId ? `AND batches.batch_id = :batchId` : ''}
+        ${startDate ? `AND attendances.attendance_date >= :startDate` : ''}
+        ${endDate ? `AND attendances.attendance_date <= :endDate` : ''}
         ORDER BY
         attendances.attendance_date;
-        `
-    )
+        `,
+        { replacements }
+    );
 
     return {
         aggregatedAttendance: aggregatedAttendance[0],
         detailedAttendance: detailedAttendance[0]
-    }
-}
+    };
+};
 
 const getAttendanceOfAllForSemesterDivisionBatchCourseQuery = async (
     semesterId,
@@ -645,23 +661,38 @@ const getAttendanceOfAllForSemesterDivisionBatchCourseQuery = async (
         throw new ApiError(
             httpStatus.BAD_REQUEST,
             "One of the parameters is required: semesterId, divisionId, courseId, batchId, startDate, endDate, semesterNumber, academicStartYear, academicEndYear, branchId, schemeId"
-        )
+        );
     }
 
-    // Build WHERE clause dynamically
+    // Build WHERE clause dynamically using named placeholders instead of raw values
     const conditions = [];
-    if (semesterId) conditions.push(`semesters.semester_id = '${semesterId}'`);
-    if (semesterNumber != null) conditions.push(`semesters.semester_number = ${semesterNumber}`);
-    if (academicStartYear != null) conditions.push(`semesters.academic_start_year = ${academicStartYear}`);
-    if (academicEndYear != null) conditions.push(`semesters.academic_end_year = ${academicEndYear}`);
-    if (branchId) conditions.push(`semesters.branch_id = '${branchId}'`);
-    if (schemeId) conditions.push(`semesters.scheme_id = '${schemeId}'`);
-    if (divisionId) conditions.push(`timetables.division_id = '${divisionId}'`);
-    if (batchId) conditions.push(`classes.batch_id = '${batchId}'`);
-    if (courseId) conditions.push(`classes.course_id = '${courseId}'`);
-    if (startDate) conditions.push(`attendances.attendance_date >= '${startDate}'`);
-    if (endDate) conditions.push(`attendances.attendance_date <= '${endDate}'`);
+    if (semesterId) conditions.push(`semesters.semester_id = :semesterId`);
+    if (semesterNumber != null) conditions.push(`semesters.semester_number = :semesterNumber`);
+    if (academicStartYear != null) conditions.push(`semesters.academic_start_year = :academicStartYear`);
+    if (academicEndYear != null) conditions.push(`semesters.academic_end_year = :academicEndYear`);
+    if (branchId) conditions.push(`semesters.branch_id = :branchId`);
+    if (schemeId) conditions.push(`semesters.scheme_id = :schemeId`);
+    if (divisionId) conditions.push(`timetables.division_id = :divisionId`);
+    if (batchId) conditions.push(`classes.batch_id = :batchId`);
+    if (courseId) conditions.push(`classes.course_id = :courseId`);
+    if (startDate) conditions.push(`attendances.attendance_date >= :startDate`);
+    if (endDate) conditions.push(`attendances.attendance_date <= :endDate`);
+    
     const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const replacements = {
+        semesterId,
+        divisionId,
+        batchId,
+        courseId,
+        startDate,
+        endDate,
+        semesterNumber,
+        academicStartYear,
+        academicEndYear,
+        branchId,
+        schemeId
+    };
 
     const attendance = await sequelize.query(
         `
@@ -695,12 +726,12 @@ const getAttendanceOfAllForSemesterDivisionBatchCourseQuery = async (
         ) AS "attendanceSummary"
         FROM attendance_grouped_by_course_id_and_attendance_date
         GROUP BY course_id;
-        `
-    )
+        `,
+        { replacements }
+    );
 
-    return attendance[0]
-
-}
+    return attendance[0];
+};
 
 
 const sendAttendanceReport = asyncHandler(async (req, res) => {
