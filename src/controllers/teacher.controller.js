@@ -41,10 +41,14 @@ const getTeacher = asyncHandler(async (req, res) => {
         page = 1,
         limit = 10,
         getAll = "false",
+        isActive = "false",
     } = req.query;
 
     // Normalize getAll to a boolean regardless of it coming as string or boolean
     const isGetAll = getAll === true || getAll === 'true';
+
+    // Normalize isActive to a boolean
+    const filterByActive = isActive === true || isActive === 'true';
 
     const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
@@ -65,6 +69,10 @@ const getTeacher = asyncHandler(async (req, res) => {
             ],
         })),
     };
+
+    if (filterByActive) {
+        searchClause.isActive = true;
+    }
 
     let courseIdFilterClause = {}
     let includeClause = []
