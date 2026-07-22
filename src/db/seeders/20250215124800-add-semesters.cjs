@@ -42,32 +42,9 @@ module.exports = {
 
         await queryInterface.bulkInsert('semesters', semestersToInsert.map(({ id, ...rest }) => ({ semester_id: id, ...rest })));
 
-        // 3. Fetch Courses to link to semesters
-        const courses = await queryInterface.sequelize.query(
-            `SELECT course_id, course_code, course_name FROM courses;`,
-            { type: queryInterface.sequelize.QueryTypes.SELECT }
-        );
-
-        // 4. Prepare and insert Optional courses for Sem 7
-        const semesterCoursesToInsert = [];
-        const findSemesterId = (branchId, semNum) => semestersToInsert.find(s => s.branch_id === branchId && s.semester_number === semNum).id;
-        const compSem7Id = findSemesterId(compBranchId, 7);
-        if (compSem7Id) {
-            
-            const optionalCourseNames = ['Natural Language Processing', 'Natural Language Processing Lab', 'Block Chain', 'Block Chain Lab', 'Cyber Security and Laws'];
-            const optionalCourses = courses.filter(c => optionalCourseNames.includes(c.course_name));
-            optionalCourses.forEach(course => {
-                semesterCoursesToInsert.push({ id: uuidv4(), semester_id: compSem7Id, course_id: course.course_id, created_at: new Date(), updated_at: new Date() });
-            });
-        }
-
-        if (semesterCoursesToInsert.length > 0) {
-            await queryInterface.bulkInsert('semester_courses', semesterCoursesToInsert.map(({ id, ...rest }) => ({ semester_courses_id: id, ...rest })));
-        }
     },
 
     async down(queryInterface, Sequelize) {
-        await queryInterface.bulkDelete('semester_courses', null, {});
         await queryInterface.bulkDelete('semesters', null, {});
     }
 };

@@ -2,29 +2,28 @@ import { Sequelize, Model, UUIDV4 } from 'sequelize';
 import sequelize from '../../config/db.connection.js';
 import Course from './course.model.js';
 
-class SemesterCourse extends Model { }
+class DivisionCourse extends Model { }
 
-SemesterCourse.init(
+DivisionCourse.init(
     {
         id: {
             type: Sequelize.UUID,
             defaultValue: UUIDV4,
             primaryKey: true,
             allowNull: false,
-            autoIncrement: true,
-            field: 'semester_courses_id'
+            field: 'division_courses_id'
         },
-        semesterId: {
+        divisionId: {
             type: Sequelize.UUID,
             allowNull: false,
-            field: 'semester_id',
+            field: 'division_id',
             references: {
-                model: 'semesters',
-                key: 'semester_id',
+                model: 'divisions',
+                key: 'division_id',
             },
             validate: {
                 notNull: {
-                    msg: 'Semester ID cannot be null'
+                    msg: 'Division ID cannot be null'
                 }
             }
         },
@@ -66,13 +65,11 @@ SemesterCourse.init(
     {
         sequelize,
         timestamps: true,
-        modelName: 'SemesterCourse', // Corrected Model Name
-        tableName: 'semester_courses', // Corrected Table Name
+        modelName: 'DivisionCourse',
+        tableName: 'division_courses',
     }
 );
 
-export default SemesterCourse;
+DivisionCourse.belongsTo(Course, { foreignKey: 'courseId', targetKey: 'id' });
 
-// Associations
-// Link SemesterCourse -> Course to support eager loading in controllers
-SemesterCourse.belongsTo(Course, { foreignKey: 'courseId', targetKey: 'id' });
+export default DivisionCourse;

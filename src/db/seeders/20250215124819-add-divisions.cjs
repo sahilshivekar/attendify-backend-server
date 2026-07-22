@@ -50,9 +50,40 @@ module.exports = {
         }));
 
         await queryInterface.bulkInsert('divisions', divisionsToInsert, {});
+
+        // Seed optional courses for Comp Sem 7 divisions
+        const courses = await queryInterface.sequelize.query(
+            `SELECT course_id, course_name FROM courses;`,
+            { type: queryInterface.sequelize.QueryTypes.SELECT }
+        );
+
+        const optionalCourseNames = ['Natural Language Processing', 'Natural Language Processing Lab', 'Block Chain', 'Block Chain Lab', 'Cyber Security and Laws'];
+        const optionalCourses = courses.filter(c => optionalCourseNames.includes(c.course_name));
+
+        const compSem7Divisions = divisionsToInsert.filter(
+            d => d.semester_id === getSemesterId(compBranchId, 7)
+        );
+
+        const divisionCoursesToInsert = [];
+        compSem7Divisions.forEach(division => {
+            optionalCourses.forEach(course => {
+                divisionCoursesToInsert.push({
+                    division_courses_id: uuidv4(),
+                    division_id: division.division_id,
+                    course_id: course.course_id,
+                    created_at: new Date(),
+                    updated_at: new Date()
+                });
+            });
+        });
+
+        if (divisionCoursesToInsert.length > 0) {
+            await queryInterface.bulkInsert('division_courses', divisionCoursesToInsert, {});
+        }
     },
 
     async down(queryInterface, Sequelize) {
+        await queryInterface.bulkDelete('division_courses', null, {});
         await queryInterface.bulkDelete('divisions', null, {});
     }
 };

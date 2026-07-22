@@ -3,20 +3,20 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('semester_courses', {
+        await queryInterface.createTable('division_courses', {
             id: {
                 type: Sequelize.UUID,
                 defaultValue: Sequelize.UUIDV4,
                 primaryKey: true,
-                field: 'semester_courses_id'
+                field: 'division_courses_id'
             },
-            semesterId: {
+            divisionId: {
                 type: Sequelize.UUID,
                 allowNull: false,
-                field: 'semester_id',
+                field: 'division_id',
                 references: {
-                    model: 'semesters',
-                    key: 'semester_id',
+                    model: 'divisions',
+                    key: 'division_id',
                 },
                 onDelete: 'CASCADE'
             },
@@ -49,6 +49,6 @@ module.exports = {
     },
 
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('semester_courses');
+        await queryInterface.dropTable('division_courses');
     }
 };
