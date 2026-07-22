@@ -26,15 +26,19 @@ const addDivision = {
 	body: Joi.object().keys({
 		divisionCode: Joi.string().trim().min(1).max(10).required()
 			.messages({ 'any.required': 'Division code is required', 'string.min': 'Division code must be at least 1 character', 'string.max': 'Division code cannot exceed 10 characters' }),
-		semesterId: uuid.required().messages({ 'any.required': 'Semester ID is required', 'string.guid': 'Semester ID must be a valid UUID' })
+		semesterId: uuid.required().messages({ 'any.required': 'Semester ID is required', 'string.guid': 'Semester ID must be a valid UUID' }),
+		optionalCourseIds: Joi.array().items(uuid.messages({ 'string.guid': 'Each optional course ID must be a valid UUID' }))
+			.messages({ 'array.base': 'Optional course IDs must be an array' })
 	})
 };
 
 const updateDivision = {
 	params: Joi.object().keys({ id: uuid.required().messages({ 'any.required': 'Division ID is required', 'string.guid': 'Division ID must be a valid UUID' }) }),
 	body: Joi.object().keys({
-		divisionCode: Joi.string().trim().min(1).max(10).required()
-			.messages({ 'any.required': 'Division code is required', 'string.min': 'Division code must be at least 1 character', 'string.max': 'Division code cannot exceed 10 characters' })
+		divisionCode: Joi.string().trim().min(1).max(10)
+			.messages({ 'string.min': 'Division code must be at least 1 character', 'string.max': 'Division code cannot exceed 10 characters' }),
+		optionalCourseIds: Joi.array().items(uuid.messages({ 'string.guid': 'Each optional course ID must be a valid UUID' }))
+			.messages({ 'array.base': 'Optional course IDs must be an array' })
 	})
 };
 
@@ -46,12 +50,19 @@ const getDivisionById = {
 	params: Joi.object().keys({ id: uuid.required().messages({ 'any.required': 'Division ID is required', 'string.guid': 'Division ID must be a valid UUID' }) })
 };
 
+const getCoursesOfDivision = {
+	query: Joi.object().keys({
+		divisionId: uuid.required().messages({ 'any.required': 'Division ID is required', 'string.guid': 'Division ID must be a valid UUID' })
+	})
+};
+
 export default {
 	getDivisions,
 	addDivision,
 	updateDivision,
 	removeDivision,
-	getDivisionById
+	getDivisionById,
+	getCoursesOfDivision
 };
 
 

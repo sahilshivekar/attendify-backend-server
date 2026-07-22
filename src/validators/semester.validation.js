@@ -30,8 +30,7 @@ const addSemester = {
 		academicEndYear: Joi.number().integer().min(1900).max(3000).required().messages({ 'any.required': 'Academic end year is required' }),
 		startDate: Joi.date().iso().required().messages({ 'date.format': 'Start date must be a valid ISO date', 'any.required': 'Start date is required' }),
 		endDate: Joi.date().iso().required().messages({ 'date.format': 'End date must be a valid ISO date', 'any.required': 'End date is required' }),
-		schemeId: uuid.required().messages({ 'any.required': 'Scheme ID is required', 'string.guid': 'Scheme ID must be a valid UUID' }),
-		optionalCourseIds: Joi.array().items(uuid.messages({ 'string.guid': 'Each optional course ID must be a valid UUID' })).default([])
+		schemeId: uuid.required().messages({ 'any.required': 'Scheme ID is required', 'string.guid': 'Scheme ID must be a valid UUID' })
 	})
 };
 
@@ -39,8 +38,7 @@ const updateSemester = {
 	params: Joi.object().keys({ id: uuid.required().messages({ 'any.required': 'Semester ID is required', 'string.guid': 'Semester ID must be a valid UUID' }) }),
 	body: Joi.object().keys({
 		startDate: Joi.date().iso().required().messages({ 'any.required': 'Start date is required' }),
-		endDate: Joi.date().iso().required().messages({ 'any.required': 'End date is required' }),
-		optionalCourseIds: Joi.array().items(uuid.messages({ 'string.guid': 'Each optional course ID must be a valid UUID' }))
+		endDate: Joi.date().iso().required().messages({ 'any.required': 'End date is required' })
 	})
 };
 
@@ -68,8 +66,7 @@ const bulkCreateSemesters = {
 				academicEndYear: Joi.number().integer().min(1900).max(3000).required().messages({ 'any.required': 'Academic end year is required' }),
 				startDate: Joi.date().iso().required().messages({ 'date.format': 'Start date must be a valid ISO date', 'any.required': 'Start date is required' }),
 				endDate: Joi.date().iso().required().messages({ 'date.format': 'End date must be a valid ISO date', 'any.required': 'End date is required' }),
-				schemeId: uuid.required().messages({ 'any.required': 'Scheme ID is required', 'string.guid': 'Scheme ID must be a valid UUID' }),
-				optionalCourseIds: Joi.array().items(uuid.messages({ 'string.guid': 'Each optional course ID must be a valid UUID' })).default([])
+				schemeId: uuid.required().messages({ 'any.required': 'Scheme ID is required', 'string.guid': 'Scheme ID must be a valid UUID' })
 			})
 		).min(1).max(50).required()
 		.messages({

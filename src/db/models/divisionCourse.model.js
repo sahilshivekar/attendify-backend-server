@@ -1,6 +1,7 @@
 import { Sequelize, Model, UUIDV4 } from 'sequelize';
 import sequelize from '../../config/db.connection.js';
 import Course from './course.model.js';
+import Division from './division.model.js';
 
 class DivisionCourse extends Model { }
 
@@ -71,5 +72,6 @@ DivisionCourse.init(
 );
 
 DivisionCourse.belongsTo(Course, { foreignKey: 'courseId', targetKey: 'id' });
+DivisionCourse.belongsTo(Division, { foreignKey: 'divisionId', targetKey: 'id' });
 
 export default DivisionCourse;

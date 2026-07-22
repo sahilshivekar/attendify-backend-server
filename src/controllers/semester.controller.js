@@ -8,7 +8,7 @@ import Scheme from '../db/models/scheme.model.js';
 import Course from '../db/models/course.model.js';
 import BranchCourseSemester from '../db/models/branchCourseSemester.model.js';
 import University from '../db/models/university.model.js';
-import SemesterCourse from '../db/models/semesterCourse.model.js';
+import DivisionCourse from '../db/models/divisionCourse.model.js';
 import Division from '../db/models/division.model.js';
 import Batch from '../db/models/batch.model.js';
 import httpStatus from 'http-status';
@@ -126,8 +126,7 @@ const addSemester = asyncHandler(async (req, res) => {
         academicEndYear,
         startDate,
         endDate,
-        schemeId,
-        optionalCourseIds
+        schemeId
     } = req.body;
 
     // Remove input validation already handled by @semester.validation.js
@@ -152,88 +151,6 @@ const addSemester = asyncHandler(async (req, res) => {
         throw new ApiError(httpStatus.BAD_REQUEST, "End date cannot be greater than academic end year");
     }
 
-    // searching courses for the semeseter to be added bcz if the semester contains optional courses then we must create a entry in SemesterCourse table to tell the optional courses for a particular semester
-    let branchClause = {}
-    if (branchId) {
-        branchClause = { branchId: branchId }
-    }
-
-    let semesterNumberClause = {}
-    if (semesterNumber) {
-        semesterNumberClause = { semesterNumber: semesterNumber }
-    }
-
-    const branchCourseSemesterWhereClause = {
-        [Op.and]: [
-            branchClause,
-            semesterNumberClause
-        ]
-    }
-
-    let schemeClause = {}
-    if (schemeId) {
-        schemeClause = { schemeId: schemeId }
-    }
-
-    const courses = await Course.findAll({
-        where: {
-            [Op.and]: [
-                schemeClause,
-                { optionalCourse: { [Op.ne]: null } }
-            ]
-        },
-        include: [
-            {
-                model: BranchCourseSemester,
-                required: true,
-                where: branchCourseSemesterWhereClause,
-                duplicating: false,
-                include: {
-                    model: Branch,
-                    required: true,
-                    duplicating: false,
-                }
-            }
-        ]
-    });
-
-    // creating a map to store the optional courses and the courses that belong to them
-    const requiredOptionalCourses = {}
-    for (const course of courses) {
-        if (requiredOptionalCourses[course.optionalCourse]) { // differentiating between the optional courses based on the unique string for each optional course
-            requiredOptionalCourses[course.optionalCourse] = [...requiredOptionalCourses[course.optionalCourse], course.id]
-        } else {
-            requiredOptionalCourses[course.optionalCourse] = [course.id]
-        }
-    }
-
-    const countOfRequiredOptionalCourses = Object.keys(requiredOptionalCourses).length
-
-    // if the semester contains optional courses then we must check if the courses that are being added are valid
-    if (countOfRequiredOptionalCourses > 0) {
-        // optionalCourseIds presence/type/array validation is handled by @semester.validation.js
-
-        if (optionalCourseIds.length !== countOfRequiredOptionalCourses) {
-            throw new ApiError(httpStatus.BAD_REQUEST, `Please give ${countOfRequiredOptionalCourses} optional courses`)
-        }
-
-        for (let optionalCourseId of optionalCourseIds) {
-            for (let optionalCourseList of Object.values(requiredOptionalCourses)) {
-                if (optionalCourseList.includes(optionalCourseId)) {
-                    optionalCourseList.length = 0; // making length 0 bcz each courseId from the input list must belong to a diff optionCourseList
-                    break
-                }
-            }
-        }
-
-        // if the length of any of the optionCourseList is greater than 0 then the courses that are being added are not valid
-        for (let optionalCourseList of Object.values(requiredOptionalCourses)) {
-            if (optionalCourseList.length > 0) {
-                throw new ApiError(httpStatus.BAD_REQUEST, `Invalid optional courses`)
-            }
-        }
-    }
-
     const semester = await Semester.create({
         branchId: branchId || null,
         semesterNumber: semesterNumber || null,
@@ -243,24 +160,6 @@ const addSemester = asyncHandler(async (req, res) => {
         startDate: startDate || null,
         endDate: endDate || null,
     });
-
-    if (optionalCourseIds && optionalCourseIds.length > 0) {
-        // adding entry of optional courses for the specific semester
-        for (let optionalCourseId of optionalCourseIds) {
-            await SemesterCourse.create({
-                semesterId: semester.id,
-                courseId: optionalCourseId
-            });
-        }
-    }
-    const addedOptionalCourses = []
-
-    for (let optionalCourseId of optionalCourseIds) {
-        const course = await Course.findByPk(optionalCourseId);
-        if (course) {
-            addedOptionalCourses.push(course);
-        }
-    }
 
     res
         .status(httpStatus.CREATED)
@@ -303,15 +202,28 @@ const getCoursesOfSemester = asyncHandler(async (req, res) => {
         }
     });
 
-    const optionalCourses = await SemesterCourse.findAll({
-        where: {
-            semesterId: semesterId
-        },
-        include: {
-            model: Course,
-            required: true,
-        },
+    const divisions = await Division.findAll({
+        where: { semesterId: semesterId },
+        attributes: ['id']
     });
+
+    const divisionIds = divisions.map(div => div.id);
+
+    const optionalCourses = divisionIds.length > 0 ? await DivisionCourse.findAll({
+        where: {
+            divisionId: { [Op.in]: divisionIds }
+        },
+        include: [
+            {
+                model: Course,
+                required: true,
+            },
+            {
+                model: Division,
+                required: true,
+            }
+        ],
+    }) : [];
 
     res
         .status(httpStatus.OK)
@@ -319,19 +231,20 @@ const getCoursesOfSemester = asyncHandler(async (req, res) => {
             new ApiResponse(
                 httpStatus.OK,
                 "Courses retrieved successfully.",
-                [...compulsaryCourses.map(bcs => bcs.Course), ...optionalCourses.map(sc => sc.Course)]
+                {
+                    compulsaryCourses: compulsaryCourses.map(bcs => bcs.Course),
+                    optionalCourses: optionalCourses
+                }
             )
         );
 })
 
 
-//! updating the semester will make the optional courses and other courses invalid, hence it is very error prone so use delete and then create new semester instead of updating
 const updateSemester = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const {
         startDate,
-        endDate,
-        optionalCourseIds
+        endDate
     } = req.body;
 
     // Remove input validation already handled by @semester.validation.js
@@ -340,76 +253,6 @@ const updateSemester = asyncHandler(async (req, res) => {
 
     if (!semester) {
         throw new ApiError(httpStatus.NOT_FOUND, "Semester not found");
-    }
-
-    // searching courses for the semester to be updated
-    let branchClause = { branchId: semester.branchId }
-    let semesterNumberClause = { semesterNumber: semester.semesterNumber }
-
-    const branchCourseSemesterWhereClause = {
-        [Op.and]: [
-            branchClause,
-            semesterNumberClause
-        ]
-    }
-
-    let schemeClause = { schemeId: semester.schemeId }
-
-    const courses = await Course.findAll({
-        where: {
-            [Op.and]: [
-                schemeClause,
-                { optionalCourse: { [Op.ne]: null } }
-            ]
-        },
-        include: [
-            {
-                model: BranchCourseSemester,
-                required: true,
-                where: branchCourseSemesterWhereClause,
-                duplicating: false,
-                include: {
-                    model: Branch,
-                    required: true,
-                    duplicating: false,
-                }
-            }
-        ]
-    });
-
-    // creating a map to store the optional courses and the courses that belong to them
-    const requiredOptionalCourses = {}
-    for (const course of courses) {
-        if (requiredOptionalCourses[course.optionalCourse]) {
-            requiredOptionalCourses[course.optionalCourse] = [...requiredOptionalCourses[course.optionalCourse], course.id]
-        } else {
-            requiredOptionalCourses[course.optionalCourse] = [course.id]
-        }
-    }
-
-    const countOfRequiredOptionalCourses = Object.keys(requiredOptionalCourses).length
-
-    // if the semester contains optional courses then we must check if the courses that are being added are valid
-    if (optionalCourseIds && countOfRequiredOptionalCourses > 0) {
-        if (optionalCourseIds.length !== countOfRequiredOptionalCourses) {
-            throw new ApiError(httpStatus.BAD_REQUEST, `Please give ${countOfRequiredOptionalCourses} optional courses`)
-        }
-
-        for (let optionalCourseId of optionalCourseIds) {
-            for (let optionalCourseList of Object.values(requiredOptionalCourses)) {
-                if (optionalCourseList.includes(optionalCourseId)) {
-                    optionalCourseList.length = 0; // making length 0 bcz each courseId from the input list must belong to a diff optionCourseList
-                    break
-                }
-            }
-        }
-
-        // if the length of any of the optionCourseList is greater than 0 then the courses that are being added are not valid
-        for (let optionalCourseList of Object.values(requiredOptionalCourses)) {
-            if (optionalCourseList.length > 0) {
-                throw new ApiError(httpStatus.BAD_REQUEST, `Invalid optional courses`)
-            }
-        }
     }
 
     if (startDate || endDate) {
@@ -433,36 +276,6 @@ const updateSemester = asyncHandler(async (req, res) => {
     }
 
     await semester.save();
-
-    const existingOptionalCourses = await SemesterCourse.findAll({
-        where: { semesterId: id },
-        attributes: ['courseId']
-    });
-    const existingCourseIds = existingOptionalCourses.map(sc => sc.courseId);
-
-    if (optionalCourseIds !== undefined) {
-        const newCourseIds = optionalCourseIds;
-        const arraysEqual = (a, b) => a.length === b.length && a.every((val, index) => val === b[index]);
-        const hasChanged = !arraysEqual(existingCourseIds.sort(), newCourseIds.sort());
-
-        if (hasChanged) {
-            const toAdd = newCourseIds.filter(id => !existingCourseIds.includes(id));
-            const toRemove = existingCourseIds.filter(id => !newCourseIds.includes(id));
-
-            if (toRemove.length > 0) {
-                await SemesterCourse.destroy({
-                    where: { semesterId: id, courseId: toRemove }
-                });
-            }
-
-            for (let courseId of toAdd) {
-                await SemesterCourse.create({
-                    semesterId: id,
-                    courseId: courseId
-                });
-            }
-        }
-    }
 
     res
         .status(httpStatus.OK)
@@ -742,12 +555,6 @@ const bulkDeleteSemesters = asyncHandler(async (req, res) => {
                 `Cannot delete semester: dependent records exist (student enrollments: ${associatedSemesterIds.join(', ')})`
             );
         }
-
-        // Delete associated semester courses first
-        await SemesterCourse.destroy({
-            where: { semesterId: uniqueSemesterIds },
-            transaction
-        });
 
         // Delete semesters
         const deletedCount = await Semester.destroy({

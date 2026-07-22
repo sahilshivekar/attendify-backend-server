@@ -5,7 +5,8 @@ import {
     addDivision,
     updateDivision,
     removeDivision,
-    getDivisionById
+    getDivisionById,
+    getCoursesOfDivision
 } from '../controllers/division.controller.js';
 import { ROLES } from '../config/roles.js';
 import validate from '../middlewares/validate.js';
@@ -41,6 +42,13 @@ router.route('/:id')
         validate(divisionValidation.removeDivision),
         verifyJWT([ROLES.ADMIN]),
         removeDivision
+    );
+
+router.route('/courses')
+    .get(
+        validate(divisionValidation.getCoursesOfDivision),
+        verifyJWT([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
+        getCoursesOfDivision
     );
 
 export default router;
