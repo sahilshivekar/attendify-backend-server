@@ -439,7 +439,7 @@ const getCoursesOfDivision = asyncHandler(async (req, res) => {
                 httpStatus.OK,
                 "Division courses retrieved successfully.",
                 {
-                    compulsarySubjects: compulsaryCourses.map(bcs => bcs.Course),
+                    compulsoryCourses: compulsaryCourses.map(bcs => bcs.Course),
                     optionalCourses: optionalCourses
                 }
             )

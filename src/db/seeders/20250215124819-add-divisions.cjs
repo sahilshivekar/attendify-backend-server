@@ -51,21 +51,28 @@ module.exports = {
 
         await queryInterface.bulkInsert('divisions', divisionsToInsert, {});
 
-        // Seed optional courses for Comp Sem 7 divisions
+        // Seed optional courses for Comp Sem 7 divisions based on division code
         const courses = await queryInterface.sequelize.query(
             `SELECT course_id, course_name FROM courses;`,
             { type: queryInterface.sequelize.QueryTypes.SELECT }
         );
 
-        const optionalCourseNames = ['Natural Language Processing', 'Natural Language Processing Lab', 'Block Chain', 'Block Chain Lab', 'Cyber Security and Laws'];
-        const optionalCourses = courses.filter(c => optionalCourseNames.includes(c.course_name));
-
         const compSem7Divisions = divisionsToInsert.filter(
             d => d.semester_id === getSemesterId(compBranchId, 7)
         );
 
+        const firstDivisionOptionalCourseNames = ['Natural Language Processing', 'Natural Language Processing Lab', 'Block Chain', 'Block Chain Lab', 'Cyber Security and Laws'];
+        const lastDivisionOptionalCourseNames = ['Quantum Computing', 'Quantum Computing Lab', 'Block Chain', 'Block Chain Lab', 'Cyber Security and Laws'];
+
         const divisionCoursesToInsert = [];
-        compSem7Divisions.forEach(division => {
+
+        const addOptionalCoursesForDivision = (division, optionalCourseNames) => {
+            if (!division) {
+                return;
+            }
+
+            const optionalCourses = courses.filter(c => optionalCourseNames.includes(c.course_name));
+
             optionalCourses.forEach(course => {
                 divisionCoursesToInsert.push({
                     division_courses_id: uuidv4(),
@@ -75,6 +82,16 @@ module.exports = {
                     updated_at: new Date()
                 });
             });
+        };
+
+        compSem7Divisions.forEach(division => {
+            if (division.division_code === 'A') {
+                addOptionalCoursesForDivision(division, firstDivisionOptionalCourseNames);
+            }
+
+            if (division.division_code === 'B') {
+                addOptionalCoursesForDivision(division, lastDivisionOptionalCourseNames);
+            }
         });
 
         if (divisionCoursesToInsert.length > 0) {

@@ -47,7 +47,7 @@ module.exports = {
 
         // ── 4. Resolve courses by name ────────────────────────────────────────
         const courseNames = [
-            'Natural Language Processing', 'Natural Language Processing Lab', 
+            'Quantum Computing', 'Quantum Computing Lab', 
             'Block Chain', 'Block Chain Lab', 'Cyber Security and Laws',
             'Big Data Analytics Lab', 'Machine Learning Lab', 'Big Data Analytics',
             'Machine Learning'
@@ -89,8 +89,8 @@ module.exports = {
             'Block Chain Lab': teacherByName('Renuka', 'Sanga'),
             'Big Data Analytics': teacherByName('Sandeep', 'More'),
             'Big Data Analytics Lab': teacherByName('Sandeep', 'More'),
-            'Natural Language Processing': teacherByName('Rucha', 'Patwardhan'),
-            'Natural Language Processing Lab': teacherByName('Rucha', 'Patwardhan'),
+            'Quantum Computing': teacherByName('Rucha', 'Patwardhan'),
+            'Quantum Computing Lab': teacherByName('Rucha', 'Patwardhan'),
         };
 
         // ── 5a. Register teacher–course assignments in teacher_teaches_course ─
@@ -142,7 +142,7 @@ module.exports = {
         };
 
         const labRoomMap = {
-            'Natural Language Processing Lab': getLabRoomId('501'),
+            'Quantum Computing Lab': getLabRoomId('501'),
             'Block Chain Lab': getLabRoomId('702'),
             'Machine Learning Lab': getLabRoomId('704'),
             'Big Data Analytics Lab': getLabRoomId('701')
@@ -176,14 +176,14 @@ module.exports = {
             { day: "Monday", courseName: "Big Data Analytics", start: "10:00:00", end: "11:00:00" },
             { day: "Monday", courseName: "Cyber Security and Laws", start: "11:00:00", end: "12:00:00" },
             { day: "Monday", courseName: "Block Chain", start: "14:45:00", end: "15:45:00" },
-            { day: "Monday", courseName: "Natural Language Processing", start: "12:30:00", end: "13:30:00" },
+            { day: "Monday", courseName: "Quantum Computing", start: "12:30:00", end: "13:30:00" },
 
             // TUESDAY
             { day: "Tuesday", courseName: "Machine Learning", start: "10:00:00", end: "11:00:00" },
             { day: "Tuesday", courseName: "Cyber Security and Laws", start: "11:00:00", end: "12:00:00" },
             { day: "Tuesday", courseName: "Big Data Analytics", start: "12:30:00", end: "13:30:00" },
             { day: "Tuesday", courseName: "Block Chain", start: "14:45:00", end: "15:45:00" },
-            { day: "Tuesday", courseName: "Natural Language Processing", start: "13:30:00", end: "14:30:00" },
+            { day: "Tuesday", courseName: "Quantum Computing", start: "13:30:00", end: "14:30:00" },
 
             // WEDNESDAY
             { day: "Wednesday", courseName: "Big Data Analytics", start: "10:00:00", end: "11:00:00" },
@@ -191,7 +191,7 @@ module.exports = {
             { day: "Wednesday", courseName: "Block Chain", start: "14:45:00", end: "15:45:00" },
 
             // THURSDAY
-            { day: "Thursday", courseName: "Natural Language Processing", start: "10:00:00", end: "11:00:00" },
+            { day: "Thursday", courseName: "Quantum Computing", start: "10:00:00", end: "11:00:00" },
             { day: "Thursday", courseName: "Machine Learning", start: "11:00:00", end: "12:00:00" },
             { day: "Thursday", courseName: "Block Chain", start: "14:45:00", end: "15:45:00" },
 
@@ -203,7 +203,7 @@ module.exports = {
             // WEDNESDAY LAB
             {
                 day: "Wednesday",
-                courseName: "Natural Language Processing Lab",
+                courseName: "Quantum Computing Lab",
                 batch: bb1.batch_id,
                 start: "12:30:00",
                 end: "14:30:00"

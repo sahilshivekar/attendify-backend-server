@@ -89,10 +89,12 @@ const getSemesters = asyncHandler(async (req, res) => {
             {
                 model: Division,
                 duplicating: false,
+                separate: true,
                 include: [
                     {
                         model: Batch,
                         duplicating: false,
+                        separate: true,
                     }
                 ]
             }
@@ -232,7 +234,7 @@ const getCoursesOfSemester = asyncHandler(async (req, res) => {
                 httpStatus.OK,
                 "Courses retrieved successfully.",
                 {
-                    compulsaryCourses: compulsaryCourses.map(bcs => bcs.Course),
+                    compulsoryCourses: compulsaryCourses.map(bcs => bcs.Course),
                     optionalCourses: optionalCourses
                 }
             )

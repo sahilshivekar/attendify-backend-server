@@ -26,6 +26,13 @@ router.route('/')
         verifyJWT([ROLES.ADMIN]),
         addDivision
     );
+    
+router.route('/courses')
+    .get(
+        validate(divisionValidation.getCoursesOfDivision),
+        verifyJWT([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
+        getCoursesOfDivision
+    );
 
 router.route('/:id')
     .get(
@@ -44,11 +51,5 @@ router.route('/:id')
         removeDivision
     );
 
-router.route('/courses')
-    .get(
-        validate(divisionValidation.getCoursesOfDivision),
-        verifyJWT([ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]),
-        getCoursesOfDivision
-    );
 
 export default router;
