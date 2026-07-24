@@ -200,7 +200,7 @@ const addTeacher = asyncHandler(async (req, res) => {
         highestQualification: highestQualification || null,
         role: role,
         // password: password,
-        isActive: isActive || true
+        isActive: isActive !== undefined ? isActive : true
     });
 
 
@@ -250,7 +250,8 @@ const updateTeacherDetails = asyncHandler(async (req, res) => {
     teacher.gender = gender || teacher.gender;
     teacher.highestQualification = highestQualification || teacher.highestQualification;
     teacher.phoneNumber = phoneNumber || teacher.phoneNumber;
-    teacher.isActive = isActive || teacher.isActive;
+    // Preserve explicit `false`; only fall back when the field is not provided.
+    teacher.isActive = isActive !== undefined ? isActive : teacher.isActive;
 
     await teacher.save();
 

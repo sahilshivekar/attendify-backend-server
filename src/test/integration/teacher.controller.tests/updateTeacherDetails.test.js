@@ -71,4 +71,17 @@ describe('Teacher API - PUT /api/v1/teachers', () => {
     expect(res.body.data).toHaveProperty('highestQualification', 'MCA');
     expect(res.body.data).toHaveProperty('role', 'Head of Department');
   });
+
+  test('should allow updating isActive to false', async () => {
+    const res = await request(app)
+      .put(`/api/v1/teachers/${teacher.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ id: teacher.id, isActive: false });
+
+    expect(res.status).toBe(httpStatus.OK);
+    expect(res.body.data).toHaveProperty('isActive', false);
+
+    const updatedTeacher = await Teacher.findByPk(teacher.id);
+    expect(updatedTeacher.isActive).toBe(false);
+  });
 });
