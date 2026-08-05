@@ -62,6 +62,9 @@ module.exports = {
             timestamps: true,
             freezeTableName: true
         });
+
+        await queryInterface.addIndex('students_divisions', ['student_id', 'division_id']);
+        await queryInterface.addIndex('students_divisions', ['student_id', 'end_date']);
     },
 
     async down(queryInterface, Sequelize) {

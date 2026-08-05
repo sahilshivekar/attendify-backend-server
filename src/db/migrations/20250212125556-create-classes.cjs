@@ -107,6 +107,14 @@ module.exports = {
             timestamps: true,
             freezeTableName: true
         });
+
+        await queryInterface.addIndex('classes', ['timetable_id']);
+        await queryInterface.addIndex('classes', ['teacher_id']);
+        await queryInterface.addIndex('classes', ['room_id']);
+        await queryInterface.addIndex('classes', ['batch_id']);
+        await queryInterface.addIndex('classes', ['course_id']);
+        await queryInterface.addIndex('classes', ['day_of_week', 'start_time', 'end_time']);
+        await queryInterface.addIndex('classes', ['active_from', 'active_till']);
     },
 
     async down(queryInterface, Sequelize) {

@@ -60,6 +60,10 @@ module.exports = {
                 freezeTableName: true,
             }
         );
+
+        await queryInterface.addIndex('courses', ['course_name']);
+        await queryInterface.addIndex('courses', ['scheme_id']);
+        await queryInterface.addIndex('courses', ['course_optional_course']);
     },
 
     async down(queryInterface, Sequelize) {

@@ -57,6 +57,9 @@ module.exports = {
             timestamps: true,
             freezeTableName: true
         });
+
+        await queryInterface.addIndex('students_batches', ['student_id', 'batch_id']);
+        await queryInterface.addIndex('students_batches', ['student_id', 'end_date']);
     },
 
     async down(queryInterface, Sequelize) {

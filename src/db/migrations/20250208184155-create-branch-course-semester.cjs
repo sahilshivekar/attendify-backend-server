@@ -53,6 +53,9 @@ module.exports = {
                 freezeTableName: true,
             }
         );
+
+        await queryInterface.addIndex('branch_course_semesters', ['branch_id', 'semester_number']);
+        await queryInterface.addIndex('branch_course_semesters', ['course_id']);
     },
 
     async down(queryInterface, Sequelize) {

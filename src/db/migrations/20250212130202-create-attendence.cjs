@@ -40,6 +40,9 @@ module.exports = {
             freezeTableName: true
         });
 
+        await queryInterface.addIndex('attendances', ['class_id', 'attendance_date']);
+        await queryInterface.addIndex('attendances', ['attendance_date']);
+
         // Create the join table for students and attendance
         await queryInterface.createTable('attendance_students', {
             id: {
@@ -91,6 +94,9 @@ module.exports = {
             timestamps: true,
             freezeTableName: true
         });
+
+        await queryInterface.addIndex('attendance_students', ['attendance_id', 'student_id']);
+        await queryInterface.addIndex('attendance_students', ['student_id']);
     },
 
     async down(queryInterface, Sequelize) {

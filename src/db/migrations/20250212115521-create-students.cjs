@@ -154,6 +154,13 @@ module.exports = {
                 freezeTableName: true,
             }
         );
+
+        await queryInterface.addIndex('students', ['first_name', 'last_name']);
+        await queryInterface.addIndex('students', ['admission_year']);
+        await queryInterface.addIndex('students', ['admission_type']);
+        await queryInterface.addIndex('students', ['branch_id']);
+        await queryInterface.addIndex('students', ['scheme_id']);
+        await queryInterface.addIndex('students', ['biometric_verification_status']);
     },
 
     async down(queryInterface, Sequelize) {

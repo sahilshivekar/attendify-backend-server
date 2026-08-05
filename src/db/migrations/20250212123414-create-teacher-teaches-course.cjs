@@ -55,6 +55,8 @@ module.exports = {
                 }
             }
         );
+
+        await queryInterface.addIndex('teacher_teaches_course', ['course_id']);
     },
 
     async down(queryInterface, Sequelize) {

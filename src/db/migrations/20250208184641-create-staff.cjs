@@ -99,6 +99,9 @@ module.exports = {
                 freezeTableName: true,
             }
         );
+
+        await queryInterface.addIndex('teacher', ['first_name', 'last_name']);
+        await queryInterface.addIndex('teacher', ['is_active']);
     },
 
     async down(queryInterface, Sequelize) {
