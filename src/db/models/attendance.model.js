@@ -65,7 +65,11 @@ Attendance.init(
         sequelize,
         timestamps: true,
         modelName: 'Attendance',
-        tableName: 'attendances'
+        tableName: 'attendances',
+        indexes: [
+            { fields: ['class_id', 'attendance_date'] },
+            { fields: ['attendance_date'] }
+        ]
     }
 );
 
@@ -144,7 +148,11 @@ AttendanceStudent.init(
         sequelize,
         timestamps: true,
         modelName: 'AttendanceStudent',
-        tableName: 'attendance_students'
+        tableName: 'attendance_students',
+        indexes: [
+            { fields: ['attendance_id', 'student_id'] },
+            { fields: ['student_id'] }
+        ]
     }
 );
 

@@ -284,6 +284,14 @@ Student.init(
         timestamps: true,
         modelName: 'Student',
         tableName: 'students',
+        indexes: [
+            { fields: ['first_name', 'last_name'] },
+            { fields: ['admission_year'] },
+            { fields: ['admission_type'] },
+            { fields: ['branch_id'] },
+            { fields: ['scheme_id'] },
+            { fields: ['biometric_verification_status'] }
+        ]
     }
 );
 

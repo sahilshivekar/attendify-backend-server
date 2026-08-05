@@ -166,7 +166,16 @@ Class.init(
         sequelize,
         timestamps: true,
         modelName: 'Class',
-        tableName: 'classes'
+        tableName: 'classes',
+        indexes: [
+            { fields: ['timetable_id'] },
+            { fields: ['teacher_id'] },
+            { fields: ['room_id'] },
+            { fields: ['batch_id'] },
+            { fields: ['course_id'] },
+            { fields: ['day_of_week', 'start_time', 'end_time'] },
+            { fields: ['active_from', 'active_till'] }
+        ]
     }
 );
 

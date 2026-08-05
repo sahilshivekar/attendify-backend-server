@@ -89,7 +89,11 @@ StudentBatch.init(
         sequelize,
         timestamps: true,
         modelName: 'StudentBatch',
-        tableName: 'students_batches'
+        tableName: 'students_batches',
+        indexes: [
+            { fields: ['student_id', 'batch_id'] },
+            { fields: ['student_id', 'end_date'] }
+        ]
     }
 );
 

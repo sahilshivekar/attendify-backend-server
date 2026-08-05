@@ -81,6 +81,10 @@ BranchCourseSemester.init(
         timestamps: true,
         modelName: 'BranchCourseSemester', // Corrected Model Name
         tableName: 'branch_course_semesters', // Corrected Table Name
+        indexes: [
+            { fields: ['branch_id', 'semester_number'] },
+            { fields: ['course_id'] }
+        ]
     }
 );
 

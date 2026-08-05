@@ -87,6 +87,11 @@ Course.init(
         timestamps: true,
         modelName: 'Course',
         tableName: 'courses',
+        indexes: [
+            { fields: ['course_name'] },
+            { fields: ['scheme_id'] },
+            { fields: ['course_optional_course'] }
+        ]
     }
 );
 

@@ -103,7 +103,11 @@ StudentDivision.init(
         sequelize,
         timestamps: true,
         modelName: 'StudentDivision', // Corrected model name
-        tableName: 'students_divisions' // Corrected table name
+        tableName: 'students_divisions', // Corrected table name
+        indexes: [
+            { fields: ['student_id', 'division_id'] },
+            { fields: ['student_id', 'end_date'] }
+        ]
     }
 );
 

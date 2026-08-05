@@ -189,6 +189,10 @@ Teacher.init(
         timestamps: true,
         modelName: 'Teacher',
         tableName: 'teacher',
+        indexes: [
+            { fields: ['first_name', 'last_name'] },
+            { fields: ['is_active'] }
+        ]
     }
 );
 

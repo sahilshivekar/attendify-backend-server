@@ -77,6 +77,9 @@ TeacherTeachesCourse.init(
         timestamps: true,
         modelName: 'TeacherTeachesCourse', // Corrected Model Name
         tableName: 'teacher_teaches_course', // Corrected Table Name,
+        indexes: [
+            { fields: ['course_id'] }
+        ]
     }
 );
 
