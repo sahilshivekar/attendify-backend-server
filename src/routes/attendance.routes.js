@@ -6,6 +6,7 @@ import {
     bulkUpdateStudentAttendance,
     createAttendance,
     getAttendanceOfStudentForSpecificCourseInSemester,
+    getAttendanceOfEveryStudentForSpecificCourseInSemester,
     getAttendanceOfAllForSemesterDivisionBatchCourse,
     sendAttendanceReport,
     getAttendanceById,
@@ -36,6 +37,9 @@ router.route('/students')
 // Individual student attendance queries
 router.route('/student')
     .get(validate(attendanceValidation.getAttendanceOfAnyStudentForSpecificCourseInSemester), verifyJWT([ROLES.ADMIN, ROLES.TEACHER]), getAttendanceOfStudentForSpecificCourseInSemester);
+
+router.route('/students/bulk')
+    .get(validate(attendanceValidation.getAttendanceOfEveryStudentForSpecificCourseInSemester), verifyJWT([ROLES.ADMIN, ROLES.TEACHER]), getAttendanceOfEveryStudentForSpecificCourseInSemester);
 
 router.route('/me')
     .get(validate(attendanceValidation.getAttendanceOfSelfForSpecificCourseInSemester), verifyJWT([ROLES.STUDENT]), getAttendanceOfStudentForSpecificCourseInSemester);

@@ -242,6 +242,69 @@ const getAttendanceOfAnyStudentForSpecificCourseInSemester = {
     })
 };
 
+const getAttendanceOfEveryStudentForSpecificCourseInSemester = {
+    query: Joi.object().keys({
+        studentIds: Joi.alternatives()
+            .try(
+                Joi.array().items(
+                    Joi.string()
+                        .uuid()
+                        .messages({
+                            'string.guid': 'Each student ID must be a valid UUID',
+                            'string.base': 'Each student ID must be a string'
+                        })
+                ),
+                Joi.string().uuid().messages({
+                    'string.guid': 'Student ID must be a valid UUID',
+                    'string.base': 'Student ID must be a string'
+                })
+            )
+            .required()
+            .messages({
+                'any.required': 'Student IDs are required'
+            }),
+        courseId: Joi.string()
+            .uuid()
+            .required()
+            .messages({
+                'string.guid': 'Course ID must be a valid UUID',
+                'any.required': 'Course ID is required',
+                'string.base': 'Course ID must be a string'
+            }),
+        semesterId: Joi.string()
+            .uuid()
+            .optional()
+            .allow(null, ''),
+        divisionId: Joi.string()
+            .uuid()
+            .optional()
+            .allow(null, ''),
+        batchId: Joi.string()
+            .uuid()
+            .optional()
+            .allow(null, ''),
+        startDate: Joi.string().optional().allow(null, '').custom((value) => {
+            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            if (value && !dateRegex.test(value)) {
+                throw new Error('Start date must be in YYYY-MM-DD format');
+            }
+            return value;
+        }),
+        endDate: Joi.string().optional().allow(null, '').custom((value) => {
+            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            if (value && !dateRegex.test(value)) {
+                throw new Error('End date must be in YYYY-MM-DD format');
+            }
+            return value;
+        }),
+        semesterNumber: Joi.number().integer().optional().allow(null),
+        academicStartYear: Joi.number().integer().optional().allow(null),
+        academicEndYear: Joi.number().integer().optional().allow(null),
+        branchId: Joi.string().uuid().optional().allow(null, ''),
+        schemeId: Joi.string().uuid().optional().allow(null, '')
+    })
+};
+
 const getAttendanceOfSelfForSpecificCourseInSemester = {
     query: Joi.object().keys({
         courseId: Joi.string()
@@ -701,6 +764,7 @@ export default {
     bulkUpdateStudentAttendance,
     removeAttendance,
     getAttendanceOfAnyStudentForSpecificCourseInSemester,
+    getAttendanceOfEveryStudentForSpecificCourseInSemester,
     getAttendanceOfSelfForSpecificCourseInSemester,
     getAttendanceOfAllForSemesterDivisionBatchCourse,
     sendAttendanceReport,

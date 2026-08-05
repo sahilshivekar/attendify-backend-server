@@ -460,6 +460,90 @@ const getAttendanceOfStudentForSpecificCourseInSemester = asyncHandler(async (re
     res.status(httpStatus.OK).json(new ApiResponse(httpStatus.OK, "Attendance fetched successfully", attendance));
 });
 
+const getAttendanceOfEveryStudentForSpecificCourseInSemester = asyncHandler(async (req, res) => {
+    let {
+        studentIds,
+        courseId,
+        semesterId,
+        divisionId,
+        batchId,
+        startDate,
+        endDate,
+        semesterNumber,
+        academicStartYear,
+        academicEndYear,
+        branchId,
+        schemeId
+    } = req.query;
+
+    if (!Array.isArray(studentIds)) {
+        studentIds = studentIds ? [studentIds] : [];
+    }
+
+    if (!studentIds.length) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Student IDs are required")
+    }
+
+    const uniqueStudentIds = [...new Set(studentIds)];
+
+    await Promise.all(uniqueStudentIds.map(async (studentId) => {
+        const student = await Student.findByPk(studentId);
+        if (!student) {
+            throw new ApiError(httpStatus.NOT_FOUND, `Student not found: ${studentId}`)
+        }
+    }));
+
+    if (courseId) {
+        const course = await Course.findByPk(courseId);
+        if (!course) {
+            throw new ApiError(httpStatus.NOT_FOUND, "Course not found")
+        }
+    }
+
+    if (semesterId) {
+        const semester = await Semester.findByPk(semesterId);
+        if (!semester) {
+            throw new ApiError(httpStatus.NOT_FOUND, "Semester not found")
+        }
+    }
+
+    if (divisionId) {
+        const division = await Division.findByPk(divisionId);
+        if (!division) {
+            throw new ApiError(httpStatus.NOT_FOUND, "Division not found")
+        }
+    }
+    if (branchId) {
+        const branch = await Branch.findByPk(branchId);
+        if (!branch) {
+            throw new ApiError(httpStatus.NOT_FOUND, "Branch not found")
+        }
+    }
+    if (schemeId) {
+        const scheme = await Scheme.findByPk(schemeId);
+        if (!scheme) {
+            throw new ApiError(httpStatus.NOT_FOUND, "Scheme not found")
+        }
+    }
+
+    const attendance = await getAttendanceOfEveryStudentForSpecificCourseInSemesterQuery(
+        uniqueStudentIds,
+        courseId,
+        semesterId ? semesterId : null,
+        divisionId ? divisionId : null,
+        batchId ? batchId : null,
+        startDate ? startDate : null,
+        endDate ? endDate : null,
+        semesterNumber ? Number(semesterNumber) : null,
+        academicStartYear ? Number(academicStartYear) : null,
+        academicEndYear ? Number(academicEndYear) : null,
+        branchId ? branchId : null,
+        schemeId ? schemeId : null
+    );
+
+    res.status(httpStatus.OK).json(new ApiResponse(httpStatus.OK, "Attendance fetched successfully", attendance));
+});
+
 const getAttendanceOfAllForSemesterDivisionBatchCourse = asyncHandler(async (req, res) => {
     const {
         semesterId,
@@ -641,6 +725,46 @@ const getAttendanceOfStudentForSpecificCourseInSemesterQuery = async (
         aggregatedAttendance: aggregatedAttendance[0],
         detailedAttendance: detailedAttendance[0]
     };
+};
+
+const getAttendanceOfEveryStudentForSpecificCourseInSemesterQuery = async (
+    studentIds,
+    courseId,
+    semesterId,
+    divisionId,
+    batchId,
+    startDate,
+    endDate,
+    semesterNumber,
+    academicStartYear,
+    academicEndYear,
+    branchId,
+    schemeId
+) => {
+    const attendanceByStudent = await Promise.all(studentIds.map(async (studentId) => {
+        const attendance = await getAttendanceOfStudentForSpecificCourseInSemesterQuery(
+            studentId,
+            courseId,
+            semesterId,
+            divisionId,
+            batchId,
+            startDate,
+            endDate,
+            semesterNumber,
+            academicStartYear,
+            academicEndYear,
+            branchId,
+            schemeId
+        );
+
+        return {
+            studentId,
+            aggregatedAttendance: attendance.aggregatedAttendance,
+            detailedAttendance: attendance.detailedAttendance
+        };
+    }));
+
+    return { attendanceByStudent };
 };
 
 const getAttendanceOfAllForSemesterDivisionBatchCourseQuery = async (
@@ -1501,6 +1625,7 @@ export {
     bulkUpdateStudentAttendance,
     createAttendance,
     getAttendanceOfStudentForSpecificCourseInSemester,
+    getAttendanceOfEveryStudentForSpecificCourseInSemester,
     getAttendanceOfAllForSemesterDivisionBatchCourse,
     sendAttendanceReport,
     getAttendanceById,
