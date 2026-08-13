@@ -1,6 +1,5 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable('classes', {
@@ -56,12 +55,12 @@ module.exports = {
                 onDelete: 'CASCADE'
             },
             activeFrom: {
-                type: Sequelize.DATEONLY, // Or DATETIME if you need time as well
+                type: Sequelize.DATEONLY,
                 allowNull: false,
                 field: 'active_from'
             },
             activeTill: {
-                type: Sequelize.DATEONLY, // Or DATETIME if you need time as well
+                type: Sequelize.DATEONLY,
                 allowNull: true,
                 field: 'active_till'
             },

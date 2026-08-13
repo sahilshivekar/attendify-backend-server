@@ -14,10 +14,17 @@ import Course from '../../../db/models/course.model.js';
 import Room from '../../../db/models/room.model.js';
 import Timetable from '../../../db/models/timetable.model.js';
 import Class from '../../../db/models/class.model.js';
-import { Attendance, AttendanceStudent } from '../../../db/models/attendance.model.js';
-import { faker } from '@faker-js/faker';
+import {
+    Attendance,
+    AttendanceStudent
+} from '../../../db/models/attendance.model.js';
+import {
+    faker
+} from '@faker-js/faker';
 import httpStatus from 'http-status';
-import { ROLES } from '../../../config/roles.js';
+import {
+    ROLES
+} from '../../../config/roles.js';
 
 setupTestDb();
 
@@ -43,32 +50,31 @@ describe('Attendance API - updateStudentAttendance', () => {
     let attendanceStudent2;
 
     beforeEach(async () => {
-        // Create admin and login
+
         await Admin.create({
             email: 'admin@example.com',
             username: 'adminuser',
-            password: 'Admin@12345',
+            password: 'Admin@12345'
         });
-        const adminLoginRes = await request(app)
-            .post('/api/v1/auth/admins/login')
-            .send({
-                emailOrUsername: 'admin@example.com',
-                password: 'Admin@12345',
-            });
+        const adminLoginRes = await request(app).
+        post('/api/v1/auth/admins/login').
+        send({
+            emailOrUsername: 'admin@example.com',
+            password: 'Admin@12345'
+        });
         adminToken = adminLoginRes.body.data.accessToken;
 
-        // Create dependencies
         university = await University.create({
             name: 'Test University',
-            abbreviation: 'TU',
+            abbreviation: 'TU'
         });
         branch = await Branch.create({
             name: 'Computer Science',
-            abbreviation: 'CS',
+            abbreviation: 'CS'
         });
         scheme = await Scheme.create({
             name: 'CS 2026 Scheme',
-            universityId: university.id,
+            universityId: university.id
         });
         semester = await Semester.create({
             semesterNumber: 1,
@@ -77,18 +83,17 @@ describe('Attendance API - updateStudentAttendance', () => {
             academicEndYear: 2026,
             startDate: '2025-08-01',
             endDate: '2025-12-31',
-            schemeId: scheme.id,
+            schemeId: scheme.id
         });
         division = await Division.create({
             divisionCode: 'A',
-            semesterId: semester.id,
+            semesterId: semester.id
         });
         batch = await Batch.create({
             batchCode: 'Batch 1',
-            divisionId: division.id,
+            divisionId: division.id
         });
 
-        // Create teacher
         teacher = await Teacher.create({
             firstName: 'John',
             lastName: 'Doe',
@@ -98,15 +103,14 @@ describe('Attendance API - updateStudentAttendance', () => {
             gender: 'Male',
             role: 'Teacher'
         });
-        const teacherLoginRes = await request(app)
-            .post('/api/v1/auth/teachers/login')
-            .send({
-                email: 'teacher@example.com',
-                password: 'Teacher@123',
-            });
+        const teacherLoginRes = await request(app).
+        post('/api/v1/auth/teachers/login').
+        send({
+            email: 'teacher@example.com',
+            password: 'Teacher@123'
+        });
         teacherToken = teacherLoginRes.body.data.accessToken;
 
-        // Create students
         student1 = await Student.create({
             firstName: 'Jane',
             lastName: 'Smith',
@@ -134,26 +138,25 @@ describe('Attendance API - updateStudentAttendance', () => {
             gender: 'Male'
         });
 
-        const studentLoginRes = await request(app)
-            .post('/api/v1/auth/students/login')
-            .send({
-                emailOrPRN: 'student1@example.com',
-                password: 'Student@123',
-            });
+        const studentLoginRes = await request(app).
+        post('/api/v1/auth/students/login').
+        send({
+            emailOrPRN: 'student1@example.com',
+            password: 'Student@123'
+        });
         studentToken = studentLoginRes.body.data.accessToken;
 
-        // Create course, room, timetable, class
         course = await Course.create({
             name: 'Programming Fundamentals',
             code: 'CS101',
-            schemeId: scheme.id,
+            schemeId: scheme.id
         });
         room = await Room.create({
             roomNumber: '101',
             sittingCapacity: 60
         });
         timetable = await Timetable.create({
-            divisionId: division.id,
+            divisionId: division.id
         });
         classEntity = await Class.create({
             teacherId: teacher.id,
@@ -166,25 +169,24 @@ describe('Attendance API - updateStudentAttendance', () => {
             activeTill: '2025-12-31',
             classType: 'Lecture',
             courseId: course.id,
-            timetableId: timetable.id,
+            timetableId: timetable.id
         });
 
-        // Create attendance and attendance students
         attendance = await Attendance.create({
             classId: classEntity.id,
-            date: '2025-01-15',
+            date: '2025-01-15'
         });
 
         attendanceStudent1 = await AttendanceStudent.create({
             attendanceId: attendance.id,
             studentId: student1.id,
-            attendanceStatus: true, // present
+            attendanceStatus: true
         });
 
         attendanceStudent2 = await AttendanceStudent.create({
             attendanceId: attendance.id,
             studentId: student2.id,
-            attendanceStatus: false, // absent
+            attendanceStatus: false
         });
     });
 
@@ -192,14 +194,14 @@ describe('Attendance API - updateStudentAttendance', () => {
         const validUpdateData = () => ({
             attendanceId: attendance.id,
             studentId: student1.id,
-            newAttendanceStatus: false, // changing from present to absent
+            newAttendanceStatus: false
         });
 
         describe('Authentication', () => {
             test('should return 401 if no token provided', async () => {
-                const response = await request(app)
-                    .put('/api/v1/attendances/students')
-                    .send(validUpdateData());
+                const response = await request(app).
+                put('/api/v1/attendances/students').
+                send(validUpdateData());
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
@@ -207,20 +209,20 @@ describe('Attendance API - updateStudentAttendance', () => {
             });
 
             test('should return 401 if invalid token provided', async () => {
-                const response = await request(app)
-                    .put('/api/v1/attendances/students')
-                    .set('Authorization', 'Bearer invalidtoken')
-                    .send(validUpdateData());
+                const response = await request(app).
+                put('/api/v1/attendances/students').
+                set('Authorization', 'Bearer invalidtoken').
+                send(validUpdateData());
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
             });
 
             test('should return 403 if student tries to update attendance', async () => {
-                const response = await request(app)
-                    .put('/api/v1/attendances/students')
-                    .set('Authorization', `Bearer ${studentToken}`)
-                    .send(validUpdateData());
+                const response = await request(app).
+                put('/api/v1/attendances/students').
+                set('Authorization', `Bearer ${studentToken}`).
+                send(validUpdateData());
 
                 expect(response.status).toBe(httpStatus.FORBIDDEN);
                 expect(response.body.success).toBe(false);
@@ -230,13 +232,15 @@ describe('Attendance API - updateStudentAttendance', () => {
 
         describe('Validation', () => {
             test('should return 400 if attendanceId is missing', async () => {
-                const invalidData = { ...validUpdateData() };
+                const invalidData = {
+                    ...validUpdateData()
+                };
                 delete invalidData.attendanceId;
 
-                const response = await request(app)
-                    .put('/api/v1/attendances/students')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                put('/api/v1/attendances/students').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -244,12 +248,15 @@ describe('Attendance API - updateStudentAttendance', () => {
             });
 
             test('should return 400 if attendanceId is not a valid UUID', async () => {
-                const invalidData = { ...validUpdateData(), attendanceId: 'invalid-uuid' };
+                const invalidData = {
+                    ...validUpdateData(),
+                    attendanceId: 'invalid-uuid'
+                };
 
-                const response = await request(app)
-                    .put('/api/v1/attendances/students')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                put('/api/v1/attendances/students').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -257,13 +264,15 @@ describe('Attendance API - updateStudentAttendance', () => {
             });
 
             test('should return 400 if studentId is missing', async () => {
-                const invalidData = { ...validUpdateData() };
+                const invalidData = {
+                    ...validUpdateData()
+                };
                 delete invalidData.studentId;
 
-                const response = await request(app)
-                    .put('/api/v1/attendances/students')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                put('/api/v1/attendances/students').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -271,12 +280,15 @@ describe('Attendance API - updateStudentAttendance', () => {
             });
 
             test('should return 400 if studentId is not a valid UUID', async () => {
-                const invalidData = { ...validUpdateData(), studentId: 'invalid-uuid' };
+                const invalidData = {
+                    ...validUpdateData(),
+                    studentId: 'invalid-uuid'
+                };
 
-                const response = await request(app)
-                    .put('/api/v1/attendances/students')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                put('/api/v1/attendances/students').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -284,13 +296,15 @@ describe('Attendance API - updateStudentAttendance', () => {
             });
 
             test('should return 400 if newAttendanceStatus is missing', async () => {
-                const invalidData = { ...validUpdateData() };
+                const invalidData = {
+                    ...validUpdateData()
+                };
                 delete invalidData.newAttendanceStatus;
 
-                const response = await request(app)
-                    .put('/api/v1/attendances/students')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                put('/api/v1/attendances/students').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -298,12 +312,15 @@ describe('Attendance API - updateStudentAttendance', () => {
             });
 
             test('should return 400 if newAttendanceStatus is not a boolean', async () => {
-                const invalidData = { ...validUpdateData(), newAttendanceStatus: 'invalid' };
+                const invalidData = {
+                    ...validUpdateData(),
+                    newAttendanceStatus: 'invalid'
+                };
 
-                const response = await request(app)
-                    .put('/api/v1/attendances/students')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                put('/api/v1/attendances/students').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -313,10 +330,10 @@ describe('Attendance API - updateStudentAttendance', () => {
 
         describe('Success Cases', () => {
             test('should update student attendance from present to absent successfully with admin token', async () => {
-                const response = await request(app)
-                    .put('/api/v1/attendances/students')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(validUpdateData());
+                const response = await request(app).
+                put('/api/v1/attendances/students').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(validUpdateData());
 
                 expect(response.status).toBe(httpStatus.OK);
                 expect(response.body.success).toBe(true);
@@ -324,7 +341,6 @@ describe('Attendance API - updateStudentAttendance', () => {
                 expect(response.body.data).toHaveProperty('id');
                 expect(response.body.data.attendanceStatus).toBe(false);
 
-                // Verify in database
                 const updatedAttendance = await AttendanceStudent.findOne({
                     where: {
                         attendanceId: attendance.id,
@@ -339,20 +355,19 @@ describe('Attendance API - updateStudentAttendance', () => {
                 const updateData = {
                     attendanceId: attendance.id,
                     studentId: student2.id,
-                    newAttendanceStatus: true, // changing from absent to present
+                    newAttendanceStatus: true
                 };
 
-                const response = await request(app)
-                    .put('/api/v1/attendances/students')
-                    .set('Authorization', `Bearer ${teacherToken}`)
-                    .send(updateData);
+                const response = await request(app).
+                put('/api/v1/attendances/students').
+                set('Authorization', `Bearer ${teacherToken}`).
+                send(updateData);
 
                 expect(response.status).toBe(httpStatus.OK);
                 expect(response.body.success).toBe(true);
                 expect(response.body.message).toContain('updated successfully');
                 expect(response.body.data.attendanceStatus).toBe(true);
 
-                // Verify in database
                 const updatedAttendance = await AttendanceStudent.findOne({
                     where: {
                         attendanceId: attendance.id,
@@ -367,19 +382,18 @@ describe('Attendance API - updateStudentAttendance', () => {
                 const updateData = {
                     attendanceId: attendance.id,
                     studentId: student1.id,
-                    newAttendanceStatus: true, // same as current status
+                    newAttendanceStatus: true
                 };
 
-                const response = await request(app)
-                    .put('/api/v1/attendances/students')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(updateData);
+                const response = await request(app).
+                put('/api/v1/attendances/students').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(updateData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
                 expect(response.body.message).toContain('New attendance status is same as old attendance status');
 
-                // Verify in database
                 const updatedAttendance = await AttendanceStudent.findOne({
                     where: {
                         attendanceId: attendance.id,
@@ -396,10 +410,10 @@ describe('Attendance API - updateStudentAttendance', () => {
                     attendanceId: faker.string.uuid()
                 };
 
-                const response = await request(app)
-                    .put('/api/v1/attendances/students')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                put('/api/v1/attendances/students').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.NOT_FOUND);
                 expect(response.body.success).toBe(false);
@@ -412,10 +426,10 @@ describe('Attendance API - updateStudentAttendance', () => {
                     studentId: faker.string.uuid()
                 };
 
-                const response = await request(app)
-                    .put('/api/v1/attendances/students')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                put('/api/v1/attendances/students').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.NOT_FOUND);
                 expect(response.body.success).toBe(false);
@@ -423,7 +437,7 @@ describe('Attendance API - updateStudentAttendance', () => {
             });
 
             test('should return 404 if student attendance record does not exist', async () => {
-                // Create a new student without attendance record
+
                 const newStudent = await Student.create({
                     firstName: 'Charlie',
                     lastName: 'Brown',
@@ -443,10 +457,10 @@ describe('Attendance API - updateStudentAttendance', () => {
                     studentId: newStudent.id
                 };
 
-                const response = await request(app)
-                    .put('/api/v1/attendances/students')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                put('/api/v1/attendances/students').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.NOT_FOUND);
                 expect(response.body.success).toBe(false);

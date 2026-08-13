@@ -1,31 +1,30 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable(
-            'schemes',
-            {
+            'schemes', {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
                     primaryKey: true,
-                    field: "scheme_id",
+                    field: "scheme_id"
                 },
                 name: {
                     type: Sequelize.STRING(255),
                     allowNull: false,
-                    unique: true, // To ensure no duplicate scheme names
-                    field: 'scheme_name',
+                    unique: true,
+                    field: 'scheme_name'
                 },
                 universityId: {
                     type: Sequelize.UUID,
                     allowNull: false,
                     references: {
-                        model: 'universities', // Table name for universities
-                        key: 'university_id', // Primary key of universities table
-                    }, onDelete: 'CASCADE',
-                    field: 'university_id',
+                        model: 'universities',
+                        key: 'university_id'
+                    },
+                    onDelete: 'CASCADE',
+                    field: 'university_id'
                 },
                 createdAt: {
                     type: Sequelize.DATE,
@@ -38,11 +37,10 @@ module.exports = {
                     allowNull: false,
                     field: "updated_at",
                     defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-                },
-            },
-            {
+                }
+            }, {
                 timestamps: true,
-                freezeTableName: true,
+                freezeTableName: true
             }
         );
         await queryInterface.addIndex('schemes', ['university_id']);
@@ -51,5 +49,5 @@ module.exports = {
 
     async down(queryInterface, Sequelize) {
         await queryInterface.dropTable('schemes');
-    },
+    }
 };

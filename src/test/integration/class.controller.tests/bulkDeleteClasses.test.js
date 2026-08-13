@@ -1,4 +1,6 @@
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.js';
 import setupTestDb from '../../util/setupTestDb.js';
@@ -13,12 +15,15 @@ import Timetable from '../../../db/models/timetable.model.js';
 import Division from '../../../db/models/division.model.js';
 import Batch from '../../../db/models/batch.model.js';
 import Class from '../../../db/models/class.model.js';
-import { Attendance } from '../../../db/models/attendance.model.js';
+import {
+    Attendance
+} from '../../../db/models/attendance.model.js';
 import Admin from '../../../db/models/admin.model.js';
 import jwt from 'jsonwebtoken';
-import { config } from '../../../config/config.js';
+import {
+    config
+} from '../../../config/config.js';
 
-// Setup test database before each test
 setupTestDb();
 
 describe('DELETE /api/v1/classes/bulk/delete', () => {
@@ -38,35 +43,33 @@ describe('DELETE /api/v1/classes/bulk/delete', () => {
 
     beforeEach(async () => {
         try {
-            // Create test admin
+
             const admin = await Admin.create({
                 email: 'admin@example.com',
                 username: 'adminuser',
                 password: 'Admin@12345'
             });
 
-            // Create test university
             validUniversity = await University.create({
                 name: 'Test University',
                 abbreviation: 'TU'
             });
 
-            // Generate admin token
-            adminToken = jwt.sign({ id: admin.id, role: 'admin' }, config.jwt.accessTokenSecret);
+            adminToken = jwt.sign({
+                id: admin.id,
+                role: 'admin'
+            }, config.jwt.accessTokenSecret);
 
-            // Create test branch
             validBranch = await Branch.create({
                 name: 'Computer Science',
                 abbreviation: 'CS'
             });
 
-            // Create test scheme
             validScheme = await Scheme.create({
                 name: 'CS 2026 Scheme',
                 universityId: validUniversity.id
             });
 
-            // Create test semester
             validSemester = await Semester.create({
                 branchId: validBranch.id,
                 semesterNumber: 1,
@@ -77,14 +80,12 @@ describe('DELETE /api/v1/classes/bulk/delete', () => {
                 schemeId: validScheme.id
             });
 
-            // Create test course
             validCourse = await Course.create({
                 name: 'Programming Fundamentals',
                 code: 'CS101',
                 schemeId: validScheme.id
             });
 
-            // Create test teacher
             validTeacher = await Teacher.create({
                 firstName: 'John',
                 lastName: 'Doe',
@@ -95,30 +96,25 @@ describe('DELETE /api/v1/classes/bulk/delete', () => {
                 role: 'Teacher'
             });
 
-            // Create test room
             validRoom = await Room.create({
                 roomNumber: '101',
                 sittingCapacity: 60
             });
 
-            // Create test division
             validDivision = await Division.create({
                 divisionCode: 'A',
                 semesterId: validSemester.id
             });
 
-            // Create test batch
             validBatch = await Batch.create({
                 batchCode: 'Batch 1',
                 divisionId: validDivision.id
             });
 
-            // Create test timetable
             validTimetable = await Timetable.create({
                 divisionId: validDivision.id
             });
 
-            // Create test classes
             testClass1 = await Class.create({
                 teacherId: validTeacher.id,
                 startTime: '09:00:00',
@@ -156,95 +152,91 @@ describe('DELETE /api/v1/classes/bulk/delete', () => {
 
     describe('Authentication Tests', () => {
         test('should return 401 without token', async () => {
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .send({
-                    classIds: [testClass1.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            send({
+                classIds: [testClass1.id]
+            });
 
             expect(response.status).toBe(401);
             expect(response.body.message).toBe('Unauthorized request: No token provided');
         });
 
         test('should return 401 with invalid token', async () => {
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', 'Bearer invalid-token')
-                .send({
-                    classIds: [testClass1.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', 'Bearer invalid-token').
+            send({
+                classIds: [testClass1.id]
+            });
 
             expect(response.status).toBe(401);
             expect(response.body.message).toBe('Unauthorized request: Invalid token');
         });
 
         test('should return 403 for student access', async () => {
-            // Note: This test would require a student token, which isn't available in the test util
-            // For now, we'll skip this test as it requires student token generation
-            // This should be implemented when student tokens are available
+
         });
 
         test('should return 403 for teacher access', async () => {
-            // Note: This test would require a teacher token, which isn't available in the test util
-            // For now, we'll skip this test as it requires teacher token generation
-            // This should be implemented when teacher tokens are available
+
         });
     });
 
     describe('Validation Tests', () => {
         test('should return 400 when classIds array is missing', async () => {
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({});
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({});
 
             expect(response.status).toBe(400);
             expect(response.body.message).toContain('Class IDs array is required');
         });
 
         test('should return 400 when classIds array is empty', async () => {
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    classIds: []
-                });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds: []
+            });
 
             expect(response.status).toBe(400);
             expect(response.body.message).toContain('At least one class ID is required');
         });
 
         test('should return 400 when classIds contain invalid UUIDs', async () => {
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    classIds: ['invalid-uuid']
-                });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds: ['invalid-uuid']
+            });
 
             expect(response.status).toBe(400);
             expect(response.body.message).toContain('Each class ID must be a valid UUID');
         });
 
         test('should return 400 when classIds contain null values', async () => {
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    classIds: [null]
-                });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds: [null]
+            });
 
             expect(response.status).toBe(400);
             expect(response.body.message).toContain('Each class ID must be a valid UUID');
         });
 
         test('should return 400 when classIds contain empty strings', async () => {
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    classIds: ['']
-                });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds: ['']
+            });
 
             expect(response.status).toBe(400);
             expect(response.body.message).toContain('Each class ID must be a valid UUID');
@@ -252,36 +244,35 @@ describe('DELETE /api/v1/classes/bulk/delete', () => {
 
         test('should return 413 when request payload is too large', async () => {
             const largeClassIds = Array(100).fill().map(() => '12345678-1234-1234-1234-123456789012');
-            
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({ 
-                    classIds: largeClassIds,
-                    // Add large data to exceed payload limit
-                    largeField: 'x'.repeat(10000)
-                });
 
-            // This should trigger the payload limit middleware
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds: largeClassIds,
+
+                largeField: 'x'.repeat(10000)
+            });
+
             expect([413, 400]).toContain(response.status);
         });
     });
 
     describe('Business Logic Tests', () => {
         test('should return 404 when trying to delete non-existent classes', async () => {
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    classIds: ['12345678-1234-1234-1234-123456789012']
-                });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds: ['12345678-1234-1234-1234-123456789012']
+            });
 
             expect(response.status).toBe(404);
             expect(response.body.message).toContain('Some classes not found');
         });
 
         test('should return 409 when trying to delete class with dependent attendance records', async () => {
-            // Create an attendance record that depends on the class
+
             await Attendance.create({
                 classId: testClass1.id,
                 teacherId: validTeacher.id,
@@ -294,12 +285,12 @@ describe('DELETE /api/v1/classes/bulk/delete', () => {
                 batchId: validBatch.id
             });
 
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    classIds: [testClass1.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds: [testClass1.id]
+            });
 
             expect(response.status).toBe(409);
             expect(response.body.message).toContain('Cannot delete class');
@@ -307,45 +298,46 @@ describe('DELETE /api/v1/classes/bulk/delete', () => {
         });
 
         test('should handle mixed valid and invalid class IDs', async () => {
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    classIds: [
-                        testClass1.id,
-                        '12345678-1234-1234-1234-123456789012' // Non-existent
-                    ]
-                });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds: [
+                    testClass1.id,
+                    '12345678-1234-1234-1234-123456789012'
+                ]
+
+            });
 
             expect(response.status).toBe(404);
             expect(response.body.message).toContain('Some classes not found');
         });
 
         test('should handle duplicate class IDs in request', async () => {
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    classIds: [
-                        testClass1.id,
-                        testClass1.id // Duplicate
-                    ]
-                });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds: [
+                    testClass1.id,
+                    testClass1.id
+                ]
+
+            });
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
-            expect(response.body.data.deletedCount).toBe(1); // Should only delete once
+            expect(response.body.data.deletedCount).toBe(1);
         });
 
         test('should validate class ownership/access properly', async () => {
-            // This test would be more relevant if we had multi-university support
-            // For now, we'll just ensure the class exists
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    classIds: [testClass1.id]
-                });
+
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds: [testClass1.id]
+            });
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
@@ -354,12 +346,12 @@ describe('DELETE /api/v1/classes/bulk/delete', () => {
 
     describe('Success Tests', () => {
         test('should successfully delete single class', async () => {
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    classIds: [testClass1.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds: [testClass1.id]
+            });
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
@@ -367,25 +359,23 @@ describe('DELETE /api/v1/classes/bulk/delete', () => {
             expect(response.body.data).toHaveProperty('deletedCount');
             expect(response.body.data.deletedCount).toBe(1);
 
-            // Verify class was deleted from database
             const deletedClass = await Class.findByPk(testClass1.id);
             expect(deletedClass).toBe(null);
         });
 
         test('should successfully delete multiple classes', async () => {
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    classIds: [testClass1.id, testClass2.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds: [testClass1.id, testClass2.id]
+            });
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
             expect(response.body.message).toBe('Classes deleted successfully');
             expect(response.body.data.deletedCount).toBe(2);
 
-            // Verify classes were deleted from database
             const deletedClass1 = await Class.findByPk(testClass1.id);
             const deletedClass2 = await Class.findByPk(testClass2.id);
             expect(deletedClass1).toBe(null);
@@ -393,12 +383,12 @@ describe('DELETE /api/v1/classes/bulk/delete', () => {
         });
 
         test('should return correct response structure', async () => {
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    classIds: [testClass1.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds: [testClass1.id]
+            });
 
             expect(response.status).toBe(200);
             expect(response.body).toHaveProperty('success');
@@ -409,36 +399,40 @@ describe('DELETE /api/v1/classes/bulk/delete', () => {
         });
 
         test('should handle deletion when some classes are already deleted', async () => {
-            // Delete one class first
+
             await Class.destroy({
-                where: { id: testClass1.id }
+                where: {
+                    id: testClass1.id
+                }
             });
 
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    classIds: [testClass1.id, testClass2.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds: [testClass1.id, testClass2.id]
+            });
 
             expect(response.status).toBe(404);
             expect(response.body.message).toContain('Some classes not found');
         });
 
         test('should successfully delete when no dependent records exist', async () => {
-            // Ensure no dependent records exist
+
             const attendanceCount = await Attendance.count({
-                where: { classId: testClass1.id }
+                where: {
+                    classId: testClass1.id
+                }
             });
 
             expect(attendanceCount).toBe(0);
 
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    classIds: [testClass1.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds: [testClass1.id]
+            });
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
@@ -446,7 +440,7 @@ describe('DELETE /api/v1/classes/bulk/delete', () => {
         });
 
         test('should handle large batch deletion efficiently', async () => {
-            // Create multiple classes for batch deletion
+
             const additionalClasses = [];
             for (let i = 0; i < 5; i++) {
                 const additionalClass = await Class.create({
@@ -468,18 +462,21 @@ describe('DELETE /api/v1/classes/bulk/delete', () => {
 
             const classIds = [testClass1.id, testClass2.id, ...additionalClasses];
 
-            const response = await request(app)
-                .delete('/api/v1/classes/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({ classIds });
+            const response = await request(app).
+            delete('/api/v1/classes/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                classIds
+            });
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
-            expect(response.body.data.deletedCount).toBe(7); // 2 original + 5 additional
+            expect(response.body.data.deletedCount).toBe(7);
 
-            // Verify all classes were deleted
             const remainingCount = await Class.count({
-                where: { id: classIds }
+                where: {
+                    id: classIds
+                }
             });
             expect(remainingCount).toBe(0);
         });

@@ -17,46 +17,42 @@ describe('Student Auth API - updateStudentPassword', () => {
     let studentToken;
 
     beforeEach(async () => {
-        // Create test university
+
         testUniversity = await University.create({
             name: 'Test University',
             abbreviation: 'TU'
         });
 
-        // Create test scheme
         testScheme = await Scheme.create({
             name: 'Test Scheme',
             universityId: testUniversity.id
         });
 
-        // Create test branch
         testBranch = await Branch.create({
             name: 'Computer Science',
             abbreviation: 'CS'
         });
 
-        // Create test student
         testStudent = await Student.create({
             prn: 'TU2025001',
             firstName: 'John',
             lastName: 'Doe',
             email: 'john.doe@test.com',
             phoneNumber: '1234567890',
-            password: 'TestPass123!', // This should trigger password hashing hook
+            password: 'TestPass123!',
             schemeId: testScheme.id,
             branchId: testBranch.id,
             admissionYear: 2025,
             admissionType: 'FE',
-            gender: "Male",
+            gender: "Male"
         });
 
-        // Login to get token
-        const loginRes = await request(app)
-            .post('/api/v1/auth/students/login')
-            .send({
-                emailOrPRN: testStudent.email,
-                password: 'TestPass123!'
-            });
+        const loginRes = await request(app).
+        post('/api/v1/auth/students/login').
+        send({
+            emailOrPRN: testStudent.email,
+            password: 'TestPass123!'
+        });
 
         studentToken = loginRes.body.data.accessToken;
     });
@@ -68,22 +64,20 @@ describe('Student Auth API - updateStudentPassword', () => {
                 confirmPassword: 'NewPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/students/update-password')
-                .set('Authorization', `Bearer ${studentToken}`)
-                .send(updateData)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            put('/api/v1/auth/students/update-password').
+            set('Authorization', `Bearer ${studentToken}`).
+            send(updateData).
+            expect(httpStatus.OK);
 
             expect(res.body.success).toBe(true);
             expect(res.body.message).toBe('Password updated successfully');
             expect(res.body.data).toBeNull();
 
-            // Verify password was updated in DB
             const updatedStudent = await Student.findByPk(testStudent.id);
             const isNewPasswordMatching = await updatedStudent.isPasswordMatching('NewPass123!');
             expect(isNewPasswordMatching).toBe(true);
 
-            // Verify old password no longer works
             const isOldPasswordMatching = await updatedStudent.isPasswordMatching('TestPass123!');
             expect(isOldPasswordMatching).toBe(false);
         });
@@ -94,11 +88,11 @@ describe('Student Auth API - updateStudentPassword', () => {
                 confirmPassword: 'TestPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/students/update-password')
-                .set('Authorization', `Bearer ${studentToken}`)
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/students/update-password').
+            set('Authorization', `Bearer ${studentToken}`).
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toBe('New password can\'t be same as old password.');
@@ -109,11 +103,11 @@ describe('Student Auth API - updateStudentPassword', () => {
                 confirmPassword: 'NewPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/students/update-password')
-                .set('Authorization', `Bearer ${studentToken}`)
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/students/update-password').
+            set('Authorization', `Bearer ${studentToken}`).
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Password is required');
@@ -124,11 +118,11 @@ describe('Student Auth API - updateStudentPassword', () => {
                 password: 'NewPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/students/update-password')
-                .set('Authorization', `Bearer ${studentToken}`)
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/students/update-password').
+            set('Authorization', `Bearer ${studentToken}`).
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Confirm password is required');
@@ -140,11 +134,11 @@ describe('Student Auth API - updateStudentPassword', () => {
                 confirmPassword: 'DifferentPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/students/update-password')
-                .set('Authorization', `Bearer ${studentToken}`)
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/students/update-password').
+            set('Authorization', `Bearer ${studentToken}`).
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Password and confirm password must match');
@@ -152,30 +146,30 @@ describe('Student Auth API - updateStudentPassword', () => {
 
         test('should return 400 when password is too short', async () => {
             const updateData = {
-                password: '12345', // less than 8
+                password: '12345',
                 confirmPassword: '12345'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/students/update-password')
-                .set('Authorization', `Bearer ${studentToken}`)
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/students/update-password').
+            set('Authorization', `Bearer ${studentToken}`).
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
         });
 
         test('should return 400 when password lacks uppercase', async () => {
             const updateData = {
-                password: 'newpass123!', // no uppercase
+                password: 'newpass123!',
                 confirmPassword: 'newpass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/students/update-password')
-                .set('Authorization', `Bearer ${studentToken}`)
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/students/update-password').
+            set('Authorization', `Bearer ${studentToken}`).
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Password must contain at least one uppercase letter');
@@ -183,15 +177,15 @@ describe('Student Auth API - updateStudentPassword', () => {
 
         test('should return 400 when password lacks number', async () => {
             const updateData = {
-                password: 'NewPass!', // no number
+                password: 'NewPass!',
                 confirmPassword: 'NewPass!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/students/update-password')
-                .set('Authorization', `Bearer ${studentToken}`)
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/students/update-password').
+            set('Authorization', `Bearer ${studentToken}`).
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Password must contain at least one number');
@@ -199,15 +193,15 @@ describe('Student Auth API - updateStudentPassword', () => {
 
         test('should return 400 when password lacks special character', async () => {
             const updateData = {
-                password: 'NewPass123', // no special char
+                password: 'NewPass123',
                 confirmPassword: 'NewPass123'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/students/update-password')
-                .set('Authorization', `Bearer ${studentToken}`)
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/students/update-password').
+            set('Authorization', `Bearer ${studentToken}`).
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Password must contain at least one special character');
@@ -219,10 +213,10 @@ describe('Student Auth API - updateStudentPassword', () => {
                 confirmPassword: 'NewPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/students/update-password')
-                .send(updateData)
-                .expect(httpStatus.UNAUTHORIZED);
+            const res = await request(app).
+            put('/api/v1/auth/students/update-password').
+            send(updateData).
+            expect(httpStatus.UNAUTHORIZED);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Unauthorized');
@@ -234,11 +228,11 @@ describe('Student Auth API - updateStudentPassword', () => {
                 confirmPassword: 'NewPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/students/update-password')
-                .set('Authorization', 'Bearer invalidtoken')
-                .send(updateData)
-                .expect(httpStatus.UNAUTHORIZED);
+            const res = await request(app).
+            put('/api/v1/auth/students/update-password').
+            set('Authorization', 'Bearer invalidtoken').
+            send(updateData).
+            expect(httpStatus.UNAUTHORIZED);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Unauthorized');

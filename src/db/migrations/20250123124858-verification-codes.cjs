@@ -1,11 +1,9 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable(
-            'verification_codes',
-            {
+            'verification_codes', {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
@@ -17,13 +15,13 @@ module.exports = {
                     allowNull: false,
                     validate: {
                         notEmpty: {
-                            msg: 'Email cannot be empty',
+                            msg: 'Email cannot be empty'
                         },
                         isEmail: {
-                            msg: 'Must be a valid email address',
+                            msg: 'Must be a valid email address'
                         }
                     },
-                    field: 'email',
+                    field: 'email'
                 },
                 code: {
                     type: Sequelize.STRING,
@@ -50,15 +48,14 @@ module.exports = {
                     allowNull: false,
                     field: 'updated_at',
                     defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-                },
-            },
-            {
-                freezeTableName: true,
+                }
+            }, {
+                freezeTableName: true
             }
-        )
+        );
     },
 
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('verification_codes')
+        await queryInterface.dropTable('verification_codes');
     }
 };

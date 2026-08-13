@@ -1,5 +1,7 @@
-import dotenv from "dotenv"
-dotenv.config({ path: './.env' })
+import dotenv from "dotenv";
+dotenv.config({
+    path: './.env'
+});
 
 export default {
     development: {
@@ -9,13 +11,8 @@ export default {
         host: process.env.PG_DEV_DB_HOST,
         port: process.env.PG_DEV_DB_PORT,
         dialect: "postgres",
-        logging: false,
-        // dialectOptions: { 
-        //     ssl: {
-        //         require: false,
-        //         rejectUnauthorized: false // Required for Render.com
-        //     }
-        // },
+        logging: false
+
     },
     test: {
         username: process.env.PG_TEST_DB_USER,
@@ -24,7 +21,7 @@ export default {
         host: process.env.PG_TEST_DB_HOST,
         port: process.env.PG_TEST_DB_PORT,
         dialect: "postgres",
-        logging: false,
+        logging: false
     },
     production: {
         username: process.env.PG_PROD_DB_USER,
@@ -33,12 +30,7 @@ export default {
         host: process.env.PG_PROD_DB_HOST,
         port: process.env.PG_PROD_DB_PORT,
         dialect: "postgres",
-        logging: false,
-        // dialectOptions: { 
-        //     ssl: {
-        //         require: true,
-        //         rejectUnauthorized: false // Required for Render.com
-        //     }
-        // },
+        logging: false
+
     }
-}
+};

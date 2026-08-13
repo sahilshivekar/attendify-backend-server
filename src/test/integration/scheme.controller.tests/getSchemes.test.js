@@ -12,145 +12,169 @@ import Scheme from '../../../db/models/scheme.model.js';
 setupTestDb();
 
 describe('Scheme API - GET /api/v1/schemes', () => {
-  let adminToken;
-  let teacherToken;
-  let studentToken;
-  let university;
-  let branch;
-  let schemes;
+    let adminToken;
+    let teacherToken;
+    let studentToken;
+    let university;
+    let branch;
+    let schemes;
 
-  beforeEach(async () => {
-    try {
-      // Create admin and login
-      await Admin.create({
-        email: 'admin@example.com',
-        username: 'adminuser',
-        password: 'Admin@12345',
-      });
-      const adminLoginRes = await request(app)
-        .post('/api/v1/auth/admins/login')
-        .send({ emailOrUsername: 'admin@example.com', password: 'Admin@12345' });
-      adminToken = adminLoginRes.body.data.accessToken;
+    beforeEach(async () => {
+        try {
 
-      // Create teacher and login
-      await Teacher.create({
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'teacher@example.com',
-        phoneNumber: '+911234567890',
-        password: 'Teacher@123',
-        gender: 'Male',
-        role: 'Teacher'
-      });
-      const teacherLoginRes = await request(app)
-        .post('/api/v1/auth/teachers/login')
-        .send({ email: 'teacher@example.com', password: 'Teacher@123' });
-      teacherToken = teacherLoginRes.body.data.accessToken;
+            await Admin.create({
+                email: 'admin@example.com',
+                username: 'adminuser',
+                password: 'Admin@12345'
+            });
+            const adminLoginRes = await request(app).
+            post('/api/v1/auth/admins/login').
+            send({
+                emailOrUsername: 'admin@example.com',
+                password: 'Admin@12345'
+            });
+            adminToken = adminLoginRes.body.data.accessToken;
 
-      // Create University and Branch
-      university = await University.create({ name: 'Test University', abbreviation: 'TU' });
-      branch = await Branch.create({ name: 'Computer Science', abbreviation: 'CS' });
+            await Teacher.create({
+                firstName: 'John',
+                lastName: 'Doe',
+                email: 'teacher@example.com',
+                phoneNumber: '+911234567890',
+                password: 'Teacher@123',
+                gender: 'Male',
+                role: 'Teacher'
+            });
+            const teacherLoginRes = await request(app).
+            post('/api/v1/auth/teachers/login').
+            send({
+                email: 'teacher@example.com',
+                password: 'Teacher@123'
+            });
+            teacherToken = teacherLoginRes.body.data.accessToken;
 
-      // Create some Schemes
-      schemes = await Scheme.bulkCreate([
-        { name: 'Computer Science 2026', universityId: university.id },
-        { name: 'Electronics 2025', universityId: university.id },
-        { name: 'Mechanical 2023', universityId: university.id },
-      ], { returning: true });
+            university = await University.create({
+                name: 'Test University',
+                abbreviation: 'TU'
+            });
+            branch = await Branch.create({
+                name: 'Computer Science',
+                abbreviation: 'CS'
+            });
 
-      // Create student and login (student requires branchId and schemeId)
-      await Student.create({
-        firstName: 'Jane',
-        lastName: 'Smith',
-        email: 'student1@example.com',
-        phoneNumber: '+919876543210',
-        prn: 'STU001',
-        password: 'Student@123',
-        schemeId: schemes[0].id,
-        branchId: branch.id,
-        admissionYear: 2025,
-        admissionType: 'FE',
-        gender: 'Male'
-      });
-      const studentLoginRes = await request(app)
-        .post('/api/v1/auth/students/login')
-        .send({ emailOrPRN: 'student1@example.com', password: 'Student@123' });
-      studentToken = studentLoginRes.body.data.accessToken;
-    } catch (err) {
-      // Helpful for debugging setup failures
-      // eslint-disable-next-line no-console
-      console.error('beforeEach setup error:', err);
-      throw err;
-    }
-  });
+            schemes = await Scheme.bulkCreate([{
+                    name: 'Computer Science 2026',
+                    universityId: university.id
+                },
+                {
+                    name: 'Electronics 2025',
+                    universityId: university.id
+                },
+                {
+                    name: 'Mechanical 2023',
+                    universityId: university.id
+                }
+            ], {
+                returning: true
+            });
 
-  test('should return 401 when no token is provided', async () => {
-    const res = await request(app).get('/api/v1/schemes');
-    expect(res.status).toBe(httpStatus.UNAUTHORIZED);
-    expect(res.body.success).toBe(false);
-  });
+            await Student.create({
+                firstName: 'Jane',
+                lastName: 'Smith',
+                email: 'student1@example.com',
+                phoneNumber: '+919876543210',
+                prn: 'STU001',
+                password: 'Student@123',
+                schemeId: schemes[0].id,
+                branchId: branch.id,
+                admissionYear: 2025,
+                admissionType: 'FE',
+                gender: 'Male'
+            });
+            const studentLoginRes = await request(app).
+            post('/api/v1/auth/students/login').
+            send({
+                emailOrPRN: 'student1@example.com',
+                password: 'Student@123'
+            });
+            studentToken = studentLoginRes.body.data.accessToken;
+        } catch (err) {
 
-  test('should return 401 when invalid token is provided', async () => {
-    const res = await request(app)
-      .get('/api/v1/schemes')
-      .set('Authorization', 'Bearer invalidtoken');
-    expect(res.status).toBe(httpStatus.UNAUTHORIZED);
-    expect(res.body.success).toBe(false);
-  });
+            console.error('beforeEach setup error:', err);
+            throw err;
+        }
+    });
 
-  test('should list schemes for Admin', async () => {
-    const res = await request(app)
-      .get('/api/v1/schemes')
-      .set('Authorization', `Bearer ${adminToken}`);
+    test('should return 401 when no token is provided', async () => {
+        const res = await request(app).get('/api/v1/schemes');
+        expect(res.status).toBe(httpStatus.UNAUTHORIZED);
+        expect(res.body.success).toBe(false);
+    });
 
-    expect(res.status).toBe(httpStatus.OK);
-    expect(res.body.success).toBe(true);
-    expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.data.length).toBe(3);
-  });
+    test('should return 401 when invalid token is provided', async () => {
+        const res = await request(app).
+        get('/api/v1/schemes').
+        set('Authorization', 'Bearer invalidtoken');
+        expect(res.status).toBe(httpStatus.UNAUTHORIZED);
+        expect(res.body.success).toBe(false);
+    });
 
-  test('should list schemes for Teacher', async () => {
-    const res = await request(app)
-      .get('/api/v1/schemes')
-      .set('Authorization', `Bearer ${teacherToken}`);
+    test('should list schemes for Admin', async () => {
+        const res = await request(app).
+        get('/api/v1/schemes').
+        set('Authorization', `Bearer ${adminToken}`);
 
-    expect(res.status).toBe(httpStatus.OK);
-    expect(res.body.success).toBe(true);
-    expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.data.length).toBe(3);
-  });
+        expect(res.status).toBe(httpStatus.OK);
+        expect(res.body.success).toBe(true);
+        expect(Array.isArray(res.body.data)).toBe(true);
+        expect(res.body.data.length).toBe(3);
+    });
 
-  test('should list schemes for Student', async () => {
-    const res = await request(app)
-      .get('/api/v1/schemes')
-      .set('Authorization', `Bearer ${studentToken}`);
+    test('should list schemes for Teacher', async () => {
+        const res = await request(app).
+        get('/api/v1/schemes').
+        set('Authorization', `Bearer ${teacherToken}`);
 
-    expect(res.status).toBe(httpStatus.OK);
-    expect(res.body.success).toBe(true);
-    expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.data.length).toBe(3);
-  });
+        expect(res.status).toBe(httpStatus.OK);
+        expect(res.body.success).toBe(true);
+        expect(Array.isArray(res.body.data)).toBe(true);
+        expect(res.body.data.length).toBe(3);
+    });
 
-  test('should filter by searchQuery (case-insensitive)', async () => {
-    const res = await request(app)
-      .get('/api/v1/schemes')
-      .query({ searchQuery: 'electronics' })
-      .set('Authorization', `Bearer ${adminToken}`);
+    test('should list schemes for Student', async () => {
+        const res = await request(app).
+        get('/api/v1/schemes').
+        set('Authorization', `Bearer ${studentToken}`);
 
-    expect(res.status).toBe(httpStatus.OK);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toHaveLength(1);
-    expect(res.body.data[0].name).toMatch(/Electronics 2025/i);
-  });
+        expect(res.status).toBe(httpStatus.OK);
+        expect(res.body.success).toBe(true);
+        expect(Array.isArray(res.body.data)).toBe(true);
+        expect(res.body.data.length).toBe(3);
+    });
 
-  test('should return empty array when no schemes match searchQuery', async () => {
-    const res = await request(app)
-      .get('/api/v1/schemes')
-      .query({ searchQuery: 'biology' })
-      .set('Authorization', `Bearer ${adminToken}`);
+    test('should filter by searchQuery (case-insensitive)', async () => {
+        const res = await request(app).
+        get('/api/v1/schemes').
+        query({
+            searchQuery: 'electronics'
+        }).
+        set('Authorization', `Bearer ${adminToken}`);
 
-    expect(res.status).toBe(httpStatus.OK);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toHaveLength(0);
-  });
+        expect(res.status).toBe(httpStatus.OK);
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toHaveLength(1);
+        expect(res.body.data[0].name).toMatch(/Electronics 2025/i);
+    });
+
+    test('should return empty array when no schemes match searchQuery', async () => {
+        const res = await request(app).
+        get('/api/v1/schemes').
+        query({
+            searchQuery: 'biology'
+        }).
+        set('Authorization', `Bearer ${adminToken}`);
+
+        expect(res.status).toBe(httpStatus.OK);
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toHaveLength(0);
+    });
 });

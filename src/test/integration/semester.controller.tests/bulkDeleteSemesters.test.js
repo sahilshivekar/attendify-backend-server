@@ -1,4 +1,6 @@
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.js';
 import setupTestDb from '../../util/setupTestDb.js';
@@ -11,10 +13,13 @@ import StudentSemester from '../../../db/models/studentSemester.model.js';
 import Student from '../../../db/models/student.model.js';
 import Admin from '../../../db/models/admin.model.js';
 import jwt from 'jsonwebtoken';
-import { config } from '../../../config/config.js';
-import { randomUUID } from 'crypto';
+import {
+    config
+} from '../../../config/config.js';
+import {
+    randomUUID
+} from 'crypto';
 
-// Setup test database before each test
 setupTestDb();
 
 describe('DELETE /api/v1/semesters/bulk/delete', () => {
@@ -27,35 +32,33 @@ describe('DELETE /api/v1/semesters/bulk/delete', () => {
 
     beforeEach(async () => {
         try {
-            // Create test admin and generate token
+
             const admin = await Admin.create({
                 email: 'testadmin@test.com',
                 username: 'testadmin',
                 password: 'Admin@12345'
             });
 
-            // Create test university
             validUniversity = await University.create({
                 name: 'Test University',
                 abbreviation: 'TU'
             });
 
-            // Generate admin token
-            adminToken = jwt.sign({ id: admin.id, role: 'admin' }, config.jwt.accessTokenSecret);
+            adminToken = jwt.sign({
+                id: admin.id,
+                role: 'admin'
+            }, config.jwt.accessTokenSecret);
 
-            // Create test branch
             validBranch = await Branch.create({
                 name: 'Computer Science Engineering',
                 abbreviation: 'CSE'
             });
 
-            // Create test scheme
             validScheme = await Scheme.create({
                 name: 'CS 2026 Scheme',
                 universityId: validUniversity.id
             });
 
-            // Create test semesters
             testSemester1 = await Semester.create({
                 branchId: validBranch.id,
                 semesterNumber: 1,
@@ -83,109 +86,107 @@ describe('DELETE /api/v1/semesters/bulk/delete', () => {
 
     describe('Authentication Tests', () => {
         test('should return 401 without token', async () => {
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .send({
-                    semesterIds: [testSemester1.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            send({
+                semesterIds: [testSemester1.id]
+            });
 
             expect(response.status).toBe(401);
             expect(response.body.message).toBe('Unauthorized request: No token provided');
         });
 
         test('should return 401 with invalid token', async () => {
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', 'Bearer invalid-token')
-                .send({
-                    semesterIds: [testSemester1.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', 'Bearer invalid-token').
+            send({
+                semesterIds: [testSemester1.id]
+            });
 
             expect(response.status).toBe(401);
             expect(response.body.message).toBe('Unauthorized request: Invalid token');
         });
 
         test('should return 403 for student access', async () => {
-            // Note: This test would require a student token, which isn't available in the test util
-            // For now, we'll skip this test as it requires student token generation
-            // This should be implemented when student tokens are available
+
         });
 
         test('should return 403 for teacher access', async () => {
-            // Note: This test would require a teacher token, which isn't available in the test util
-            // For now, we'll skip this test as it requires teacher token generation
-            // This should be implemented when teacher tokens are available
+
         });
     });
 
     describe('Validation Tests', () => {
         test('should return 400 when semesterIds array is missing', async () => {
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({});
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({});
 
             expect(response.status).toBe(400);
             expect(response.body.message).toContain('Semester IDs array is required');
         });
 
         test('should return 400 when semesterIds array is empty', async () => {
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    semesterIds: []
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds: []
+            });
 
             expect(response.status).toBe(400);
             expect(response.body.message).toContain('does not contain 1 required value(s)');
         });
 
         test('should return 400 when semesterIds array exceeds maximum limit', async () => {
-            // Use a valid UUID repeated to ensure per-item validation passes and array.max triggers
+
             const validId = testSemester1.id || randomUUID();
             const semesterIds = Array(51).fill(validId);
 
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({ semesterIds });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds
+            });
 
             expect(response.status).toBe(400);
             expect(response.body.message).toContain('Cannot delete more than 50 semesters at once');
         });
 
         test('should return 400 when semesterIds contain invalid UUIDs', async () => {
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    semesterIds: ['invalid-uuid']
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds: ['invalid-uuid']
+            });
 
             expect(response.status).toBe(400);
             expect(response.body.message).toContain('Each semester ID must be a valid UUID');
         });
 
         test('should return 400 when semesterIds contain null values', async () => {
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    semesterIds: [null]
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds: [null]
+            });
 
             expect(response.status).toBe(400);
             expect(response.body.message).toContain('must be a string');
         });
 
         test('should return 400 when semesterIds contain empty strings', async () => {
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    semesterIds: ['']
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds: ['']
+            });
 
             expect(response.status).toBe(400);
             expect(response.body.message).toContain('is not allowed to be empty');
@@ -193,47 +194,46 @@ describe('DELETE /api/v1/semesters/bulk/delete', () => {
 
         test('should return 413 when request payload is too large', async () => {
             const largeSemesterIds = Array(100).fill().map(() => '12345678-1234-1234-1234-123456789012');
-            
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({ 
-                    semesterIds: largeSemesterIds,
-                    // Add large data to exceed payload limit
-                    largeField: 'x'.repeat(10000)
-                });
 
-            // This should trigger the payload limit middleware
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds: largeSemesterIds,
+
+                largeField: 'x'.repeat(10000)
+            });
+
             expect([413, 400]).toContain(response.status);
         });
     });
 
     describe('Business Logic Tests', () => {
         test('should return 404 when trying to delete non-existent semesters', async () => {
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    semesterIds: [randomUUID()]
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds: [randomUUID()]
+            });
 
             expect(response.status).toBe(404);
             expect(response.body.message).toContain('Some semesters not found');
         });
 
         test('should return 409 when trying to delete semester with dependent divisions', async () => {
-            // Create a division that depends on the semester
+
             await Division.create({
                 divisionCode: 'A',
                 semesterId: testSemester1.id
             });
 
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    semesterIds: [testSemester1.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds: [testSemester1.id]
+            });
 
             expect(response.status).toBe(409);
             expect(response.body.message).toContain('Cannot delete semester');
@@ -241,7 +241,7 @@ describe('DELETE /api/v1/semesters/bulk/delete', () => {
         });
 
         test('should return 409 when trying to delete semester with dependent student semesters', async () => {
-            // Create a student that depends on the semester
+
             const testStudent = await Student.create({
                 firstName: 'Test',
                 lastName: 'Student',
@@ -256,18 +256,17 @@ describe('DELETE /api/v1/semesters/bulk/delete', () => {
                 gender: 'Male'
             });
 
-            // Create a student semester that depends on the semester
             await StudentSemester.create({
                 studentId: testStudent.id,
                 semesterId: testSemester1.id
             });
 
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    semesterIds: [testSemester1.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds: [testSemester1.id]
+            });
 
             expect(response.status).toBe(409);
             expect(response.body.message).toContain('Cannot delete semester');
@@ -275,45 +274,47 @@ describe('DELETE /api/v1/semesters/bulk/delete', () => {
         });
 
         test('should handle mixed valid and invalid semester IDs', async () => {
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    semesterIds: [
-                        testSemester1.id,
-                        randomUUID() // Non-existent
-                    ]
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds: [
+                    testSemester1.id,
+                    randomUUID()
+                ]
+
+            });
 
             expect(response.status).toBe(404);
             expect(response.body.message).toContain('Some semesters not found');
         });
 
         test('should handle duplicate semester IDs in request', async () => {
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    semesterIds: [
-                        testSemester1.id,
-                        testSemester1.id // Duplicate
-                    ]
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds: [
+                    testSemester1.id,
+                    testSemester1.id
+                ]
+
+            });
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
-            expect(response.body.data.deletedCount).toBe(1); // Should only delete once
+            expect(response.body.data.deletedCount).toBe(1);
         });
     });
 
     describe('Success Tests', () => {
         test('should successfully delete single semester', async () => {
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    semesterIds: [testSemester1.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds: [testSemester1.id]
+            });
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
@@ -321,25 +322,23 @@ describe('DELETE /api/v1/semesters/bulk/delete', () => {
             expect(response.body.data).toHaveProperty('deletedCount');
             expect(response.body.data.deletedCount).toBe(1);
 
-            // Verify semester was deleted from database
             const deletedSemester = await Semester.findByPk(testSemester1.id);
             expect(deletedSemester).toBe(null);
         });
 
         test('should successfully delete multiple semesters', async () => {
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    semesterIds: [testSemester1.id, testSemester2.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds: [testSemester1.id, testSemester2.id]
+            });
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
             expect(response.body.message).toBe('2 semesters deleted successfully');
             expect(response.body.data.deletedCount).toBe(2);
 
-            // Verify semesters were deleted from database
             const deletedSemester1 = await Semester.findByPk(testSemester1.id);
             const deletedSemester2 = await Semester.findByPk(testSemester2.id);
             expect(deletedSemester1).toBe(null);
@@ -347,12 +346,12 @@ describe('DELETE /api/v1/semesters/bulk/delete', () => {
         });
 
         test('should return correct response structure', async () => {
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    semesterIds: [testSemester1.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds: [testSemester1.id]
+            });
 
             expect(response.status).toBe(200);
             expect(response.body).toHaveProperty('success');
@@ -363,40 +362,46 @@ describe('DELETE /api/v1/semesters/bulk/delete', () => {
         });
 
         test('should handle deletion when some semesters are already deleted', async () => {
-            // Delete one semester first
+
             await Semester.destroy({
-                where: { id: testSemester1.id }
+                where: {
+                    id: testSemester1.id
+                }
             });
 
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    semesterIds: [testSemester1.id, testSemester2.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds: [testSemester1.id, testSemester2.id]
+            });
 
             expect(response.status).toBe(404);
             expect(response.body.message).toContain('Some semesters not found');
         });
 
         test('should successfully delete when no dependent records exist', async () => {
-            // Ensure no dependent records exist
+
             const divisionCount = await Division.count({
-                where: { semesterId: testSemester1.id }
+                where: {
+                    semesterId: testSemester1.id
+                }
             });
             const studentSemesterCount = await StudentSemester.count({
-                where: { semesterId: testSemester1.id }
+                where: {
+                    semesterId: testSemester1.id
+                }
             });
 
             expect(divisionCount).toBe(0);
             expect(studentSemesterCount).toBe(0);
 
-            const response = await request(app)
-                .delete('/api/v1/semesters/bulk/delete')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    semesterIds: [testSemester1.id]
-                });
+            const response = await request(app).
+            delete('/api/v1/semesters/bulk/delete').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                semesterIds: [testSemester1.id]
+            });
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);

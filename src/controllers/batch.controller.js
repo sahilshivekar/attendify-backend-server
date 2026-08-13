@@ -1,9 +1,17 @@
-import { Op } from 'sequelize';
+import {
+    Op
+} from 'sequelize';
 import Batch from '../db/models/batch.model.js';
 import Semester from '../db/models/semester.model.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { ApiError } from '../utils/ApiError.js';
-import { ApiResponse } from '../utils/ApiResponse.js';
+import {
+    asyncHandler
+} from '../utils/asyncHandler.js';
+import {
+    ApiError
+} from '../utils/ApiError.js';
+import {
+    ApiResponse
+} from '../utils/ApiResponse.js';
 import Branch from '../db/models/branch.model.js';
 import Scheme from '../db/models/scheme.model.js';
 import Division from '../db/models/division.model.js';
@@ -19,41 +27,41 @@ const getBatches = asyncHandler(async (req, res) => {
         searchQuery,
         page,
         limit,
-        getAll,
+        getAll
     } = req.query;
 
-    const searchClause = {}
+    const searchClause = {};
 
     if (searchQuery) {
         searchClause.batchCode = {
             [Op.iLike]: `%${searchQuery}%`
-        }
+        };
     }
 
-    const semesterWhereClause = {}
+    const semesterWhereClause = {};
 
     if (semesterNumber) {
         semesterWhereClause.semesterNumber = {
             [Op.eq]: semesterNumber
-        }
+        };
     }
 
     if (branchId) {
         semesterWhereClause.branchId = {
             [Op.eq]: branchId
-        }
+        };
     }
 
     if (academicStartYear) {
         semesterWhereClause.academicStartYear = {
             [Op.gte]: academicStartYear
-        }
+        };
     }
 
     if (academicEndYear) {
         semesterWhereClause.academicEndYear = {
             [Op.lte]: academicEndYear
-        }
+        };
     }
 
     const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
@@ -62,94 +70,101 @@ const getBatches = asyncHandler(async (req, res) => {
         where: {
             [Op.and]: [
                 searchClause,
-                ...(divisionId ? [{ divisionId }] : []),
+                ...(divisionId ? [{
+                    divisionId
+                }] : [])
             ]
+
         },
         include: {
             model: Division,
             required: true,
             duplicating: false,
-            include: [
-                {
-                    model: Semester,
-                    required: true,
-                    duplicating: false,
-                    where: semesterWhereClause,
-                    include: [
-                        {
-                            model: Branch,
-                            required: true,
-                            duplicating: false,
-                        },
-                        {
-                            model: Scheme,
-                            required: true,
-                            duplicating: false,
-                        }
-                    ]
-                },
-            ]
+            include: [{
+                model: Semester,
+                required: true,
+                duplicating: false,
+                where: semesterWhereClause,
+                include: [{
+                        model: Branch,
+                        required: true,
+                        duplicating: false
+                    },
+                    {
+                        model: Scheme,
+                        required: true,
+                        duplicating: false
+                    }
+                ]
+
+            }]
+
         },
-        ...(limit && getAll === false ? { offset: offset, } : {}),
-        ...(limit && getAll === false ? { limit } : {})
+        ...(limit && getAll === false ? {
+            offset: offset
+        } : {}),
+        ...(limit && getAll === false ? {
+            limit
+        } : {})
     });
-    
+
     res.status(httpStatus.OK).json(new ApiResponse(httpStatus.OK, "Batches fetched successfully", {
         batches: batches.rows,
         totalCount: batches.count
     }));
 
-})
+});
 
 const getBatchById = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const {
+        id
+    } = req.params;
 
     const batch = await Batch.findOne({
-        where: { id: id },
-        include: [
-            {
-                model: Division,
+        where: {
+            id: id
+        },
+        include: [{
+            model: Division,
+            required: true,
+            include: [{
+                model: Semester,
                 required: true,
-                include: [
+                include: [{
+                        model: Branch,
+                        required: true
+                    },
                     {
-                        model: Semester,
-                        required: true,
-                        include: [
-                            {
-                                model: Branch,
-                                required: true,
-                            },
-                            {
-                                model: Scheme,
-                                required: true,
-                            }
-                        ]
+                        model: Scheme,
+                        required: true
                     }
                 ]
-            }
-        ]
+
+            }]
+
+        }]
+
     });
 
     if (!batch) {
         throw new ApiError(httpStatus.NOT_FOUND, "Batch not found");
     }
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Batch retrieved successfully",
-                batch
-            )
-        );
-})
-
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Batch retrieved successfully",
+            batch
+        )
+    );
+});
 
 const addBatch = asyncHandler(async (req, res) => {
     const {
         batchCode,
-        divisionId,
+        divisionId
     } = req.body;
 
     const division = await Division.findByPk(divisionId);
@@ -169,7 +184,7 @@ const addBatch = asyncHandler(async (req, res) => {
 
     const batch = await Batch.create({
         batchCode: batchCode,
-        divisionId: divisionId,
+        divisionId: divisionId
     });
 
     if (!batch) {
@@ -180,8 +195,12 @@ const addBatch = asyncHandler(async (req, res) => {
 });
 
 const updateBatch = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { batchCode } = req.body;
+    const {
+        id
+    } = req.params;
+    const {
+        batchCode
+    } = req.body;
 
     const batch = await Batch.findByPk(id);
 
@@ -194,7 +213,9 @@ const updateBatch = asyncHandler(async (req, res) => {
             where: {
                 batchCode: batchCode,
                 divisionId: batch.divisionId,
-                id: { [Op.ne]: id }
+                id: {
+                    [Op.ne]: id
+                }
             }
         });
         if (existingBatch) {
@@ -209,9 +230,10 @@ const updateBatch = asyncHandler(async (req, res) => {
     res.status(httpStatus.OK).json(new ApiResponse(httpStatus.OK, "Batch updated successfully", batch));
 });
 
-
 const removeBatch = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const {
+        id
+    } = req.params;
 
     const batch = await Batch.findByPk(id);
 
@@ -230,4 +252,4 @@ export {
     updateBatch,
     removeBatch,
     getBatchById
-}
+};

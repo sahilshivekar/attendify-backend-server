@@ -1,15 +1,29 @@
-import { Op } from 'sequelize';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import Student from '../db/models/student.model.js'
-import { ApiResponse } from '../utils/ApiResponse.js';
-import { ApiError } from '../utils/ApiError.js';
+import {
+    Op
+} from 'sequelize';
+import {
+    asyncHandler
+} from '../utils/asyncHandler.js';
+import Student from '../db/models/student.model.js';
+import {
+    ApiResponse
+} from '../utils/ApiResponse.js';
+import {
+    ApiError
+} from '../utils/ApiError.js';
 import StudentFCMToken from '../db/models/studentFCMToken.model.js';
 import httpStatus from 'http-status';
 
 const upsertStudentFCMToken = asyncHandler(async (req, res) => {
-    const { studentId, fcmToken, deviceId, deviceModel, osVersion, appVersion, deviceType } = req.body;
-
-    // Input validation is handled by @studentFCMToken.validation.js
+    const {
+        studentId,
+        fcmToken,
+        deviceId,
+        deviceModel,
+        osVersion,
+        appVersion,
+        deviceType
+    } = req.body;
 
     const student = await Student.findByPk(studentId);
 
@@ -42,21 +56,22 @@ const upsertStudentFCMToken = asyncHandler(async (req, res) => {
         await studentFCMTokenEntry.save();
     }
 
-    res
-        .status(created ? httpStatus.CREATED : httpStatus.OK)
-        .json(
-            new ApiResponse(
-                created ? httpStatus.CREATED : httpStatus.OK,
-                created ? "FCM token added successfully" : "FCM token updated successfully",
-                studentFCMTokenEntry
-            )
-        );
-})
+    res.
+    status(created ? httpStatus.CREATED : httpStatus.OK).
+    json(
+        new ApiResponse(
+            created ? httpStatus.CREATED : httpStatus.OK,
+            created ? "FCM token added successfully" : "FCM token updated successfully",
+            studentFCMTokenEntry
+        )
+    );
+});
 
 const removeStudentFCMTokens = asyncHandler(async (req, res) => {
-    const { studentId, deviceId } = req.query;
-
-    // Input validation is handled by @studentFCMToken.validation.js
+    const {
+        studentId,
+        deviceId
+    } = req.query;
 
     const student = await Student.findByPk(studentId);
 
@@ -69,7 +84,7 @@ const removeStudentFCMTokens = asyncHandler(async (req, res) => {
             studentId: studentId,
             deviceId: deviceId
         }
-    })
+    });
 
     if (!studentFCMToken) {
         throw new ApiError(httpStatus.NOT_FOUND, "FCM token is not added for this device");
@@ -77,18 +92,18 @@ const removeStudentFCMTokens = asyncHandler(async (req, res) => {
 
     await studentFCMToken.destroy();
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "FCM token deleted successfully",
-                null
-            )
-        );
-})
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "FCM token deleted successfully",
+            null
+        )
+    );
+});
 
 export {
     upsertStudentFCMToken,
     removeStudentFCMTokens
-}
+};

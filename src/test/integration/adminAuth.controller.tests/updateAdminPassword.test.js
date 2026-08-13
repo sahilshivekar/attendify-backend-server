@@ -2,7 +2,9 @@ import request from 'supertest';
 import app from '../../../app.js';
 import setupTestDb from '../../util/setupTestDb.js';
 import Admin from '../../../db/models/admin.model.js';
-import { faker } from '@faker-js/faker';
+import {
+    faker
+} from '@faker-js/faker';
 import httpStatus from 'http-status';
 
 setupTestDb();
@@ -12,21 +14,20 @@ describe('Admin Auth - updateAdminPassword', () => {
     let existingAdmin;
 
     beforeEach(async () => {
-        // Create an existing admin for authentication
+
         existingAdmin = await Admin.create({
             email: faker.internet.email().toLowerCase(),
             username: faker.internet.username().toLowerCase(),
             password: 'TestPass123!',
-            isVerified: true,
+            isVerified: true
         });
 
-        // Login to get token
-        const loginRes = await request(app)
-            .post('/api/v1/auth/admins/login')
-            .send({
-                emailOrUsername: existingAdmin.email,
-                password: 'TestPass123!',
-            });
+        const loginRes = await request(app).
+        post('/api/v1/auth/admins/login').
+        send({
+            emailOrUsername: existingAdmin.email,
+            password: 'TestPass123!'
+        });
 
         adminToken = loginRes.body.data.accessToken;
     });
@@ -35,38 +36,36 @@ describe('Admin Auth - updateAdminPassword', () => {
         test('should update password successfully with valid data', async () => {
             const updateData = {
                 password: 'NewPass123!',
-                confirmPassword: 'NewPass123!',
+                confirmPassword: 'NewPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/admins/update-password')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send(updateData)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            put('/api/v1/auth/admins/update-password').
+            set('Authorization', `Bearer ${adminToken}`).
+            send(updateData).
+            expect(httpStatus.OK);
 
             expect(res.body.success).toBe(true);
             expect(res.body.message).toBe('Password updated successfully');
             expect(res.body.data).toBeNull();
 
-            // Verify new password works for login
-            const verifyLoginRes = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send({
-                    emailOrUsername: existingAdmin.email,
-                    password: 'NewPass123!',
-                })
-                .expect(httpStatus.OK);
+            const verifyLoginRes = await request(app).
+            post('/api/v1/auth/admins/login').
+            send({
+                emailOrUsername: existingAdmin.email,
+                password: 'NewPass123!'
+            }).
+            expect(httpStatus.OK);
 
             expect(verifyLoginRes.body.success).toBe(true);
 
-            // Verify new password works for login
-            const loginRes = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send({
-                    emailOrUsername: existingAdmin.email,
-                    password: 'NewPass123!',
-                })
-                .expect(httpStatus.OK);
+            const loginRes = await request(app).
+            post('/api/v1/auth/admins/login').
+            send({
+                emailOrUsername: existingAdmin.email,
+                password: 'NewPass123!'
+            }).
+            expect(httpStatus.OK);
 
             expect(loginRes.body.success).toBe(true);
         });
@@ -75,14 +74,14 @@ describe('Admin Auth - updateAdminPassword', () => {
             const updateData = {
                 currentPassword: 'WrongPass123!',
                 newPassword: 'NewPass123!',
-                confirmPassword: 'NewPass123!',
+                confirmPassword: 'NewPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/admins/update-password')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/admins/update-password').
+            set('Authorization', `Bearer ${adminToken}`).
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toBe('Password is required');
@@ -92,14 +91,14 @@ describe('Admin Auth - updateAdminPassword', () => {
             const updateData = {
                 currentPassword: 'TestPass123!',
                 newPassword: 'NewPass123!',
-                confirmPassword: 'DifferentPass123!',
+                confirmPassword: 'DifferentPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/admins/update-password')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/admins/update-password').
+            set('Authorization', `Bearer ${adminToken}`).
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toBe('Password is required');
@@ -108,14 +107,14 @@ describe('Admin Auth - updateAdminPassword', () => {
         test('should return 400 for missing current password', async () => {
             const updateData = {
                 newPassword: 'NewPass123!',
-                confirmPassword: 'NewPass123!',
+                confirmPassword: 'NewPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/admins/update-password')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/admins/update-password').
+            set('Authorization', `Bearer ${adminToken}`).
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toBe('Password is required');
@@ -124,14 +123,14 @@ describe('Admin Auth - updateAdminPassword', () => {
         test('should return 400 for missing new password', async () => {
             const updateData = {
                 currentPassword: 'TestPass123!',
-                confirmPassword: 'NewPass123!',
+                confirmPassword: 'NewPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/admins/update-password')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/admins/update-password').
+            set('Authorization', `Bearer ${adminToken}`).
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toBe('Password is required');
@@ -140,14 +139,14 @@ describe('Admin Auth - updateAdminPassword', () => {
         test('should return 400 for missing confirm password', async () => {
             const updateData = {
                 currentPassword: 'TestPass123!',
-                newPassword: 'NewPass123!',
+                newPassword: 'NewPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/admins/update-password')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/admins/update-password').
+            set('Authorization', `Bearer ${adminToken}`).
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toBe('Password is required');
@@ -157,14 +156,14 @@ describe('Admin Auth - updateAdminPassword', () => {
             const updateData = {
                 currentPassword: 'TestPass123!',
                 newPassword: 'weak',
-                confirmPassword: 'weak',
+                confirmPassword: 'weak'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/admins/update-password')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/admins/update-password').
+            set('Authorization', `Bearer ${adminToken}`).
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toBe('Password is required');
@@ -174,13 +173,13 @@ describe('Admin Auth - updateAdminPassword', () => {
             const updateData = {
                 currentPassword: 'TestPass123!',
                 newPassword: 'NewPass123!',
-                confirmPassword: 'NewPass123!',
+                confirmPassword: 'NewPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/admins/update-password')
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/admins/update-password').
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toBe('Password is required');
@@ -190,33 +189,37 @@ describe('Admin Auth - updateAdminPassword', () => {
             const updateData = {
                 currentPassword: 'TestPass123!',
                 newPassword: 'NewPass123!',
-                confirmPassword: 'NewPass123!',
+                confirmPassword: 'NewPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/admins/update-password')
-                .set('Authorization', 'Bearer invalidtoken')
-                .send(updateData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            put('/api/v1/auth/admins/update-password').
+            set('Authorization', 'Bearer invalidtoken').
+            send(updateData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toBe('Password is required');
         });
 
         test('should return 404 when admin not found', async () => {
-            // Delete the admin first
-            await Admin.destroy({ where: { id: existingAdmin.id } });
+
+            await Admin.destroy({
+                where: {
+                    id: existingAdmin.id
+                }
+            });
 
             const updateData = {
                 currentPassword: 'TestPass123!',
                 newPassword: 'NewPass123!',
-                confirmPassword: 'NewPass123!',
+                confirmPassword: 'NewPass123!'
             };
 
-            const res = await request(app)
-                .put('/api/v1/auth/admins/update-password')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send(updateData);
+            const res = await request(app).
+            put('/api/v1/auth/admins/update-password').
+            set('Authorization', `Bearer ${adminToken}`).
+            send(updateData);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toBe('Password is required');

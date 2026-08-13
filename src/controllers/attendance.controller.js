@@ -1,8 +1,18 @@
-import { Op } from 'sequelize';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { ApiResponse } from '../utils/ApiResponse.js';
-import { ApiError } from '../utils/ApiError.js';
-import fs, { truncate } from 'fs';
+import {
+    Op
+} from 'sequelize';
+import {
+    asyncHandler
+} from '../utils/asyncHandler.js';
+import {
+    ApiResponse
+} from '../utils/ApiResponse.js';
+import {
+    ApiError
+} from '../utils/ApiError.js';
+import fs, {
+    truncate
+} from 'fs';
 import Class from '../db/models/class.model.js';
 import Room from '../db/models/room.model.js';
 import Course from '../db/models/course.model.js';
@@ -16,29 +26,40 @@ import BranchCourseSemester from '../db/models/branchCourseSemester.model.js';
 import Branch from '../db/models/branch.model.js';
 import Scheme from '../db/models/scheme.model.js';
 import Student from '../db/models/student.model.js';
-import { Attendance, AttendanceStudent } from '../db/models/attendance.model.js';
+import {
+    Attendance,
+    AttendanceStudent
+} from '../db/models/attendance.model.js';
 import StudentDivision from '../db/models/studentDivision.model.js';
 import sequelize from '../config/db.connection.js';
-import { fromYYYYMMDDToDDMMYYYY } from "../utils/date.js";
-import { sendAttendanceReportToEmail } from "../utils/email.js";
-import { sendNotification } from "../utils/firebaseCloudMessaging.js";
+import {
+    fromYYYYMMDDToDDMMYYYY
+} from "../utils/date.js";
+import {
+    sendAttendanceReportToEmail
+} from "../utils/email.js";
+import {
+    sendNotification
+} from "../utils/firebaseCloudMessaging.js";
 import StudentFCMToken from "../db/models/studentFCMToken.model.js";
 import StudentBatch from '../db/models/studentBatch.model.js';
 import httpStatus from 'http-status';
-import { extractGroupEmbeddings } from '../utils/faceRecognition.js';
-// removed logger import as per request to remove logs
+import {
+    extractGroupEmbeddings
+} from '../utils/faceRecognition.js';
 
 const FACE_DESCRIPTOR_DIMENSION = 128;
 
-// Helper for Cosine Similarity
 const cosineSimilarity = (a, b) => {
-    let dotProduct = 0, normA = 0, normB = 0;
+    let dotProduct = 0,
+        normA = 0,
+        normB = 0;
     for (let i = 0; i < a.length; i++) {
         dotProduct += a[i] * b[i];
         normA += a[i] * a[i];
         normB += b[i] * b[i];
     }
-    return (normA === 0 || normB === 0) ? 0 : dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+    return normA === 0 || normB === 0 ? 0 : dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 };
 
 const getUploadedFilePaths = (files) => {
@@ -49,10 +70,10 @@ const getUploadedFilePaths = (files) => {
     }
 
     if (typeof files === 'object') {
-        return Object.values(files)
-            .flat()
-            .map((file) => file?.path)
-            .filter(Boolean);
+        return Object.values(files).
+        flat().
+        map((file) => file?.path).
+        filter(Boolean);
     }
 
     return [];
@@ -75,8 +96,6 @@ const calculateEuclideanDistance = (vectorA, vectorB) => {
     return Math.sqrt(sum);
 };
 
-
-//* Creates attendance record and automatically marks all students in the class as absent
 const createAttendance = asyncHandler(async (req, res) => {
     const {
         classId,
@@ -86,7 +105,7 @@ const createAttendance = asyncHandler(async (req, res) => {
     const classObj = await Class.findByPk(classId);
 
     if (!classObj) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Class not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Class not found");
     }
 
     const timetable = await Timetable.findByPk(classObj.timetableId);
@@ -94,27 +113,30 @@ const createAttendance = asyncHandler(async (req, res) => {
     const semester = await Semester.findByPk(division.semesterId);
 
     if (semester.startDate > date || semester.endDate < date) {
-        throw new ApiError(httpStatus.BAD_REQUEST, `Date is out of bounds because semester start date is ${semester.startDate} and semester end date is ${semester.endDate}`)
+        throw new ApiError(httpStatus.BAD_REQUEST, `Date is out of bounds because semester start date is ${semester.startDate} and semester end date is ${semester.endDate}`);
     }
 
     const checkIfAttendaceAlreadyCreatedForTodaysClass = await Attendance.findOne({
         where: {
-            [Op.and]: [
-                { classId: classId },
-                { date: date }
+            [Op.and]: [{
+                    classId: classId
+                },
+                {
+                    date: date
+                }
             ]
+
         }
-    })
+    });
 
     if (checkIfAttendaceAlreadyCreatedForTodaysClass) {
         return res.status(httpStatus.OK).json(new ApiResponse(httpStatus.OK, "Attendance already exists", checkIfAttendaceAlreadyCreatedForTodaysClass));
     }
 
-    // Get all students for this class (batch-specific or division-wide)
     let studentIds = [];
 
     if (classObj.batchId) {
-        // Get students in this specific batch
+
         const studentBatches = await StudentBatch.findAll({
             where: {
                 batchId: classObj.batchId,
@@ -122,9 +144,9 @@ const createAttendance = asyncHandler(async (req, res) => {
             },
             attributes: ['studentId']
         });
-        studentIds = studentBatches.map(sb => sb.studentId);
+        studentIds = studentBatches.map((sb) => sb.studentId);
     } else {
-        // Get all students in the division
+
         const studentDivisions = await StudentDivision.findAll({
             where: {
                 divisionId: division.id,
@@ -132,29 +154,30 @@ const createAttendance = asyncHandler(async (req, res) => {
             },
             attributes: ['studentId']
         });
-        studentIds = studentDivisions.map(sd => sd.studentId);
+        studentIds = studentDivisions.map((sd) => sd.studentId);
     }
 
     if (studentIds.length === 0) {
         throw new ApiError(httpStatus.BAD_REQUEST, "No students found in this class");
     }
 
-    // Create attendance and mark all students as absent in a transaction
     const transaction = await sequelize.transaction();
     try {
         const attendance = await Attendance.create({
             classId: classId,
             date: date
-        }, { transaction });
+        }, {
+            transaction
+        });
 
-        // Mark all students as absent by default
         await AttendanceStudent.bulkCreate(
-            studentIds.map(studentId => ({
+            studentIds.map((studentId) => ({
                 attendanceId: attendance.id,
                 studentId: studentId,
-                attendanceStatus: false // All students marked as absent initially
-            })),
-            { transaction }
+                attendanceStatus: false
+            })), {
+                transaction
+            }
         );
 
         await transaction.commit();
@@ -163,15 +186,12 @@ const createAttendance = asyncHandler(async (req, res) => {
     } catch (error) {
         await transaction.rollback();
         if (error.name === 'SequelizeForeignKeyConstraintError') {
-            throw new ApiError(httpStatus.BAD_REQUEST, "One or more student IDs are invalid")
+            throw new ApiError(httpStatus.BAD_REQUEST, "One or more student IDs are invalid");
         }
         throw error;
     }
-})
+});
 
-
-
-//! this will be used by the teacher to correct a students attendance status
 const updateStudentAttendance = asyncHandler(async (req, res) => {
 
     const {
@@ -180,10 +200,10 @@ const updateStudentAttendance = asyncHandler(async (req, res) => {
         newAttendanceStatus
     } = req.body;
 
-    const attendance = await Attendance.findByPk(attendanceId)
+    const attendance = await Attendance.findByPk(attendanceId);
 
     if (!attendance) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Attendance not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Attendance not found");
     }
 
     const attendanceStudent = await AttendanceStudent.findOne({
@@ -191,25 +211,27 @@ const updateStudentAttendance = asyncHandler(async (req, res) => {
             attendanceId: attendanceId,
             studentId: studentId
         }
-    })
+    });
 
     if (!attendanceStudent) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Attendance of this student not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Attendance of this student not found");
     }
 
     if (attendanceStudent.attendanceStatus === newAttendanceStatus) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "New attendance status is same as old attendance status")
+        throw new ApiError(httpStatus.BAD_REQUEST, "New attendance status is same as old attendance status");
     }
 
-    attendanceStudent.attendanceStatus = newAttendanceStatus
-    await attendanceStudent.save()
+    attendanceStudent.attendanceStatus = newAttendanceStatus;
+    await attendanceStudent.save();
 
     res.status(httpStatus.OK).json(new ApiResponse(httpStatus.OK, "Students attendance status updated successfully", attendanceStudent));
-})
+});
 
-// used by student to mark own attendance for a specific attendance sheet
 const markMyAttendance = asyncHandler(async (req, res) => {
-    const { attendanceId, studentId } = req.body;
+    const {
+        attendanceId,
+        studentId
+    } = req.body;
 
     const attendance = await Attendance.findByPk(attendanceId);
     if (!attendance) {
@@ -232,30 +254,31 @@ const markMyAttendance = asyncHandler(async (req, res) => {
         await attendanceStudent.save();
     }
 
-    res
-        .status(httpStatus.OK)
-        .json(new ApiResponse(httpStatus.OK, "Attendance marked successfully", attendanceStudent));
+    res.
+    status(httpStatus.OK).
+    json(new ApiResponse(httpStatus.OK, "Attendance marked successfully", attendanceStudent));
 });
 
-//* bulk update attendance status for multiple students
 const bulkUpdateStudentAttendance = asyncHandler(async (req, res) => {
-    const { attendanceUpdates } = req.body;
-
-    // logging removed
+    const {
+        attendanceUpdates
+    } = req.body;
 
     const transaction = await sequelize.transaction();
 
     try {
-        // Validate all attendance records exist
-        const attendanceIds = [...new Set(attendanceUpdates.map(update => update.attendanceId))];
+
+        const attendanceIds = [...new Set(attendanceUpdates.map((update) => update.attendanceId))];
         const existingAttendances = await Attendance.findAll({
-            where: { id: attendanceIds },
+            where: {
+                id: attendanceIds
+            },
             attributes: ['id'],
             transaction
         });
 
-        const existingAttendanceIds = existingAttendances.map(attendance => attendance.id);
-        const invalidAttendanceIds = attendanceIds.filter(id => !existingAttendanceIds.includes(id));
+        const existingAttendanceIds = existingAttendances.map((attendance) => attendance.id);
+        const invalidAttendanceIds = attendanceIds.filter((id) => !existingAttendanceIds.includes(id));
 
         if (invalidAttendanceIds.length > 0) {
             throw new ApiError(
@@ -264,16 +287,17 @@ const bulkUpdateStudentAttendance = asyncHandler(async (req, res) => {
             );
         }
 
-        // Validate all students exist
-        const studentIds = [...new Set(attendanceUpdates.map(update => update.studentId))];
+        const studentIds = [...new Set(attendanceUpdates.map((update) => update.studentId))];
         const existingStudents = await Student.findAll({
-            where: { id: studentIds },
+            where: {
+                id: studentIds
+            },
             attributes: ['id'],
             transaction
         });
 
-        const existingStudentIds = existingStudents.map(student => student.id);
-        const invalidStudentIds = studentIds.filter(id => !existingStudentIds.includes(id));
+        const existingStudentIds = existingStudents.map((student) => student.id);
+        const invalidStudentIds = studentIds.filter((id) => !existingStudentIds.includes(id));
 
         if (invalidStudentIds.length > 0) {
             throw new ApiError(
@@ -282,7 +306,6 @@ const bulkUpdateStudentAttendance = asyncHandler(async (req, res) => {
             );
         }
 
-        // Validate all attendance-student combinations exist
         const attendanceStudentChecks = await Promise.all(
             attendanceUpdates.map(async (update) => {
                 const attendanceStudent = await AttendanceStudent.findOne({
@@ -304,7 +327,6 @@ const bulkUpdateStudentAttendance = asyncHandler(async (req, res) => {
             );
         }
 
-        // Filter out updates that don't change the status
         const validUpdates = [];
         for (const update of attendanceUpdates) {
             const existingRecord = await AttendanceStudent.findOne({
@@ -327,62 +349,58 @@ const bulkUpdateStudentAttendance = asyncHandler(async (req, res) => {
             );
         }
 
-        // Perform bulk updates
         let updatedCount = 0;
         for (const update of validUpdates) {
-            const [affectedRows] = await AttendanceStudent.update(
-                { attendanceStatus: update.newAttendanceStatus },
-                {
-                    where: {
-                        attendanceId: update.attendanceId,
-                        studentId: update.studentId
-                    },
-                    transaction
-                }
-            );
+            const [affectedRows] = await AttendanceStudent.update({
+                attendanceStatus: update.newAttendanceStatus
+            }, {
+                where: {
+                    attendanceId: update.attendanceId,
+                    studentId: update.studentId
+                },
+                transaction
+            });
             updatedCount += affectedRows;
         }
 
         await transaction.commit();
-        // logging removed
 
-        res
-            .status(httpStatus.OK)
-            .json(
-                new ApiResponse(
-                    httpStatus.OK,
-                    `${updatedCount} attendance records updated successfully`,
-                    { updatedCount, processedUpdates: validUpdates.length }
-                )
-            );
+        res.
+        status(httpStatus.OK).
+        json(
+            new ApiResponse(
+                httpStatus.OK,
+                `${updatedCount} attendance records updated successfully`, {
+                    updatedCount,
+                    processedUpdates: validUpdates.length
+                }
+            )
+        );
 
     } catch (error) {
         if (!transaction.finished) {
             await transaction.rollback();
         }
-        // logging removed
+
         throw error;
     }
 });
-
 
 const removeAttendance = asyncHandler(async (req, res) => {
     const {
         attendanceId
     } = req.query;
 
-    const attendance = await Attendance.findByPk(attendanceId)
+    const attendance = await Attendance.findByPk(attendanceId);
 
     if (!attendance) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Attendance not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Attendance not found");
     }
 
-    await attendance.destroy()
+    await attendance.destroy();
 
     res.status(httpStatus.OK).json(new ApiResponse(httpStatus.OK, "Attendance removed successfully", null));
-})
-
-
+});
 
 const getAttendanceOfStudentForSpecificCourseInSemester = asyncHandler(async (req, res) => {
 
@@ -401,47 +419,47 @@ const getAttendanceOfStudentForSpecificCourseInSemester = asyncHandler(async (re
         schemeId
     } = req.query;
     studentId = studentId || req.student.id;
-    // courseid, semesterid, studentId
+
     if (studentId) {
         const student = await Student.findByPk(studentId);
         if (!student) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Student not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Student not found");
         }
     }
 
     if (courseId) {
         const course = await Course.findByPk(courseId);
         if (!course) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Course not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Course not found");
         }
     }
 
     if (semesterId) {
         const semester = await Semester.findByPk(semesterId);
         if (!semester) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Semester not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Semester not found");
         }
     }
 
     if (divisionId) {
         const division = await Division.findByPk(divisionId);
         if (!division) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Division not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Division not found");
         }
     }
     if (branchId) {
         const branch = await Branch.findByPk(branchId);
         if (!branch) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Branch not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Branch not found");
         }
     }
     if (schemeId) {
         const scheme = await Scheme.findByPk(schemeId);
         if (!scheme) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Scheme not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Scheme not found");
         }
     }
-    // for the rest of the courses 
+
     const attendance = await getAttendanceOfStudentForSpecificCourseInSemesterQuery(
         studentId,
         courseId,
@@ -481,7 +499,7 @@ const getAttendanceOfEveryStudentForSpecificCourseInSemester = asyncHandler(asyn
     }
 
     if (!studentIds.length) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Student IDs are required")
+        throw new ApiError(httpStatus.BAD_REQUEST, "Student IDs are required");
     }
 
     const uniqueStudentIds = [...new Set(studentIds)];
@@ -489,40 +507,40 @@ const getAttendanceOfEveryStudentForSpecificCourseInSemester = asyncHandler(asyn
     await Promise.all(uniqueStudentIds.map(async (studentId) => {
         const student = await Student.findByPk(studentId);
         if (!student) {
-            throw new ApiError(httpStatus.NOT_FOUND, `Student not found: ${studentId}`)
+            throw new ApiError(httpStatus.NOT_FOUND, `Student not found: ${studentId}`);
         }
     }));
 
     if (courseId) {
         const course = await Course.findByPk(courseId);
         if (!course) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Course not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Course not found");
         }
     }
 
     if (semesterId) {
         const semester = await Semester.findByPk(semesterId);
         if (!semester) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Semester not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Semester not found");
         }
     }
 
     if (divisionId) {
         const division = await Division.findByPk(divisionId);
         if (!division) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Division not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Division not found");
         }
     }
     if (branchId) {
         const branch = await Branch.findByPk(branchId);
         if (!branch) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Branch not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Branch not found");
         }
     }
     if (schemeId) {
         const scheme = await Scheme.findByPk(schemeId);
         if (!scheme) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Scheme not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Scheme not found");
         }
     }
 
@@ -559,44 +577,43 @@ const getAttendanceOfAllForSemesterDivisionBatchCourse = asyncHandler(async (req
         schemeId
     } = req.query;
 
-
     if (courseId) {
         const course = await Course.findByPk(courseId);
         if (!course) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Course not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Course not found");
         }
     }
 
     if (semesterId) {
         const semester = await Semester.findByPk(semesterId);
         if (!semester) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Semester not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Semester not found");
         }
     }
 
     if (divisionId) {
         const division = await Division.findByPk(divisionId);
         if (!division) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Division not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Division not found");
         }
     }
 
     if (batchId) {
         const batch = await Batch.findByPk(batchId);
         if (!batch) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Batch not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Batch not found");
         }
     }
     if (branchId) {
         const branch = await Branch.findByPk(branchId);
         if (!branch) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Branch not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Branch not found");
         }
     }
     if (schemeId) {
         const scheme = await Scheme.findByPk(schemeId);
         if (!scheme) {
-            throw new ApiError(httpStatus.NOT_FOUND, "Scheme not found")
+            throw new ApiError(httpStatus.NOT_FOUND, "Scheme not found");
         }
     }
 
@@ -612,12 +629,10 @@ const getAttendanceOfAllForSemesterDivisionBatchCourse = asyncHandler(async (req
         academicEndYear ? Number(academicEndYear) : null,
         branchId ? branchId : null,
         schemeId ? schemeId : null
-    )
+    );
     res.status(httpStatus.OK).json(new ApiResponse(httpStatus.OK, "Attendance fetched successfully", attendance));
-})
+});
 
-
-// ! query only
 const getAttendanceOfStudentForSpecificCourseInSemesterQuery = async (
     studentId,
     courseId,
@@ -630,10 +645,8 @@ const getAttendanceOfStudentForSpecificCourseInSemesterQuery = async (
     academicStartYear,
     academicEndYear,
     branchId,
-    schemeId
-) => {
-    // Create a replacements object containing all potential parameters.
-    // Sequelize will only bind the ones that actually appear in the generated query string.
+    schemeId) => {
+
     const replacements = {
         studentId,
         courseId,
@@ -649,9 +662,6 @@ const getAttendanceOfStudentForSpecificCourseInSemesterQuery = async (
         schemeId
     };
 
-    // for getting total and attended lectures of a student for a specific course
-    // in the query include the join of batches only if batchId is provided 
-    // bcz as the one division have many batches its adding duplicate rows
     const aggregatedAttendance = await sequelize.query(
         `
         SELECT
@@ -683,11 +693,11 @@ const getAttendanceOfStudentForSpecificCourseInSemesterQuery = async (
         GROUP BY 
         courses.course_id,
         courses.course_name;
-        `,
-        { replacements }
+        `, {
+            replacements
+        }
     );
 
-    // for getting detail with each attendance_id and status
     const detailedAttendance = await sequelize.query(
         `
         SELECT
@@ -717,8 +727,9 @@ const getAttendanceOfStudentForSpecificCourseInSemesterQuery = async (
         ${endDate ? `AND attendances.attendance_date <= :endDate` : ''}
         ORDER BY
         attendances.attendance_date;
-        `,
-        { replacements }
+        `, {
+            replacements
+        }
     );
 
     return {
@@ -739,8 +750,7 @@ const getAttendanceOfEveryStudentForSpecificCourseInSemesterQuery = async (
     academicStartYear,
     academicEndYear,
     branchId,
-    schemeId
-) => {
+    schemeId) => {
     const attendanceByStudent = await Promise.all(studentIds.map(async (studentId) => {
         const attendance = await getAttendanceOfStudentForSpecificCourseInSemesterQuery(
             studentId,
@@ -764,7 +774,9 @@ const getAttendanceOfEveryStudentForSpecificCourseInSemesterQuery = async (
         };
     }));
 
-    return { attendanceByStudent };
+    return {
+        attendanceByStudent
+    };
 };
 
 const getAttendanceOfAllForSemesterDivisionBatchCourseQuery = async (
@@ -778,8 +790,7 @@ const getAttendanceOfAllForSemesterDivisionBatchCourseQuery = async (
     academicStartYear,
     academicEndYear,
     branchId,
-    schemeId
-) => {
+    schemeId) => {
     if (!semesterId && !divisionId && !courseId && !batchId && !startDate && !endDate &&
         semesterNumber == null && academicStartYear == null && academicEndYear == null && !branchId && !schemeId) {
         throw new ApiError(
@@ -788,7 +799,6 @@ const getAttendanceOfAllForSemesterDivisionBatchCourseQuery = async (
         );
     }
 
-    // Build WHERE clause dynamically using named placeholders instead of raw values
     const conditions = [];
     if (semesterId) conditions.push(`semesters.semester_id = :semesterId`);
     if (semesterNumber != null) conditions.push(`semesters.semester_number = :semesterNumber`);
@@ -801,7 +811,7 @@ const getAttendanceOfAllForSemesterDivisionBatchCourseQuery = async (
     if (courseId) conditions.push(`classes.course_id = :courseId`);
     if (startDate) conditions.push(`attendances.attendance_date >= :startDate`);
     if (endDate) conditions.push(`attendances.attendance_date <= :endDate`);
-    
+
     const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const replacements = {
@@ -850,34 +860,31 @@ const getAttendanceOfAllForSemesterDivisionBatchCourseQuery = async (
         ) AS "attendanceSummary"
         FROM attendance_grouped_by_course_id_and_attendance_date
         GROUP BY course_id;
-        `,
-        { replacements }
+        `, {
+            replacements
+        }
     );
 
     return attendance[0];
 };
 
-
 const sendAttendanceReport = asyncHandler(async (req, res) => {
     try {
         const {
-            startDate, // will be same as end date if its about single day attendance
+            startDate,
             endDate,
             studentIds,
             courseIds,
             semesterId
         } = req.body;
 
-        let studentWithNoParentEmail = []
+        let studentWithNoParentEmail = [];
         let emailsSent = 0;
         let fcmNotificationsSent = 0;
 
-        // Ensure we have arrays to iterate over
         let finalStudentIds = studentIds || [];
         let finalCourseIds = courseIds || [];
 
-
-        // Early validation of semester if provided
         if (semesterId) {
             const semester = await Semester.findByPk(semesterId);
             if (!semester) {
@@ -885,27 +892,23 @@ const sendAttendanceReport = asyncHandler(async (req, res) => {
             }
         }
 
-        // If no courseIds provided but studentIds provided, get all courses
         if (finalCourseIds.length === 0 && finalStudentIds.length > 0) {
             const allCourses = await Course.findAll();
-            finalCourseIds = allCourses.map(c => c.id);
+            finalCourseIds = allCourses.map((c) => c.id);
         }
 
-        // If no studentIds provided but courseIds provided, get all students
         if (finalStudentIds.length === 0 && finalCourseIds.length > 0) {
             const allStudents = await Student.findAll();
-            finalStudentIds = allStudents.map(s => s.id);
+            finalStudentIds = allStudents.map((s) => s.id);
         }
 
-        // If only semesterId provided, get all students and courses
         if (finalStudentIds.length === 0 && finalCourseIds.length === 0 && semesterId) {
             const allStudents = await Student.findAll();
             const allCourses = await Course.findAll();
-            finalStudentIds = allStudents.map(s => s.id);
-            finalCourseIds = allCourses.map(c => c.id);
+            finalStudentIds = allStudents.map((s) => s.id);
+            finalCourseIds = allCourses.map((c) => c.id);
         }
 
-        // Validate that all students exist
         for (const studentId of finalStudentIds) {
             const student = await Student.findByPk(studentId);
             if (!student) {
@@ -913,7 +916,6 @@ const sendAttendanceReport = asyncHandler(async (req, res) => {
             }
         }
 
-        // Validate that all courses exist
         for (const courseId of finalCourseIds) {
             const course = await Course.findByPk(courseId);
             if (!course) {
@@ -924,8 +926,8 @@ const sendAttendanceReport = asyncHandler(async (req, res) => {
         let hasAnyAttendanceData = false;
 
         for (const studentId of finalStudentIds) {
-            let allCourseAttendance = []
-            let emailText = ""
+            let allCourseAttendance = [];
+            let emailText = "";
             for (const courseId of finalCourseIds) {
                 const attendance = await getAttendanceOfStudentForSpecificCourseInSemesterQuery(
                     studentId,
@@ -935,51 +937,47 @@ const sendAttendanceReport = asyncHandler(async (req, res) => {
                     null,
                     startDate || null,
                     endDate || null
-                )
-                allCourseAttendance.push(attendance)
+                );
+                allCourseAttendance.push(attendance);
             }
 
-            const student = await Student.findByPk(studentId)
+            const student = await Student.findByPk(studentId);
             if (student.parentEmail != null) {
                 let hasDataForThisStudent = false;
 
-                // each object in the "allCourseAttendance" represents a course
-                allCourseAttendance.forEach(courseAttendance => {
+                allCourseAttendance.forEach((courseAttendance) => {
                     if (courseAttendance.aggregatedAttendance.length != 0) {
                         hasDataForThisStudent = true;
                         hasAnyAttendanceData = true;
-                        emailText += `Attendance of ${student.firstName} ${student.lastName}\n\n`
+                        emailText += `Attendance of ${student.firstName} ${student.lastName}\n\n`;
 
+                        emailText += `Course: ${courseAttendance.aggregatedAttendance[0].courseName}\n`;
+                        emailText += `Total lectures: ${courseAttendance.aggregatedAttendance[0].totalLectures}\n`;
+                        emailText += `Attended lectures: ${courseAttendance.aggregatedAttendance[0].attendedLectures}\n`;
+                        emailText += `Not attended lectures: ${courseAttendance.aggregatedAttendance[0].totalLectures - courseAttendance.aggregatedAttendance[0].attendedLectures}\n`;
 
-                        emailText += `Course: ${courseAttendance.aggregatedAttendance[0].courseName}\n`
-                        emailText += `Total lectures: ${courseAttendance.aggregatedAttendance[0].totalLectures}\n`
-                        emailText += `Attended lectures: ${courseAttendance.aggregatedAttendance[0].attendedLectures}\n`
-                        emailText += `Not attended lectures: ${courseAttendance.aggregatedAttendance[0].totalLectures - courseAttendance.aggregatedAttendance[0].attendedLectures}\n`
+                        emailText += `Attendance in percentage: ${(100 * (courseAttendance.aggregatedAttendance[0].attendedLectures / courseAttendance.aggregatedAttendance[0].totalLectures)).toFixed(2)}%\n`;
 
-                        emailText += `Attendance in percentage: ${(100 * (courseAttendance.aggregatedAttendance[0].attendedLectures / courseAttendance.aggregatedAttendance[0].totalLectures)).toFixed(2)}%\n`
-
-
-                        const attendedLecturesDates = []
-                        courseAttendance.detailedAttendance.forEach(detailedAttendanceObj => {
+                        const attendedLecturesDates = [];
+                        courseAttendance.detailedAttendance.forEach((detailedAttendanceObj) => {
                             if (detailedAttendanceObj.attendanceStatus == true) {
-                                attendedLecturesDates.push(fromYYYYMMDDToDDMMYYYY(detailedAttendanceObj.date))
+                                attendedLecturesDates.push(fromYYYYMMDDToDDMMYYYY(detailedAttendanceObj.date));
                             }
-                        })
-                        emailText += `Attended lectures dates: ${attendedLecturesDates.length > 0 ? attendedLecturesDates.join(", ") : "none"}\n`
-                        const notAttendedLecturesDates = []
-                        courseAttendance.detailedAttendance.forEach(detailedAttendanceObj => {
+                        });
+                        emailText += `Attended lectures dates: ${attendedLecturesDates.length > 0 ? attendedLecturesDates.join(", ") : "none"}\n`;
+                        const notAttendedLecturesDates = [];
+                        courseAttendance.detailedAttendance.forEach((detailedAttendanceObj) => {
                             if (detailedAttendanceObj.attendanceStatus == false) {
-                                notAttendedLecturesDates.push(fromYYYYMMDDToDDMMYYYY(detailedAttendanceObj.date))
+                                notAttendedLecturesDates.push(fromYYYYMMDDToDDMMYYYY(detailedAttendanceObj.date));
                             }
-                        })
-                        emailText += `Not attended lectures dates: ${notAttendedLecturesDates.length > 0 ? notAttendedLecturesDates.join(", ") : "none"}\n\n\n\n\n`
+                        });
+                        emailText += `Not attended lectures dates: ${notAttendedLecturesDates.length > 0 ? notAttendedLecturesDates.join(", ") : "none"}\n\n\n\n\n`;
                     }
-                })
+                });
 
-                // Only send email if there's actual attendance data
                 if (hasDataForThisStudent && emailText.trim() !== "") {
                     try {
-                        await sendAttendanceReportToEmail(student.parentEmail, emailText)
+                        await sendAttendanceReportToEmail(student.parentEmail, emailText);
                         emailsSent++;
                     } catch (emailError) {
                         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to send attendance report");
@@ -987,106 +985,100 @@ const sendAttendanceReport = asyncHandler(async (req, res) => {
                 }
 
             } else {
-                studentWithNoParentEmail.push(
-                    {
-                        studentId: student.id,
-                        firstName: student.firstName,
-                        lastName: student.lastName
-                    }
-                )
+                studentWithNoParentEmail.push({
+                    studentId: student.id,
+                    firstName: student.firstName,
+                    lastName: student.lastName
+                });
             }
         }
 
+        const responseMessage = hasAnyAttendanceData ?
+            "Attendance report sent successfully" :
+            "No attendance data found";
 
-        const responseMessage = hasAnyAttendanceData
-            ? "Attendance report sent successfully"
-            : "No attendance data found";
-
-        res
-            .status(httpStatus.OK)
-            .json(
-                new ApiResponse(
-                    httpStatus.OK,
-                    responseMessage,
-                    {
-                        reportSent: emailsSent > 0,
-                        emailsSent: emailsSent,
-                        fcmNotificationsSent: fcmNotificationsSent,
-                        studentWithNoParentEmail: studentWithNoParentEmail
-                    }
-                )
-            );
+        res.
+        status(httpStatus.OK).
+        json(
+            new ApiResponse(
+                httpStatus.OK,
+                responseMessage, {
+                    reportSent: emailsSent > 0,
+                    emailsSent: emailsSent,
+                    fcmNotificationsSent: fcmNotificationsSent,
+                    studentWithNoParentEmail: studentWithNoParentEmail
+                }
+            )
+        );
     } catch (error) {
         throw error;
     }
-})
-// Get a single attendance record by its ID with all related data
+});
+
 const getAttendanceById = asyncHandler(async (req, res) => {
-    const { attendanceId } = req.params;
+    const {
+        attendanceId
+    } = req.params;
 
     const attendance = await Attendance.findByPk(attendanceId, {
-        include: [
-            {
+        include: [{
                 model: Class,
                 required: true,
                 duplicating: false,
-                include: [
-                    {
+                include: [{
                         model: Course,
                         required: true,
-                        duplicating: false,
+                        duplicating: false
                     },
                     {
                         model: Room,
                         required: false,
-                        duplicating: false,
+                        duplicating: false
                     },
                     {
                         model: Teacher,
                         required: false,
-                        duplicating: false,
+                        duplicating: false
                     },
                     {
                         model: Timetable,
                         required: true,
                         duplicating: false,
-                        include: [
-                            {
-                                model: Division,
+                        include: [{
+                            model: Division,
+                            required: true,
+                            duplicating: false,
+                            include: [{
+                                model: Semester,
                                 required: true,
                                 duplicating: false,
-                                include: [
-                                    {
-                                        model: Semester,
-                                        required: true,
-                                        duplicating: false,
-                                        include: [
-                                            {
-                                                model: Branch,
-                                                required: false,
-                                                duplicating: false,
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        ]
+                                include: [{
+                                    model: Branch,
+                                    required: false,
+                                    duplicating: false
+                                }]
+
+                            }]
+
+                        }]
+
                     }
                 ]
+
             },
             {
                 model: AttendanceStudent,
                 required: false,
                 duplicating: false,
-                include: [
-                    {
-                        model: Student,
-                        required: true,
-                        duplicating: false,
-                    },
-                ]
-            },
+                include: [{
+                    model: Student,
+                    required: true,
+                    duplicating: false
+                }]
+
+            }
         ]
+
     });
 
     if (!attendance) {
@@ -1096,7 +1088,6 @@ const getAttendanceById = asyncHandler(async (req, res) => {
     res.status(httpStatus.OK).json(new ApiResponse(httpStatus.OK, "Attendance fetched successfully", attendance));
 });
 
-// Get paginated attendance records with optional filters
 const getAttendances = asyncHandler(async (req, res) => {
     const {
         date,
@@ -1116,7 +1107,6 @@ const getAttendances = asyncHandler(async (req, res) => {
 
     const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
-    // Validate referenced entities exist
     if (studentId) {
         const student = await Student.findByPk(studentId);
         if (!student) {
@@ -1166,12 +1156,10 @@ const getAttendances = asyncHandler(async (req, res) => {
         }
     }
 
-    // Build attendance where clause
     const attendanceWhere = {};
     if (date) attendanceWhere.date = date;
     if (classId) attendanceWhere.classId = classId;
 
-    // Build semester where clause
     const semesterWhere = {};
     if (semesterId) semesterWhere.id = semesterId;
     if (branchId) semesterWhere.branchId = branchId;
@@ -1179,71 +1167,74 @@ const getAttendances = asyncHandler(async (req, res) => {
     if (academicStartYear) semesterWhere.academicStartYear = Number(academicStartYear);
     if (academicEndYear) semesterWhere.academicEndYear = Number(academicEndYear);
 
-    // Build class where clause for batchId
     const classWhere = {};
     if (batchId) classWhere.batchId = batchId;
 
-    // STEP 1: Get all matching attendance IDs with filters (for counting and pagination)
     const allMatchingIds = await Attendance.findAll({
         attributes: ['id'],
         where: attendanceWhere,
-        include: [
-            {
+        include: [{
                 model: Class,
                 required: true,
                 attributes: [],
                 where: Object.keys(classWhere).length > 0 ? classWhere : undefined,
-                include: [
-                    {
+                include: [{
                         model: Course,
                         required: true,
                         attributes: [],
-                        where: courseId ? { id: courseId } : undefined,
+                        where: courseId ? {
+                            id: courseId
+                        } : undefined
                     },
                     {
                         model: Timetable,
                         required: true,
                         attributes: [],
-                        include: [
-                            {
-                                model: Division,
+                        include: [{
+                            model: Division,
+                            required: true,
+                            attributes: [],
+                            where: divisionId ? {
+                                id: divisionId
+                            } : undefined,
+                            include: [{
+                                model: Semester,
                                 required: true,
                                 attributes: [],
-                                where: divisionId ? { id: divisionId } : undefined,
-                                include: [
-                                    {
-                                        model: Semester,
-                                        required: true,
-                                        attributes: [],
-                                        where: Object.keys(semesterWhere).length > 0 ? semesterWhere : undefined,
-                                    }
-                                ]
-                            }
-                        ]
+                                where: Object.keys(semesterWhere).length > 0 ? semesterWhere : undefined
+                            }]
+
+                        }]
+
                     }
                 ]
+
             },
-            // Add studentId filter if provided
+
             ...(studentId ? [{
                 model: AttendanceStudent,
                 required: true,
                 attributes: [],
-                include: [
-                    {
-                        model: Student,
-                        required: true,
-                        attributes: [],
-                        where: { id: studentId }
-                    },
-                ]
+                include: [{
+                    model: Student,
+                    required: true,
+                    attributes: [],
+                    where: {
+                        id: studentId
+                    }
+                }]
+
             }] : [])
         ],
-        order: [['date', 'DESC'], ['id', 'ASC']], // Add secondary sort for consistency
+
+        order: [
+            ['date', 'DESC'],
+            ['id', 'ASC']
+        ],
         subQuery: false,
         raw: true
     });
 
-    // Deduplicate IDs (JOINs may create duplicates in rare cases)
     const uniqueIdSet = new Set();
     const uniqueIds = [];
     for (const item of allMatchingIds) {
@@ -1255,7 +1246,6 @@ const getAttendances = asyncHandler(async (req, res) => {
 
     const totalCount = uniqueIds.length;
 
-    // If no results, return empty response
     if (totalCount === 0) {
         return res.status(httpStatus.OK).json(new ApiResponse(httpStatus.OK, "Attendances fetched successfully", {
             attendances: [],
@@ -1266,11 +1256,9 @@ const getAttendances = asyncHandler(async (req, res) => {
         }));
     }
 
-    // Apply pagination to the IDs
     const paginatedIds = uniqueIds.slice(offset, offset + parseInt(limit, 10));
 
-    // STEP 2: Fetch full records with all includes using the paginated IDs
-    const attendanceIds = paginatedIds.map(a => a.id);
+    const attendanceIds = paginatedIds.map((a) => a.id);
 
     const attendances = await Attendance.findAll({
         where: {
@@ -1278,54 +1266,56 @@ const getAttendances = asyncHandler(async (req, res) => {
                 [Op.in]: attendanceIds
             }
         },
-        include: [
-            {
+        include: [{
                 model: Class,
                 required: true,
-                include: [
-                    {
+                include: [{
                         model: Course,
-                        required: true,
+                        required: true
                     },
                     {
                         model: Timetable,
                         required: true,
-                        include: [
-                            {
-                                model: Division,
-                                required: true,
-                                include: [
-                                    {
-                                        model: Semester,
-                                        required: true,
-                                    }
-                                ]
-                            }
-                        ]
+                        include: [{
+                            model: Division,
+                            required: true,
+                            include: [{
+                                model: Semester,
+                                required: true
+                            }]
+
+                        }]
+
                     },
                     {
                         model: Room,
-                        required: false,
+                        required: false
                     },
                     {
                         model: Teacher,
-                        required: false,
+                        required: false
                     }
                 ]
+
             },
             {
                 model: AttendanceStudent,
                 required: false,
-                include: [
-                    {
-                        model: Student,
-                        required: true,
-                        where: studentId ? { id: studentId } : undefined,
-                    },
-                ]
-            },
+                include: [{
+                    model: Student,
+                    required: true,
+                    where: studentId ? {
+                        id: studentId
+                    } : undefined
+                }]
+
+            }
         ],
-        order: [['date', 'DESC'], ['id', 'ASC']] // Same order as step 1
+
+        order: [
+            ['date', 'DESC'],
+            ['id', 'ASC']
+        ]
     });
 
     res.status(httpStatus.OK).json(new ApiResponse(httpStatus.OK, "Attendances fetched successfully", {
@@ -1335,10 +1325,8 @@ const getAttendances = asyncHandler(async (req, res) => {
         limit: parseInt(limit, 10),
         totalPages: Math.ceil(totalCount / parseInt(limit, 10))
     }));
-})
+});
 
-
-// used by students in app to fetch active attendance sheet 
 const getActiveAttendanceSheet = asyncHandler(async (req, res) => {
     const {
         studentId,
@@ -1348,7 +1336,7 @@ const getActiveAttendanceSheet = asyncHandler(async (req, res) => {
     const student = await Student.findByPk(studentId);
 
     if (!student) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Student not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Student not found");
     }
 
     const studentDivision = await StudentDivision.findOne({
@@ -1357,10 +1345,10 @@ const getActiveAttendanceSheet = asyncHandler(async (req, res) => {
             divisionId: divisionId,
             endDate: null
         }
-    })
+    });
 
     if (!studentDivision) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Student's division not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Student's division not found");
     }
 
     const timetable = await Timetable.findOne({
@@ -1370,21 +1358,21 @@ const getActiveAttendanceSheet = asyncHandler(async (req, res) => {
     });
 
     if (!timetable) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Timetable not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Timetable not found");
     }
 
     const classes = await Class.findAll({
         where: {
             timetableId: timetable.id
         }
-    })
+    });
 
     if (!classes) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Classes not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Classes not found");
     }
-    const classIds = classes.map(classObj => classObj.id)
+    const classIds = classes.map((classObj) => classObj.id);
 
-    const fiveMinBeforeTimeStamp = new Date().getTime() - (5 * 60 * 1000)
+    const fiveMinBeforeTimeStamp = new Date().getTime() - 5 * 60 * 1000;
 
     const activeAttendanceSheets = await Attendance.findAll({
         where: {
@@ -1395,18 +1383,18 @@ const getActiveAttendanceSheet = asyncHandler(async (req, res) => {
                 [Op.gte]: fiveMinBeforeTimeStamp
             }
         }
-    })
+    });
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Active attendance sheets fetched successfully",
-                activeAttendanceSheets
-            )
-        );
-})
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Active attendance sheets fetched successfully",
+            activeAttendanceSheets
+        )
+    );
+});
 
 const groupPhotoScan = asyncHandler(async (req, res) => {
 
@@ -1417,7 +1405,6 @@ const groupPhotoScan = asyncHandler(async (req, res) => {
         throw new ApiError(httpStatus.BAD_REQUEST, "At least one classroom photo is required");
     }
 
-    // 1. Fetch Attendance and linked Class
     const attendance = await Attendance.findByPk(attendanceId);
     if (!attendance) throw new ApiError(httpStatus.NOT_FOUND, "Attendance not found");
 
@@ -1426,35 +1413,51 @@ const groupPhotoScan = asyncHandler(async (req, res) => {
 
     let targetStudents = [];
 
-    // 2. Fetch students
     if (classObj.batchId) {
         const studentBatches = await StudentBatch.findAll({
-            where: { batchId: classObj.batchId, endDate: null },
-            include: [{ model: Student }]
+            where: {
+                batchId: classObj.batchId,
+                endDate: null
+            },
+            include: [{
+                model: Student
+            }]
         });
-        targetStudents = studentBatches.map(sb => sb.Student);
+        targetStudents = studentBatches.map((sb) => sb.Student);
     } else {
         const timetable = await Timetable.findByPk(classObj.timetableId);
         const studentDivisions = await StudentDivision.findAll({
-            where: { divisionId: timetable.divisionId, endDate: null },
-            include: [{ model: Student }]
+            where: {
+                divisionId: timetable.divisionId,
+                endDate: null
+            },
+            include: [{
+                model: Student
+            }]
         });
-        targetStudents = studentDivisions.map(sd => sd.Student);
+        targetStudents = studentDivisions.map((sd) => sd.Student);
     }
 
-    // Filter valid face descriptors
-    targetStudents = targetStudents.filter(s => {
+    targetStudents = targetStudents.filter((s) => {
         if (!s.faceDescriptor) return false;
 
         let arr = s.faceDescriptor;
         if (typeof arr === 'string') {
-            try { arr = JSON.parse(arr); } catch { return false; }
+            try {
+                arr = JSON.parse(arr);
+            } catch {
+                return false;
+            }
         }
         return Array.isArray(arr) && arr.length === 128;
     });
 
     if (targetStudents.length === 0) {
-        photoPaths.forEach(p => { try { fs.unlinkSync(p); } catch { } });
+        photoPaths.forEach((p) => {
+            try {
+                fs.unlinkSync(p);
+            } catch {}
+        });
         return res.status(httpStatus.OK).json(
             new ApiResponse(httpStatus.OK, "No students with registered faces found.", {
                 presentCount: 0,
@@ -1469,14 +1472,12 @@ const groupPhotoScan = asyncHandler(async (req, res) => {
     let unknownFacesCount = 0;
     let totalFacesDetected = 0;
 
-    // 🔥 3. Process each photo (THIS WAS MISSING)
     for (const photoPath of photoPaths) {
         try {
             const crowdEmbeddings = await extractGroupEmbeddings(photoPath);
 
             totalFacesDetected += crowdEmbeddings.length;
 
-            // 🔥 4. Match each detected face
             for (let i = 0; i < crowdEmbeddings.length; i++) {
 
                 const detectedEmbedding = crowdEmbeddings[i];
@@ -1499,7 +1500,6 @@ const groupPhotoScan = asyncHandler(async (req, res) => {
                     }
                 }
 
-                // 🔥 Apply threshold AFTER best match
                 if (bestSimilarity > 0.40) {
                     presentStudentIds.add(bestMatchId);
                 } else {
@@ -1512,33 +1512,31 @@ const groupPhotoScan = asyncHandler(async (req, res) => {
         } catch (error) {
             console.error(`Error processing photo ${photoPath}:`, error);
         } finally {
-            try { fs.unlinkSync(photoPath); } catch { }
+            try {
+                fs.unlinkSync(photoPath);
+            } catch {}
         }
     }
 
     const presentIdsArray = Array.from(presentStudentIds);
 
-    // 🔥 5. Update DB
     if (presentIdsArray.length > 0) {
-        await AttendanceStudent.update(
-            { status: true }, // ⚠️ use correct column name (not attendanceStatus unless your DB uses that)
-            {
-                where: {
-                    attendanceId: attendanceId,
-                    studentId: {
-                        [Op.in]: presentIdsArray
-                    }
+        await AttendanceStudent.update({
+            status: true
+        }, {
+            where: {
+                attendanceId: attendanceId,
+                studentId: {
+                    [Op.in]: presentIdsArray
                 }
             }
-        );
+        });
     }
 
-    // 🔥 6. Response
     res.status(httpStatus.OK).json(
         new ApiResponse(
             httpStatus.OK,
-            "Classroom attendance verified.",
-            {
+            "Classroom attendance verified.", {
                 presentCount: presentIdsArray.length,
                 unknownFacesCount: unknownFacesCount,
                 totalFacesDetected: totalFacesDetected,
@@ -1549,7 +1547,9 @@ const groupPhotoScan = asyncHandler(async (req, res) => {
 });
 
 const markAllPresent = asyncHandler(async (req, res) => {
-    const { attendanceId } = req.body;
+    const {
+        attendanceId
+    } = req.body;
 
     const attendance = await Attendance.findByPk(attendanceId);
     if (!attendance) {
@@ -1558,21 +1558,23 @@ const markAllPresent = asyncHandler(async (req, res) => {
 
     const transaction = await sequelize.transaction();
     try {
-        const [affectedRows] = await AttendanceStudent.update(
-            { attendanceStatus: true },
-            {
-                where: { attendanceId: attendanceId },
-                transaction
-            }
-        );
+        const [affectedRows] = await AttendanceStudent.update({
+            attendanceStatus: true
+        }, {
+            where: {
+                attendanceId: attendanceId
+            },
+            transaction
+        });
 
         await transaction.commit();
 
         res.status(httpStatus.OK).json(
             new ApiResponse(
                 httpStatus.OK,
-                `${affectedRows} students successfully marked as present`,
-                { updatedCount: affectedRows }
+                `${affectedRows} students successfully marked as present`, {
+                    updatedCount: affectedRows
+                }
             )
         );
     } catch (error) {
@@ -1584,7 +1586,9 @@ const markAllPresent = asyncHandler(async (req, res) => {
 });
 
 const markAllAbsent = asyncHandler(async (req, res) => {
-    const { attendanceId } = req.body;
+    const {
+        attendanceId
+    } = req.body;
 
     const attendance = await Attendance.findByPk(attendanceId);
     if (!attendance) {
@@ -1593,21 +1597,23 @@ const markAllAbsent = asyncHandler(async (req, res) => {
 
     const transaction = await sequelize.transaction();
     try {
-        const [affectedRows] = await AttendanceStudent.update(
-            { attendanceStatus: false },
-            {
-                where: { attendanceId: attendanceId },
-                transaction
-            }
-        );
+        const [affectedRows] = await AttendanceStudent.update({
+            attendanceStatus: false
+        }, {
+            where: {
+                attendanceId: attendanceId
+            },
+            transaction
+        });
 
         await transaction.commit();
 
         res.status(httpStatus.OK).json(
             new ApiResponse(
                 httpStatus.OK,
-                `${affectedRows} students successfully marked as absent`,
-                { updatedCount: affectedRows }
+                `${affectedRows} students successfully marked as absent`, {
+                    updatedCount: affectedRows
+                }
             )
         );
     } catch (error) {
@@ -1634,4 +1640,4 @@ export {
     groupPhotoScan,
     markAllPresent,
     markAllAbsent
-}
+};

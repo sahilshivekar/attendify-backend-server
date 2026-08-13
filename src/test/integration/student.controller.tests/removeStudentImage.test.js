@@ -1,7 +1,9 @@
 import request from 'supertest';
 import httpStatus from 'http-status';
 import setupTestDb from '../../util/setupTestDb.js';
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 
 let app;
 let uploadOnCloudinary, deleteFromCloudinary;
@@ -19,33 +21,33 @@ describe('Student API - DELETE /api/v1/students/image', () => {
     let university, branch, scheme, student, studentWithImage;
 
     beforeAll(async () => {
-        // Create proper Jest mock functions
+
         uploadOnCloudinary = jest.fn();
         deleteFromCloudinary = jest.fn();
-        
+
         await jest.unstable_mockModule('../../../utils/cloudinary.js', () => ({
             uploadOnCloudinary,
             deleteFromCloudinary
         }));
-        
+
         const mod = await import('../../../app.js');
         app = mod.default;
     });
 
     beforeEach(async () => {
-        // Reset mocks before each test
+
         uploadOnCloudinary.mockReset();
         deleteFromCloudinary.mockReset();
-        
-        // Set default mock implementations
+
         uploadOnCloudinary.mockResolvedValue({
             url: 'http://cloudinary.example.com/fake.jpg',
             secure_url: 'https://cloudinary.example.com/fake.jpg',
             public_id: 'fake_public_id'
         });
-        deleteFromCloudinary.mockResolvedValue({ result: 'ok' });
+        deleteFromCloudinary.mockResolvedValue({
+            result: 'ok'
+        });
 
-        // Create University
         university = await University.create({
             name: 'Test University',
             abbreviation: 'TU',
@@ -56,7 +58,6 @@ describe('Student API - DELETE /api/v1/students/image', () => {
             websiteUrl: 'https://testuniversity.com'
         });
 
-        // Create Branch
         branch = await Branch.create({
             name: 'Computer Science',
             abbreviation: 'CS',
@@ -65,7 +66,6 @@ describe('Student API - DELETE /api/v1/students/image', () => {
             isActive: true
         });
 
-        // Create Scheme
         scheme = await Scheme.create({
             name: 'Test Scheme 2025',
             schemeCode: 'TS2025',
@@ -77,14 +77,12 @@ describe('Student API - DELETE /api/v1/students/image', () => {
             isActive: true
         });
 
-        // Create Admin
         await Admin.create({
             email: 'admin@example.com',
             username: 'adminuser',
-            password: 'Admin@12345',
+            password: 'Admin@12345'
         });
 
-        // Create Student with image for removal tests
         studentWithImage = await Student.create({
             firstName: 'Test',
             lastName: 'Student',
@@ -102,7 +100,6 @@ describe('Student API - DELETE /api/v1/students/image', () => {
             isActive: true
         });
 
-        // Create Student without image for login
         student = await Student.create({
             firstName: 'Login',
             lastName: 'Student',
@@ -118,29 +115,30 @@ describe('Student API - DELETE /api/v1/students/image', () => {
             isActive: true
         });
 
-        // Login to get auth tokens
-        const adminLoginRes = await request(app)
-            .post('/api/v1/auth/admins/login')
-            .send({
-                emailOrUsername: 'admin@example.com',
-                password: 'Admin@12345',
-            });
+        const adminLoginRes = await request(app).
+        post('/api/v1/auth/admins/login').
+        send({
+            emailOrUsername: 'admin@example.com',
+            password: 'Admin@12345'
+        });
         adminToken = adminLoginRes.body.data.accessToken;
 
-        const studentLoginRes = await request(app)
-            .post('/api/v1/auth/students/login')
-            .send({
-                emailOrPRN: 'login@example.com',
-                password: 'Student@123',
-            });
+        const studentLoginRes = await request(app).
+        post('/api/v1/auth/students/login').
+        send({
+            emailOrPRN: 'login@example.com',
+            password: 'Student@123'
+        });
         studentToken = studentLoginRes.body.data.accessToken;
     });
 
     describe('Authentication Tests', () => {
         test('should return 401 when no token provided', async () => {
-            const response = await request(app)
-                .delete('/api/v1/students/image')
-                .query({ studentId: studentWithImage.id });
+            const response = await request(app).
+            delete('/api/v1/students/image').
+            query({
+                studentId: studentWithImage.id
+            });
 
             expect(response.status).toBe(httpStatus.UNAUTHORIZED);
             expect(response.body.success).toBe(false);
@@ -148,10 +146,12 @@ describe('Student API - DELETE /api/v1/students/image', () => {
         });
 
         test('should return 401 when invalid token provided', async () => {
-            const response = await request(app)
-                .delete('/api/v1/students/image')
-                .query({ studentId: studentWithImage.id })
-                .set('Authorization', 'Bearer invalid-token');
+            const response = await request(app).
+            delete('/api/v1/students/image').
+            query({
+                studentId: studentWithImage.id
+            }).
+            set('Authorization', 'Bearer invalid-token');
 
             expect(response.status).toBe(httpStatus.UNAUTHORIZED);
             expect(response.body.success).toBe(false);
@@ -160,9 +160,9 @@ describe('Student API - DELETE /api/v1/students/image', () => {
 
     describe('Validation Tests', () => {
         test('should return 400 when studentId is missing', async () => {
-            const response = await request(app)
-                .delete('/api/v1/students/image')
-                .set('Authorization', `Bearer ${adminToken}`);
+            const response = await request(app).
+            delete('/api/v1/students/image').
+            set('Authorization', `Bearer ${adminToken}`);
 
             expect(response.status).toBe(httpStatus.BAD_REQUEST);
             expect(response.body.success).toBe(false);
@@ -170,10 +170,12 @@ describe('Student API - DELETE /api/v1/students/image', () => {
         });
 
         test('should return 400 when studentId is invalid UUID', async () => {
-            const response = await request(app)
-                .delete('/api/v1/students/image')
-                .query({ studentId: 'invalid-uuid' })
-                .set('Authorization', `Bearer ${adminToken}`);
+            const response = await request(app).
+            delete('/api/v1/students/image').
+            query({
+                studentId: 'invalid-uuid'
+            }).
+            set('Authorization', `Bearer ${adminToken}`);
 
             expect(response.status).toBe(httpStatus.BAD_REQUEST);
             expect(response.body.success).toBe(false);
@@ -183,12 +185,14 @@ describe('Student API - DELETE /api/v1/students/image', () => {
 
     describe('Business Logic Tests', () => {
         test('should return 404 when student not found', async () => {
-            const nonExistentId = 'f47ac10b-58cc-4372-a567-0e02b2c3d479'; // Standard UUID format
-            
-            const response = await request(app)
-                .delete('/api/v1/students/image')
-                .query({ studentId: nonExistentId })
-                .set('Authorization', `Bearer ${adminToken}`);
+            const nonExistentId = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+
+            const response = await request(app).
+            delete('/api/v1/students/image').
+            query({
+                studentId: nonExistentId
+            }).
+            set('Authorization', `Bearer ${adminToken}`);
 
             expect(response.status).toBe(httpStatus.NOT_FOUND);
             expect(response.body.success).toBe(false);
@@ -196,10 +200,12 @@ describe('Student API - DELETE /api/v1/students/image', () => {
         });
 
         test('should return 400 when student has no image to remove', async () => {
-            const response = await request(app)
-                .delete('/api/v1/students/image')
-                .query({ studentId: student.id })
-                .set('Authorization', `Bearer ${adminToken}`);
+            const response = await request(app).
+            delete('/api/v1/students/image').
+            query({
+                studentId: student.id
+            }).
+            set('Authorization', `Bearer ${adminToken}`);
 
             expect(response.status).toBe(httpStatus.BAD_REQUEST);
             expect(response.body.success).toBe(false);
@@ -207,13 +213,15 @@ describe('Student API - DELETE /api/v1/students/image', () => {
         });
 
         test('should return 500 when cloudinary deletion fails', async () => {
-            // Mock cloudinary to return failure - use mockResolvedValueOnce instead
+
             deleteFromCloudinary.mockResolvedValueOnce(null);
 
-            const response = await request(app)
-                .delete('/api/v1/students/image')
-                .query({ studentId: studentWithImage.id })
-                .set('Authorization', `Bearer ${adminToken}`);
+            const response = await request(app).
+            delete('/api/v1/students/image').
+            query({
+                studentId: studentWithImage.id
+            }).
+            set('Authorization', `Bearer ${adminToken}`);
 
             expect(response.status).toBe(httpStatus.INTERNAL_SERVER_ERROR);
             expect(response.body.success).toBe(false);
@@ -223,18 +231,22 @@ describe('Student API - DELETE /api/v1/students/image', () => {
 
     describe('Success Tests', () => {
         beforeEach(() => {
-            // Reset mocks before each test
+
             jest.clearAllMocks();
         });
 
         test('should successfully remove student image as admin', async () => {
-            // Mock successful cloudinary deletion - already set in beforeEach, but can override if needed
-            deleteFromCloudinary.mockResolvedValueOnce({ result: 'ok' });
 
-            const response = await request(app)
-                .delete('/api/v1/students/image')
-                .query({ studentId: studentWithImage.id })
-                .set('Authorization', `Bearer ${adminToken}`);
+            deleteFromCloudinary.mockResolvedValueOnce({
+                result: 'ok'
+            });
+
+            const response = await request(app).
+            delete('/api/v1/students/image').
+            query({
+                studentId: studentWithImage.id
+            }).
+            set('Authorization', `Bearer ${adminToken}`);
 
             expect(response.status).toBe(httpStatus.OK);
             expect(response.body.success).toBe(true);
@@ -243,18 +255,16 @@ describe('Student API - DELETE /api/v1/students/image', () => {
             expect(response.body.data.studentImgUrl).toBe(null);
             expect(response.body.data.studentImgPublicId).toBe(null);
 
-            // Verify cloudinary was called with correct public ID
             expect(deleteFromCloudinary).toHaveBeenCalledWith('test_image_public_id');
             expect(deleteFromCloudinary).toHaveBeenCalledTimes(1);
 
-            // Verify database was updated
             const updatedStudent = await Student.findByPk(studentWithImage.id);
             expect(updatedStudent.studentImgUrl).toBe(null);
             expect(updatedStudent.studentImgPublicId).toBe(null);
         });
 
         test('should successfully remove student image as student (own image)', async () => {
-            // Create a student with image that can login
+
             const ownStudent = await Student.create({
                 firstName: 'Own',
                 lastName: 'Image',
@@ -272,22 +282,24 @@ describe('Student API - DELETE /api/v1/students/image', () => {
                 isActive: true
             });
 
-            // Login as this student
-            const ownStudentLoginRes = await request(app)
-                .post('/api/v1/auth/students/login')
-                .send({
-                    emailOrPRN: 'ownimage@example.com',
-                    password: 'Student@123',
-                });
+            const ownStudentLoginRes = await request(app).
+            post('/api/v1/auth/students/login').
+            send({
+                emailOrPRN: 'ownimage@example.com',
+                password: 'Student@123'
+            });
             const ownStudentToken = ownStudentLoginRes.body.data.accessToken;
 
-            // Mock successful cloudinary deletion
-            deleteFromCloudinary.mockResolvedValueOnce({ result: 'ok' });
+            deleteFromCloudinary.mockResolvedValueOnce({
+                result: 'ok'
+            });
 
-            const response = await request(app)
-                .delete('/api/v1/students/image')
-                .query({ studentId: ownStudent.id })
-                .set('Authorization', `Bearer ${ownStudentToken}`);
+            const response = await request(app).
+            delete('/api/v1/students/image').
+            query({
+                studentId: ownStudent.id
+            }).
+            set('Authorization', `Bearer ${ownStudentToken}`);
 
             expect(response.status).toBe(httpStatus.OK);
             expect(response.body.success).toBe(true);
@@ -295,7 +307,6 @@ describe('Student API - DELETE /api/v1/students/image', () => {
             expect(response.body.data.studentImgUrl).toBe(null);
             expect(response.body.data.studentImgPublicId).toBe(null);
 
-            // Verify cloudinary was called
             expect(deleteFromCloudinary).toHaveBeenCalledWith('own_image_public_id');
         });
     });

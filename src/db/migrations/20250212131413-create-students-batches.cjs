@@ -1,6 +1,5 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable('students_batches', {
@@ -15,30 +14,30 @@ module.exports = {
                 allowNull: false,
                 field: 'student_id',
                 references: {
-                    model: 'students', // Name of the students table
-                    key: 'student_id' // Primary key of the students table
+                    model: 'students',
+                    key: 'student_id'
                 },
                 onDelete: 'CASCADE'
             },
             batchId: {
-                type: Sequelize.UUID,  // Changed to INTEGER to match batches table
+                type: Sequelize.UUID,
                 allowNull: false,
                 field: 'batch_id',
                 references: {
-                    model: 'batches', // Name of the batches table
-                    key: 'batch_id' // Primary key of the batches table
+                    model: 'batches',
+                    key: 'batch_id'
                 },
                 onDelete: 'CASCADE'
             },
             startDate: {
-                type: Sequelize.DATEONLY, // Or DATETIME if you need time as well
+                type: Sequelize.DATEONLY,
                 allowNull: false,
                 field: 'start_date',
                 defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
             },
             endDate: {
-                type: Sequelize.DATEONLY, // Or DATETIME if you need time as well
-                allowNull: true, // Allow null as it might be ongoing
+                type: Sequelize.DATEONLY,
+                allowNull: true,
                 field: 'end_date'
             },
             createdAt: {

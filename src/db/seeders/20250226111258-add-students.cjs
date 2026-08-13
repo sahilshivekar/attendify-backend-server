@@ -1,22 +1,24 @@
 'use strict';
 
 const bcrypt = require('bcrypt');
-const { v4: uuidv4 } = require('uuid');
+const {
+    v4: uuidv4
+} = require('uuid');
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        // 1. Fetch foreign key data
+
         const branches = await queryInterface.sequelize.query(
-            `SELECT branch_id, branch_name FROM branches;`,
-            { type: queryInterface.sequelize.QueryTypes.SELECT }
+            `SELECT branch_id, branch_name FROM branches;`, {
+                type: queryInterface.sequelize.QueryTypes.SELECT
+            }
         );
         const schemes = await queryInterface.sequelize.query(
-            `SELECT scheme_id, scheme_name FROM schemes;`,
-            { type: queryInterface.sequelize.QueryTypes.SELECT }
+            `SELECT scheme_id, scheme_name FROM schemes;`, {
+                type: queryInterface.sequelize.QueryTypes.SELECT
+            }
         );
 
-        // 2. Create lookup maps for easy access to UUIDs
         const branchIdMap = branches.reduce((map, branch) => {
             map[branch.branch_name] = branch.branch_id;
             return map;
@@ -48,7 +50,6 @@ module.exports = {
                 "Fadi", "Franklin", "Fawaz", "Fabienne", "Fariha", "Flavio", "Ferris", "Floyd", "Farzana", "Florian",
 
                 "Firdos", "Fitzgerald", "Frederica", "Fabiola", "Farley", "Frances", "Fikret", "Faustino", "Fergus", "Fitz"
-
             ],
 
             SE: [
@@ -62,7 +63,6 @@ module.exports = {
                 "Sahilpreet", "Shanaya", "Saroj", "Sudhir", "Salman", "Sushmita", "Saanvi", "Sidhant", "Sargun", "Samar",
 
                 "Shantanu", "Shekhar", "Siddique", "Sasha", "Shakti", "Siddhi", "Suresha", "Shreya", "Sparsh", "Sakina"
-
             ],
 
             TE: [
@@ -76,7 +76,6 @@ module.exports = {
                 "Tanveer", "Torsha", "Tameem", "Tarushi", "Tasnim", "Taj", "Tavleen", "Tushant", "Tushali", "Tarisha",
 
                 "Toshan", "Tamanna", "Tushika", "Tennyson", "Tajuddin", "Tirath", "Taniska", "Tigran", "Tiyasha", "Tarlan"
-
             ],
 
             BE: [
@@ -90,14 +89,9 @@ module.exports = {
                 "Bhrigu", "Bashir", "Bronson", "Brahm", "Baxter", "Bhram", "Badr", "Brett", "Barun", "Baxendra",
 
                 "Blake", "Bryson", "Benazir", "Barindra", "Beatrix", "Benedetta", "Bertram", "Bram", "Bastian", "Bodhan"
-
             ]
 
         };
-
-
-
-        // starting surnames with co for comp branch students
 
         const compLastNames = [
 
@@ -112,12 +106,7 @@ module.exports = {
             "Cowan", "Coombs", "Colangelo", "Corrigan", "Couch", "Corcoran", "Connors", "Covarrubias", "Coxwell", "Colebrook",
 
             "Cowas", "Cobs", "Colan", "Cor", "Couchen", "Corcor", "Connor", "Covarrubs", "Coxtell", "Colebros"
-
         ];
-
-
-
-        // starting surnames with ci for civil branch students
 
         const civilLastNames = [
 
@@ -132,10 +121,8 @@ module.exports = {
             "Civitano", "Cizmar", "Cizik", "Cizinski", "Cizek", "Cizmarik", "Cizner", "Cizova", "Cizotti", "Cizuela",
 
             "Civis", "Cizmario", "Cizikan", "Cizins", "Cizekats", "Cizmaree", "Cizneran", "Cizovar", "Cizot", "Cizuej"
-
         ];
 
-        // 3. Updated helper function to use UUIDs
         const generateStudent = (index, year, admissionType, schemeId, branchId) => {
             const lastNames = branchId === branchIdMap['Computer Engineering'] ? compLastNames : civilLastNames;
             const firstName = firstNames[year][index % firstNames[year].length];
@@ -148,7 +135,7 @@ module.exports = {
                 first_name: firstName,
                 last_name: lastName,
                 middle_name: null,
-                dob: new Date(2000 + (index % 5), 0, 1),
+                dob: new Date(2000 + index % 5, 0, 1),
                 gender: index % 2 === 0 ? 'Male' : 'Female',
                 email: `${firstName.toLowerCase()}${lastName.toLowerCase()}@gmail.com`,
                 phone_number: `+91${9000000000 + studentCounter++}`,
@@ -159,13 +146,12 @@ module.exports = {
                 scheme_id: schemeId,
                 created_at: new Date(),
                 updated_at: new Date(),
-                admission_year: 2026 - (year === 'FE' ? 0 : (year === 'SE' ? 1 : (year === 'TE' ? 2 : 3))),
+                admission_year: 2026 - (year === 'FE' ? 0 : year === 'SE' ? 1 : year === 'TE' ? 2 : 3),
                 admission_type: admissionType,
                 branch_id: branchId
             };
         };
 
-        // 4. Generate student data using the new dynamic UUIDs
         ['SE', 'TE', 'BE'].forEach((year) => {
             for (let i = 0; i < 60; i++) {
                 students.push(generateStudent(i, year, 'FE', schemeIdMap["REV-2019 'C' Scheme"], branchIdMap['Computer Engineering']));

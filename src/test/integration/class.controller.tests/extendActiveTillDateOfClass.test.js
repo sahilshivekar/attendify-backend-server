@@ -1,10 +1,11 @@
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 import request from 'supertest';
 import httpStatus from 'http-status';
 import app from '../../../app.js';
 import setupTestDb from '../../util/setupTestDb.js';
 
-// Models
 import Admin from '../../../db/models/admin.model.js';
 import Teacher from '../../../db/models/teacher.model.js';
 import Student from '../../../db/models/student.model.js';
@@ -26,7 +27,6 @@ describe('Class API - extendActiveTillDateOfClass', () => {
     let teacherToken;
     let studentToken;
 
-    // Entities
     let university;
     let branch;
     let scheme;
@@ -39,26 +39,49 @@ describe('Class API - extendActiveTillDateOfClass', () => {
     let timetable;
     let teacherJohn;
 
-    let classLecture; // lecture to extend
-    let classPractical; // practical to extend
+    let classLecture;
+    let classPractical;
 
     beforeEach(async () => {
-        // Admin + login
-        await Admin.create({ email: 'admin@example.com', username: 'adminuser', password: 'Admin@12345' });
-        const adminLogin = await request(app).post('/api/v1/auth/admins/login').send({ emailOrUsername: 'admin@example.com', password: 'Admin@12345' });
+
+        await Admin.create({
+            email: 'admin@example.com',
+            username: 'adminuser',
+            password: 'Admin@12345'
+        });
+        const adminLogin = await request(app).post('/api/v1/auth/admins/login').send({
+            emailOrUsername: 'admin@example.com',
+            password: 'Admin@12345'
+        });
         adminToken = adminLogin.body.data.accessToken;
 
-        // Teacher + login
         teacherJohn = await Teacher.create({
-            firstName: 'John', lastName: 'Doe', email: 'teacher@example.com', phoneNumber: '+911234567890', password: 'Teacher@123', gender: 'Male', role: 'Teacher'
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'teacher@example.com',
+            phoneNumber: '+911234567890',
+            password: 'Teacher@123',
+            gender: 'Male',
+            role: 'Teacher'
         });
-        const teacherLogin = await request(app).post('/api/v1/auth/teachers/login').send({ email: 'teacher@example.com', password: 'Teacher@123' });
+        const teacherLogin = await request(app).post('/api/v1/auth/teachers/login').send({
+            email: 'teacher@example.com',
+            password: 'Teacher@123'
+        });
         teacherToken = teacherLogin.body.data.accessToken;
 
-        // Academic setup
-        university = await University.create({ name: 'Test University', abbreviation: 'TU' });
-        branch = await Branch.create({ name: 'Computer Science', abbreviation: 'CS' });
-        scheme = await Scheme.create({ name: 'CS 2026 Scheme', universityId: university.id });
+        university = await University.create({
+            name: 'Test University',
+            abbreviation: 'TU'
+        });
+        branch = await Branch.create({
+            name: 'Computer Science',
+            abbreviation: 'CS'
+        });
+        scheme = await Scheme.create({
+            name: 'CS 2026 Scheme',
+            universityId: university.id
+        });
         semester = await Semester.create({
             semesterNumber: 1,
             branchId: branch.id,
@@ -66,81 +89,129 @@ describe('Class API - extendActiveTillDateOfClass', () => {
             academicEndYear: 2026,
             startDate: '2025-08-01',
             endDate: '2025-12-31',
-            schemeId: scheme.id,
+            schemeId: scheme.id
         });
-        division = await Division.create({ divisionCode: 'A', semesterId: semester.id });
+        division = await Division.create({
+            divisionCode: 'A',
+            semesterId: semester.id
+        });
 
-        // Batch
-        batchA = await Batch.create({ batchCode: 'Batch A', divisionId: division.id });
+        batchA = await Batch.create({
+            batchCode: 'Batch A',
+            divisionId: division.id
+        });
 
-        // Course and Rooms
-        coursePF = await Course.create({ name: 'Programming Fundamentals', code: 'CS101', schemeId: scheme.id });
-        room101 = await Room.create({ roomNumber: '101', sittingCapacity: 60 });
-        room102 = await Room.create({ roomNumber: '102', sittingCapacity: 40 });
+        coursePF = await Course.create({
+            name: 'Programming Fundamentals',
+            code: 'CS101',
+            schemeId: scheme.id
+        });
+        room101 = await Room.create({
+            roomNumber: '101',
+            sittingCapacity: 60
+        });
+        room102 = await Room.create({
+            roomNumber: '102',
+            sittingCapacity: 40
+        });
 
-        // Timetable
-        timetable = await Timetable.create({ divisionId: division.id });
+        timetable = await Timetable.create({
+            divisionId: division.id
+        });
 
-        // Student + login
         const student = await Student.create({
-            firstName: 'Jane', lastName: 'Smith', email: 'student@example.com', phoneNumber: '+919876543210', prn: 'STU001', password: 'Student@123', schemeId: scheme.id, branchId: branch.id, admissionYear: 2025, admissionType: 'FE', gender: 'Female'
+            firstName: 'Jane',
+            lastName: 'Smith',
+            email: 'student@example.com',
+            phoneNumber: '+919876543210',
+            prn: 'STU001',
+            password: 'Student@123',
+            schemeId: scheme.id,
+            branchId: branch.id,
+            admissionYear: 2025,
+            admissionType: 'FE',
+            gender: 'Female'
         });
-        const studentLogin = await request(app).post('/api/v1/auth/students/login').send({ emailOrPRN: 'student@example.com', password: 'Student@123' });
+        const studentLogin = await request(app).post('/api/v1/auth/students/login').send({
+            emailOrPRN: 'student@example.com',
+            password: 'Student@123'
+        });
         studentToken = studentLogin.body.data.accessToken;
 
-        // Base classes to extend
         classLecture = await Class.create({
             teacherId: teacherJohn.id,
-            startTime: '09:00:00', endTime: '10:00:00', dayOfWeek: 'Monday',
-            roomId: room101.id, batchId: null,
-            activeFrom: '2025-08-01', activeTill: '2025-10-31',
-            classType: 'Lecture', courseId: coursePF.id, timetableId: timetable.id, isExtraClass: false
+            startTime: '09:00:00',
+            endTime: '10:00:00',
+            dayOfWeek: 'Monday',
+            roomId: room101.id,
+            batchId: null,
+            activeFrom: '2025-08-01',
+            activeTill: '2025-10-31',
+            classType: 'Lecture',
+            courseId: coursePF.id,
+            timetableId: timetable.id,
+            isExtraClass: false
         });
 
         classPractical = await Class.create({
             teacherId: teacherJohn.id,
-            startTime: '10:00:00', endTime: '11:00:00', dayOfWeek: 'Monday',
-            roomId: room102.id, batchId: batchA.id,
-            activeFrom: '2025-08-15', activeTill: '2025-10-15',
-            classType: 'Practical', courseId: coursePF.id, timetableId: timetable.id, isExtraClass: false
+            startTime: '10:00:00',
+            endTime: '11:00:00',
+            dayOfWeek: 'Monday',
+            roomId: room102.id,
+            batchId: batchA.id,
+            activeFrom: '2025-08-15',
+            activeTill: '2025-10-15',
+            classType: 'Practical',
+            courseId: coursePF.id,
+            timetableId: timetable.id,
+            isExtraClass: false
         });
     });
 
     describe('Authentication and Authorization', () => {
         test('should return 401 if no token provided', async () => {
-            const res = await request(app)
-                .put(`/api/v1/classes/${classLecture.id}`)
-                .send({ newActiveTill: '2025-12-15' });
+            const res = await request(app).
+            put(`/api/v1/classes/${classLecture.id}`).
+            send({
+                newActiveTill: '2025-12-15'
+            });
             expect(res.status).toBe(httpStatus.UNAUTHORIZED);
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('No token provided');
         });
 
         test('should return 401 if invalid token provided', async () => {
-            const res = await request(app)
-                .put(`/api/v1/classes/${classLecture.id}`)
-                .set('Authorization', 'Bearer invalidtoken')
-                .send({ newActiveTill: '2025-12-15' });
+            const res = await request(app).
+            put(`/api/v1/classes/${classLecture.id}`).
+            set('Authorization', 'Bearer invalidtoken').
+            send({
+                newActiveTill: '2025-12-15'
+            });
             expect(res.status).toBe(httpStatus.UNAUTHORIZED);
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Invalid token');
         });
 
         test('should return 403 if teacher tries to extend', async () => {
-            const res = await request(app)
-                .put(`/api/v1/classes/${classLecture.id}`)
-                .set('Authorization', `Bearer ${teacherToken}`)
-                .send({ newActiveTill: '2025-12-15' });
+            const res = await request(app).
+            put(`/api/v1/classes/${classLecture.id}`).
+            set('Authorization', `Bearer ${teacherToken}`).
+            send({
+                newActiveTill: '2025-12-15'
+            });
             expect(res.status).toBe(httpStatus.FORBIDDEN);
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Insufficient permissions');
         });
 
         test('should return 403 if student tries to extend', async () => {
-            const res = await request(app)
-                .put(`/api/v1/classes/${classLecture.id}`)
-                .set('Authorization', `Bearer ${studentToken}`)
-                .send({ newActiveTill: '2025-12-15' });
+            const res = await request(app).
+            put(`/api/v1/classes/${classLecture.id}`).
+            set('Authorization', `Bearer ${studentToken}`).
+            send({
+                newActiveTill: '2025-12-15'
+            });
             expect(res.status).toBe(httpStatus.FORBIDDEN);
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Insufficient permissions');
@@ -149,20 +220,22 @@ describe('Class API - extendActiveTillDateOfClass', () => {
 
     describe('Validation', () => {
         test('should return 400 if id is not a valid UUID', async () => {
-            const res = await request(app)
-                .put('/api/v1/classes/invalid-uuid')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({ newActiveTill: '2025-12-15' });
+            const res = await request(app).
+            put('/api/v1/classes/invalid-uuid').
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                newActiveTill: '2025-12-15'
+            });
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Class ID must be a valid UUID');
         });
 
         test('should return 400 if newActiveTill is missing', async () => {
-            const res = await request(app)
-                .put(`/api/v1/classes/${classLecture.id}`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({});
+            const res = await request(app).
+            put(`/api/v1/classes/${classLecture.id}`).
+            set('Authorization', `Bearer ${adminToken}`).
+            send({});
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('newActiveTill is required');
@@ -173,10 +246,12 @@ describe('Class API - extendActiveTillDateOfClass', () => {
     describe('Success', () => {
         test('should extend activeTill successfully for lecture', async () => {
             const newDate = '2025-12-15';
-            const res = await request(app)
-                .put(`/api/v1/classes/${classLecture.id}`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({ newActiveTill: newDate });
+            const res = await request(app).
+            put(`/api/v1/classes/${classLecture.id}`).
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                newActiveTill: newDate
+            });
             expect(res.status).toBe(httpStatus.OK);
             expect(res.body.success).toBe(true);
             expect(res.body.message).toContain('Class updated successfully');
@@ -186,19 +261,28 @@ describe('Class API - extendActiveTillDateOfClass', () => {
 
     describe('Conflict checks', () => {
         test('should return 409 for room conflict', async () => {
-            // Another class in same room/day with overlapping time and dates
+
             await Class.create({
                 teacherId: teacherJohn.id,
-                startTime: '09:30:00', endTime: '10:30:00', dayOfWeek: 'Monday',
-                roomId: room101.id, batchId: null,
-                activeFrom: '2025-08-01', activeTill: '2025-12-31',
-                classType: 'Lecture', courseId: coursePF.id, timetableId: timetable.id, isExtraClass: false
+                startTime: '09:30:00',
+                endTime: '10:30:00',
+                dayOfWeek: 'Monday',
+                roomId: room101.id,
+                batchId: null,
+                activeFrom: '2025-08-01',
+                activeTill: '2025-12-31',
+                classType: 'Lecture',
+                courseId: coursePF.id,
+                timetableId: timetable.id,
+                isExtraClass: false
             });
 
-            const res = await request(app)
-                .put(`/api/v1/classes/${classLecture.id}`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({ newActiveTill: '2025-12-15' });
+            const res = await request(app).
+            put(`/api/v1/classes/${classLecture.id}`).
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                newActiveTill: '2025-12-15'
+            });
 
             expect(res.status).toBe(httpStatus.CONFLICT);
             expect(res.body.success).toBe(false);
@@ -206,19 +290,28 @@ describe('Class API - extendActiveTillDateOfClass', () => {
         });
 
         test("should return 409 for division conflict when lecture's slot collides (different room)", async () => {
-            // Different room to bypass room conflict, same timetable/day with overlapping times/dates
+
             await Class.create({
                 teacherId: teacherJohn.id,
-                startTime: '09:30:00', endTime: '10:30:00', dayOfWeek: 'Monday',
-                roomId: room102.id, batchId: null,
-                activeFrom: '2025-08-01', activeTill: '2025-12-31',
-                classType: 'Lecture', courseId: coursePF.id, timetableId: timetable.id, isExtraClass: false
+                startTime: '09:30:00',
+                endTime: '10:30:00',
+                dayOfWeek: 'Monday',
+                roomId: room102.id,
+                batchId: null,
+                activeFrom: '2025-08-01',
+                activeTill: '2025-12-31',
+                classType: 'Lecture',
+                courseId: coursePF.id,
+                timetableId: timetable.id,
+                isExtraClass: false
             });
 
-            const res = await request(app)
-                .put(`/api/v1/classes/${classLecture.id}`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({ newActiveTill: '2025-12-15' });
+            const res = await request(app).
+            put(`/api/v1/classes/${classLecture.id}`).
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                newActiveTill: '2025-12-15'
+            });
 
             expect(res.status).toBe(httpStatus.CONFLICT);
             expect(res.body.success).toBe(false);
@@ -226,19 +319,28 @@ describe('Class API - extendActiveTillDateOfClass', () => {
         });
 
         test('should return 409 for batch conflict when practical collides (different room)', async () => {
-            // Colliding class in same timetable/day, batch null (lecture) to collide with practical
+
             await Class.create({
                 teacherId: teacherJohn.id,
-                startTime: '10:30:00', endTime: '11:30:00', dayOfWeek: 'Monday',
-                roomId: room101.id, batchId: null, // different room from classPractical to avoid room conflict
-                activeFrom: '2025-08-20', activeTill: '2025-12-31',
-                classType: 'Lecture', courseId: coursePF.id, timetableId: timetable.id, isExtraClass: false
+                startTime: '10:30:00',
+                endTime: '11:30:00',
+                dayOfWeek: 'Monday',
+                roomId: room101.id,
+                batchId: null,
+                activeFrom: '2025-08-20',
+                activeTill: '2025-12-31',
+                classType: 'Lecture',
+                courseId: coursePF.id,
+                timetableId: timetable.id,
+                isExtraClass: false
             });
 
-            const res = await request(app)
-                .put(`/api/v1/classes/${classPractical.id}`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({ newActiveTill: '2025-12-15' });
+            const res = await request(app).
+            put(`/api/v1/classes/${classPractical.id}`).
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                newActiveTill: '2025-12-15'
+            });
 
             expect(res.status).toBe(httpStatus.CONFLICT);
             expect(res.body.success).toBe(false);
@@ -249,12 +351,13 @@ describe('Class API - extendActiveTillDateOfClass', () => {
     describe('Not Found', () => {
         test('should return 404 if class does not exist', async () => {
             const fakeId = '550e8400-e29b-41d4-a716-446655440000';
-            const res = await request(app)
-                .put(`/api/v1/classes/${fakeId}`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({ newActiveTill: '2025-12-15' });
+            const res = await request(app).
+            put(`/api/v1/classes/${fakeId}`).
+            set('Authorization', `Bearer ${adminToken}`).
+            send({
+                newActiveTill: '2025-12-15'
+            });
 
-            // Depending on controller order, this should be 404
             expect(res.status).toBe(httpStatus.NOT_FOUND);
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Class not found');

@@ -1,28 +1,26 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable(
-            'branches',
-            {
+            'branches', {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
                     primaryKey: true,
-                    field: 'branch_id',
+                    field: 'branch_id'
                 },
                 name: {
                     type: Sequelize.STRING(255),
                     allowNull: false,
-                    unique: true, // To ensure no duplicate branch names
-                    field: 'branch_name',
+                    unique: true,
+                    field: 'branch_name'
                 },
                 abbreviation: {
                     type: Sequelize.STRING(255),
                     allowNull: false,
                     unique: true,
-                    field: 'branch_abbreviation',
+                    field: 'branch_abbreviation'
                 },
                 createdAt: {
                     type: Sequelize.DATE,
@@ -35,16 +33,15 @@ module.exports = {
                     allowNull: false,
                     field: 'updated_at',
                     defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-                },
-            },
-            {
+                }
+            }, {
                 timestamps: true,
-                freezeTableName: true,
+                freezeTableName: true
             }
         );
     },
 
     async down(queryInterface, Sequelize) {
         await queryInterface.dropTable('branches');
-    },
+    }
 };

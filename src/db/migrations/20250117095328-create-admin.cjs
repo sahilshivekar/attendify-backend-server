@@ -1,12 +1,9 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
-
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable(
-            'admins',
-            {
+            'admins', {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
@@ -18,10 +15,10 @@ module.exports = {
                     allowNull: false,
                     validate: {
                         notEmpty: {
-                            msg: 'Email cannot be empty', // Validation message for notEmpty
+                            msg: 'Email cannot be empty'
                         },
                         isEmail: {
-                            msg: 'Must be a valid email address', // Validation message for isEmail
+                            msg: 'Must be a valid email address'
                         }
                     },
                     field: 'admin_email'
@@ -31,11 +28,11 @@ module.exports = {
                     allowNull: false,
                     validate: {
                         notEmpty: {
-                            msg: 'Username cannot be empty', // Validation message for notEmpty
+                            msg: 'Username cannot be empty'
                         },
                         notContains: {
                             args: ' ',
-                            msg: 'Username cannot contain spaces', // Validation message for notContains
+                            msg: 'Username cannot contain spaces'
                         },
                         isLowercase(value) {
                             if (value !== value.toLowerCase()) {
@@ -50,7 +47,7 @@ module.exports = {
                     allowNull: false,
                     validate: {
                         isStrongPassword(value) {
-                            // Custom validation logic for password
+
                             if (!/[A-Z]/.test(value)) {
                                 throw new Error('Password must contain at least one uppercase letter');
                             }
@@ -66,7 +63,7 @@ module.exports = {
                             if (value.length < 8) {
                                 throw new Error('Password must be at least 8 characters long');
                             }
-                        },
+                        }
                     },
                     field: 'admin_password'
                 },
@@ -92,15 +89,13 @@ module.exports = {
                     allowNull: false,
                     field: 'updated_at',
                     defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-                },
-            },
-            {
-                timestamps: true, // Enables automatic 'createdAt' and 'updatedAt'
-                freezeTableName: true,
+                }
+            }, {
+                timestamps: true,
+                freezeTableName: true
             }
         );
 
-        // Adding unique constraint after table creation
         await queryInterface.addConstraint('admins', {
             fields: ['admin_email'],
             type: 'unique'
@@ -115,5 +110,5 @@ module.exports = {
 
     async down(queryInterface, Sequelize) {
         await queryInterface.dropTable('admins');
-    },
+    }
 };

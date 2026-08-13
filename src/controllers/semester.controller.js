@@ -1,8 +1,17 @@
 import Semester from '../db/models/semester.model.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { ApiResponse } from '../utils/ApiResponse.js'
-import { ApiError } from '../utils/ApiError.js'
-import { Op, where } from 'sequelize'
+import {
+    asyncHandler
+} from '../utils/asyncHandler.js';
+import {
+    ApiResponse
+} from '../utils/ApiResponse.js';
+import {
+    ApiError
+} from '../utils/ApiError.js';
+import {
+    Op,
+    where
+} from 'sequelize';
 import Branch from '../db/models/branch.model.js';
 import Scheme from '../db/models/scheme.model.js';
 import Course from '../db/models/course.model.js';
@@ -14,7 +23,6 @@ import Batch from '../db/models/batch.model.js';
 import httpStatus from 'http-status';
 import sequelize from '../config/db.connection.js';
 
-//* get all the semesters
 const getSemesters = asyncHandler(async (req, res) => {
 
     const {
@@ -27,38 +35,38 @@ const getSemesters = asyncHandler(async (req, res) => {
         limit = 10,
         getAll = false,
         isEven = true,
-        isOdd = true,
+        isOdd = true
     } = req.query;
 
     const whereClause = {};
     if (semesterNumber) {
         whereClause.semesterNumber = {
             [Op.eq]: parseInt(semesterNumber)
-        }
+        };
     }
 
     if (academicStartYear) {
         whereClause.academicStartYear = {
             [Op.gte]: parseInt(academicStartYear)
-        }
+        };
     }
 
     if (academicEndYear) {
         whereClause.academicEndYear = {
             [Op.lte]: parseInt(academicEndYear)
-        }
+        };
     }
 
     if (branchId) {
         whereClause.branchId = {
             [Op.eq]: branchId
-        }
+        };
     }
 
     if (schemeId) {
         whereClause.schemeId = {
             [Op.eq]: schemeId
-        }
+        };
     }
 
     if (isEven && !isOdd) {
@@ -75,50 +83,50 @@ const getSemesters = asyncHandler(async (req, res) => {
 
     const semesters = await Semester.findAndCountAll({
         where: whereClause,
-        include: [
-            {
+        include: [{
                 model: Branch,
                 required: true,
-                duplicating: false,
+                duplicating: false
             },
             {
                 model: Scheme,
                 required: true,
-                duplicating: false,
+                duplicating: false
             },
             {
                 model: Division,
                 duplicating: false,
                 separate: true,
-                include: [
-                    {
-                        model: Batch,
-                        duplicating: false,
-                        separate: true,
-                    }
-                ]
+                include: [{
+                    model: Batch,
+                    duplicating: false,
+                    separate: true
+                }]
+
             }
         ],
-        ...(limit && getAll === false ? { offset: offset, } : {}),
-        ...(limit && getAll === false ? { limit } : {})
+
+        ...(limit && getAll === false ? {
+            offset: offset
+        } : {}),
+        ...(limit && getAll === false ? {
+            limit
+        } : {})
     });
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Semesters retrieved successfully.",
-                {
-                    semesters: semesters.rows,
-                    totalCount: semesters.count
-                }
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Semesters retrieved successfully.", {
+                semesters: semesters.rows,
+                totalCount: semesters.count
+            }
+        )
+    );
 });
 
-
-//* add semester
 const addSemester = asyncHandler(async (req, res) => {
 
     const {
@@ -131,9 +139,6 @@ const addSemester = asyncHandler(async (req, res) => {
         schemeId
     } = req.body;
 
-    // Remove input validation already handled by @semester.validation.js
-
-    // Only keep business logic validation that depends on DB or cross-field logic
     if (academicEndYear < academicStartYear) {
         throw new ApiError(httpStatus.BAD_REQUEST, "Academic end year cannot be less than academic start year");
     }
@@ -160,25 +165,25 @@ const addSemester = asyncHandler(async (req, res) => {
         academicEndYear: academicEndYear || null,
         schemeId: schemeId || null,
         startDate: startDate || null,
-        endDate: endDate || null,
+        endDate: endDate || null
     });
 
-    res
-        .status(httpStatus.CREATED)
-        .json(
-            new ApiResponse(
-                httpStatus.CREATED,
-                'Semester added successfully',
-                semester
-            )
+    res.
+    status(httpStatus.CREATED).
+    json(
+        new ApiResponse(
+            httpStatus.CREATED,
+            'Semester added successfully',
+            semester
         )
+    );
 
 });
 
 const getCoursesOfSemester = asyncHandler(async (req, res) => {
-    const { semesterId } = req.query;
-
-    // Remove input validation already handled by @semester.validation.js
+    const {
+        semesterId
+    } = req.query;
 
     const semester = await Semester.findByPk(semesterId);
     if (!semester) {
@@ -194,62 +199,68 @@ const getCoursesOfSemester = asyncHandler(async (req, res) => {
             model: Course,
             required: true,
             where: {
-                [Op.and]: [
-                    {
-                        schemeId: semester.schemeId,
-                        optionalCourse: null
-                    }
-                ]
+                [Op.and]: [{
+                    schemeId: semester.schemeId,
+                    optionalCourse: null
+                }]
+
+            },
+            include: {
+                model: Scheme,
+                required: true
             }
+
         }
     });
 
     const divisions = await Division.findAll({
-        where: { semesterId: semesterId },
+        where: {
+            semesterId: semesterId
+        },
         attributes: ['id']
     });
 
-    const divisionIds = divisions.map(div => div.id);
+    const divisionIds = divisions.map((div) => div.id);
 
     const optionalCourses = divisionIds.length > 0 ? await DivisionCourse.findAll({
         where: {
-            divisionId: { [Op.in]: divisionIds }
+            divisionId: {
+                [Op.in]: divisionIds
+            }
         },
-        include: [
-            {
+        include: [{
                 model: Course,
-                required: true,
+                required: true
             },
             {
                 model: Division,
-                required: true,
+                required: true
             }
-        ],
+        ]
+
     }) : [];
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Courses retrieved successfully.",
-                {
-                    compulsoryCourses: compulsaryCourses.map(bcs => bcs.Course),
-                    optionalCourses: optionalCourses
-                }
-            )
-        );
-})
-
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Courses retrieved successfully.", {
+                compulsoryCourses: compulsaryCourses.map((bcs) => bcs.Course),
+                optionalCourses: optionalCourses
+            }
+        )
+    );
+});
 
 const updateSemester = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const {
+        id
+    } = req.params;
     const {
         startDate,
         endDate
     } = req.body;
-
-    // Remove input validation already handled by @semester.validation.js
 
     const semester = await Semester.findByPk(id);
 
@@ -279,23 +290,22 @@ const updateSemester = asyncHandler(async (req, res) => {
 
     await semester.save();
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Semester updated successfully",
-                semester
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Semester updated successfully",
+            semester
+        )
+    );
 });
 
-//* remove semester
 const removeSemester = asyncHandler(async (req, res) => {
 
-    const { id } = req.params;
-
-    // Remove input validation already handled by @semester.validation.js
+    const {
+        id
+    } = req.params;
 
     const semester = await Semester.findByPk(id);
 
@@ -305,81 +315,84 @@ const removeSemester = asyncHandler(async (req, res) => {
 
     await semester.destroy();
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Semester deleted successfully",
-                null
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Semester deleted successfully",
+            null
+        )
+    );
 });
 
-
 const getSemesterById = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-
-    // Remove input validation already handled by @semester.validation.js
+    const {
+        id
+    } = req.params;
 
     const semester = await Semester.findOne({
-        where: { id: id },
-        include: [
-            {
+        where: {
+            id: id
+        },
+        include: [{
                 model: Branch,
                 required: true,
-                duplicating: false,
+                duplicating: false
             },
             {
                 model: Scheme,
                 required: true,
-                duplicating: false,
+                duplicating: false
             },
             {
                 model: Division,
                 duplicating: false,
-                include: [
-                    {
-                        model: Batch,
-                        duplicating: false,
-                    }
-                ]
+                include: [{
+                    model: Batch,
+                    duplicating: false
+                }]
+
             }
         ]
+
     });
 
     if (!semester) {
         throw new ApiError(httpStatus.NOT_FOUND, "Semester not found");
     }
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Semester retrieved successfully",
-                semester
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Semester retrieved successfully",
+            semester
+        )
+    );
 });
 
-//* bulk create semesters
 const bulkCreateSemesters = asyncHandler(async (req, res) => {
-    const { semesters } = req.body;
+    const {
+        semesters
+    } = req.body;
 
     const transaction = await sequelize.transaction();
 
     try {
-        // Validate all branches exist
-        const branchIds = [...new Set(semesters.map(semester => semester.branchId))];
+
+        const branchIds = [...new Set(semesters.map((semester) => semester.branchId))];
         const existingBranches = await Branch.findAll({
-            where: { id: branchIds },
+            where: {
+                id: branchIds
+            },
             attributes: ['id'],
             transaction
         });
 
-        const existingBranchIds = existingBranches.map(branch => branch.id);
-        const invalidBranchIds = branchIds.filter(id => !existingBranchIds.includes(id));
+        const existingBranchIds = existingBranches.map((branch) => branch.id);
+        const invalidBranchIds = branchIds.filter((id) => !existingBranchIds.includes(id));
 
         if (invalidBranchIds.length > 0) {
             await transaction.rollback();
@@ -389,16 +402,17 @@ const bulkCreateSemesters = asyncHandler(async (req, res) => {
             );
         }
 
-        // Validate all schemes exist
-        const schemeIds = [...new Set(semesters.map(semester => semester.schemeId))];
+        const schemeIds = [...new Set(semesters.map((semester) => semester.schemeId))];
         const existingSchemes = await Scheme.findAll({
-            where: { id: schemeIds },
+            where: {
+                id: schemeIds
+            },
             attributes: ['id'],
             transaction
         });
 
-        const existingSchemeIds = existingSchemes.map(scheme => scheme.id);
-        const invalidSchemeIds = schemeIds.filter(id => !existingSchemeIds.includes(id));
+        const existingSchemeIds = existingSchemes.map((scheme) => scheme.id);
+        const invalidSchemeIds = schemeIds.filter((id) => !existingSchemeIds.includes(id));
 
         if (invalidSchemeIds.length > 0) {
             await transaction.rollback();
@@ -408,7 +422,6 @@ const bulkCreateSemesters = asyncHandler(async (req, res) => {
             );
         }
 
-        // Validate business logic for each semester
         for (const semester of semesters) {
             if (semester.academicEndYear < semester.academicStartYear) {
                 await transaction.rollback();
@@ -446,7 +459,6 @@ const bulkCreateSemesters = asyncHandler(async (req, res) => {
             }
         }
 
-        // Check for unique constraint violations
         const duplicateCheck = await Promise.all(
             semesters.map(async (semester) => {
                 const existing = await Semester.findOne({
@@ -472,7 +484,6 @@ const bulkCreateSemesters = asyncHandler(async (req, res) => {
             );
         }
 
-        // Create semesters
         const createdSemesters = await Semester.bulkCreate(semesters, {
             transaction,
             validate: true,
@@ -481,15 +492,16 @@ const bulkCreateSemesters = asyncHandler(async (req, res) => {
 
         await transaction.commit();
 
-        res
-            .status(httpStatus.CREATED)
-            .json(
-                new ApiResponse(
-                    httpStatus.CREATED,
-                    `${createdSemesters.length} semesters created successfully`,
-                    { semesters: createdSemesters }
-                )
-            );
+        res.
+        status(httpStatus.CREATED).
+        json(
+            new ApiResponse(
+                httpStatus.CREATED,
+                `${createdSemesters.length} semesters created successfully`, {
+                    semesters: createdSemesters
+                }
+            )
+        );
 
     } catch (error) {
         await transaction.rollback();
@@ -497,46 +509,49 @@ const bulkCreateSemesters = asyncHandler(async (req, res) => {
     }
 });
 
-//* bulk delete semesters
 const bulkDeleteSemesters = asyncHandler(async (req, res) => {
-    const { semesterIds } = req.body;
+    const {
+        semesterIds
+    } = req.body;
 
-    // Deduplicate incoming IDs to avoid false negatives and double-deletions
     const uniqueSemesterIds = [...new Set(semesterIds)];
 
     const transaction = await sequelize.transaction();
 
     try {
-        // Verify all semesters exist (based on unique IDs)
+
         const existingSemesters = await Semester.findAll({
-            where: { id: uniqueSemesterIds },
+            where: {
+                id: uniqueSemesterIds
+            },
             attributes: ['id'],
             transaction
         });
 
         if (existingSemesters.length !== uniqueSemesterIds.length) {
-            const existingIds = existingSemesters.map(semester => semester.id);
-            const nonExistentIds = uniqueSemesterIds.filter(id => !existingIds.includes(id));
-            // Do not rollback here; let the catch do it to avoid double-rollback errors
+            const existingIds = existingSemesters.map((semester) => semester.id);
+            const nonExistentIds = uniqueSemesterIds.filter((id) => !existingIds.includes(id));
+
             throw new ApiError(
                 httpStatus.NOT_FOUND,
                 `Some semesters not found: ${nonExistentIds.join(', ')}`
             );
         }
 
-        // Check if any semesters have associated divisions or student enrollments
         const Division = (await import('../db/models/division.model.js')).default;
         const StudentSemester = (await import('../db/models/studentSemester.model.js')).default;
 
         const associatedDivisions = await Division.findAll({
-            where: { semesterId: uniqueSemesterIds },
+            where: {
+                semesterId: uniqueSemesterIds
+            },
             attributes: ['semesterId'],
             transaction
         });
 
         if (associatedDivisions.length > 0) {
-            const associatedSemesterIds = [...new Set(associatedDivisions.map(div => div.semesterId))];
-            // Do not rollback here; let the catch do it to avoid double-rollback errors
+            const associatedSemesterIds = [...new Set(associatedDivisions.map((div) => div.semesterId))];
+
             throw new ApiError(
                 httpStatus.CONFLICT,
                 `Cannot delete semester: dependent records exist (divisions: ${associatedSemesterIds.join(', ')})`
@@ -544,43 +559,47 @@ const bulkDeleteSemesters = asyncHandler(async (req, res) => {
         }
 
         const associatedStudents = await StudentSemester.findAll({
-            where: { semesterId: uniqueSemesterIds },
+            where: {
+                semesterId: uniqueSemesterIds
+            },
             attributes: ['semesterId'],
             transaction
         });
 
         if (associatedStudents.length > 0) {
-            const associatedSemesterIds = [...new Set(associatedStudents.map(ss => ss.semesterId))];
-            // Do not rollback here; let the catch do it to avoid double-rollback errors
+            const associatedSemesterIds = [...new Set(associatedStudents.map((ss) => ss.semesterId))];
+
             throw new ApiError(
                 httpStatus.CONFLICT,
                 `Cannot delete semester: dependent records exist (student enrollments: ${associatedSemesterIds.join(', ')})`
             );
         }
 
-        // Delete semesters
         const deletedCount = await Semester.destroy({
-            where: { id: uniqueSemesterIds },
+            where: {
+                id: uniqueSemesterIds
+            },
             transaction
         });
 
         await transaction.commit();
 
-        res
-            .status(httpStatus.OK)
-            .json(
-                new ApiResponse(
-                    httpStatus.OK,
-                    `${deletedCount} semesters deleted successfully`,
-                    { deletedCount }
-                )
-            );
+        res.
+        status(httpStatus.OK).
+        json(
+            new ApiResponse(
+                httpStatus.OK,
+                `${deletedCount} semesters deleted successfully`, {
+                    deletedCount
+                }
+            )
+        );
 
     } catch (error) {
         try {
             await transaction.rollback();
         } catch (rollbackErr) {
-            // ignore rollback error
+
         }
         throw error;
     }

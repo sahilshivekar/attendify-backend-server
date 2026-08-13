@@ -1,4 +1,6 @@
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.js';
 import setupTestDb from '../../util/setupTestDb.js';
@@ -15,16 +17,25 @@ import Course from '../../../db/models/course.model.js';
 import Room from '../../../db/models/room.model.js';
 import Timetable from '../../../db/models/timetable.model.js';
 import Class from '../../../db/models/class.model.js';
-import { Attendance, AttendanceStudent } from '../../../db/models/attendance.model.js';
+import {
+    Attendance,
+    AttendanceStudent
+} from '../../../db/models/attendance.model.js';
 import StudentSemester from '../../../db/models/studentSemester.model.js';
 import StudentDivision from '../../../db/models/studentDivision.model.js';
 import StudentBatch from '../../../db/models/studentBatch.model.js';
 import TeacherTeachesCourse from '../../../db/models/teacherTeachesCourse.model.js';
 import BranchCourseSemester from '../../../db/models/branchCourseSemester.model.js';
-import { faker } from '@faker-js/faker';
+import {
+    faker
+} from '@faker-js/faker';
 import httpStatus from 'http-status';
-import { ROLES } from '../../../config/roles.js';
-import { logger } from '../../../config/logger.js';
+import {
+    ROLES
+} from '../../../config/roles.js';
+import {
+    logger
+} from '../../../config/logger.js';
 
 setupTestDb();
 
@@ -48,32 +59,31 @@ describe('Class API - addClass', () => {
 
     beforeEach(async () => {
         try {
-            // Create admin and login
+
             await Admin.create({
                 email: 'admin@example.com',
                 username: 'adminuser',
-                password: 'Admin@12345',
+                password: 'Admin@12345'
             });
-            const adminLoginRes = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send({
-                    emailOrUsername: 'admin@example.com',
-                    password: 'Admin@12345',
-                });
+            const adminLoginRes = await request(app).
+            post('/api/v1/auth/admins/login').
+            send({
+                emailOrUsername: 'admin@example.com',
+                password: 'Admin@12345'
+            });
             adminToken = adminLoginRes.body.data.accessToken;
 
-            // Create dependencies
             university = await University.create({
                 name: 'Test University',
-                abbreviation: 'TU',
+                abbreviation: 'TU'
             });
             branch = await Branch.create({
                 name: 'Computer Science',
-                abbreviation: 'CS',
+                abbreviation: 'CS'
             });
             scheme = await Scheme.create({
                 name: 'CS 2026 Scheme',
-                universityId: university.id,
+                universityId: university.id
             });
             semester = await Semester.create({
                 semesterNumber: 1,
@@ -82,18 +92,17 @@ describe('Class API - addClass', () => {
                 academicEndYear: 2026,
                 startDate: '2025-08-01',
                 endDate: '2025-12-31',
-                schemeId: scheme.id,
+                schemeId: scheme.id
             });
             division = await Division.create({
                 divisionCode: 'A',
-                semesterId: semester.id,
+                semesterId: semester.id
             });
             batch = await Batch.create({
                 batchCode: 'Batch 1',
-                divisionId: division.id,
+                divisionId: division.id
             });
 
-            // Create teacher
             teacher = await Teacher.create({
                 firstName: 'John',
                 lastName: 'Doe',
@@ -103,15 +112,14 @@ describe('Class API - addClass', () => {
                 gender: 'Male',
                 role: 'Teacher'
             });
-            const teacherLoginRes = await request(app)
-                .post('/api/v1/auth/teachers/login')
-                .send({
-                    email: 'teacher@example.com',
-                    password: 'Teacher@123',
-                });
+            const teacherLoginRes = await request(app).
+            post('/api/v1/auth/teachers/login').
+            send({
+                email: 'teacher@example.com',
+                password: 'Teacher@123'
+            });
             teacherToken = teacherLoginRes.body.data.accessToken;
 
-            // Create student
             student1 = await Student.create({
                 firstName: 'Jane',
                 lastName: 'Smith',
@@ -126,39 +134,36 @@ describe('Class API - addClass', () => {
                 gender: 'Male'
             });
 
-            const studentLoginRes = await request(app)
-                .post('/api/v1/auth/students/login')
-                .send({
-                    emailOrPRN: 'student1@example.com',
-                    password: 'Student@123',
-                });
+            const studentLoginRes = await request(app).
+            post('/api/v1/auth/students/login').
+            send({
+                emailOrPRN: 'student1@example.com',
+                password: 'Student@123'
+            });
             studentToken = studentLoginRes.body.data.accessToken;
 
-            // Create course, room, timetable
             course = await Course.create({
                 name: 'Programming Fundamentals',
                 code: 'CS101',
-                schemeId: scheme.id,
+                schemeId: scheme.id
             });
             room = await Room.create({
                 roomNumber: '101',
                 sittingCapacity: 60
             });
             timetable = await Timetable.create({
-                divisionId: division.id,
+                divisionId: division.id
             });
 
-            // Create BranchCourseSemester (course syllabus mapping)
             branchCourseSemester = await BranchCourseSemester.create({
                 branchId: branch.id,
                 courseId: course.id,
-                semesterNumber: 1,
+                semesterNumber: 1
             });
 
-            // Create TeacherTeachesCourse (teacher can teach this course)
             teacherTeachesCourse = await TeacherTeachesCourse.create({
                 teacherId: teacher.id,
-                courseId: course.id,
+                courseId: course.id
             });
         } catch (error) {
             logger.error('Error in beforeEach:', error);
@@ -173,30 +178,30 @@ describe('Class API - addClass', () => {
             endTime: '10:00:00',
             dayOfWeek: 'Monday',
             roomId: room.id,
-            batchId: null, // Lecture (no batch)
+            batchId: null,
             activeFrom: '2025-08-01',
             activeTill: '2025-12-31',
             classType: 'Lecture',
             courseId: course.id,
-            timetableId: timetable.id,
+            timetableId: timetable.id
         });
 
         describe('Authentication', () => {
             test('should return 401 if no token provided', async () => {
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .send(validClassData())
-                    .expect(httpStatus.UNAUTHORIZED);
+                const response = await request(app).
+                post('/api/v1/classes').
+                send(validClassData()).
+                expect(httpStatus.UNAUTHORIZED);
 
                 expect(response.body.message).toBe('Unauthorized request: No token provided');
             });
 
             test('should return 401 if invalid token provided', async () => {
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', 'Bearer invalid-token')
-                    .send(validClassData())
-                    .expect(httpStatus.UNAUTHORIZED);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', 'Bearer invalid-token').
+                send(validClassData()).
+                expect(httpStatus.UNAUTHORIZED);
 
                 expect(response.body.message).toBe('Unauthorized request: Invalid token');
             });
@@ -204,27 +209,26 @@ describe('Class API - addClass', () => {
 
         describe('Authorization', () => {
             test('should return 403 if student tries to add class', async () => {
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${studentToken}`)
-                    .send(validClassData())
-                    .expect(httpStatus.FORBIDDEN);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${studentToken}`).
+                send(validClassData()).
+                expect(httpStatus.FORBIDDEN);
 
                 expect(response.body.message).toBe('Forbidden: Insufficient permissions');
             });
 
             test('should allow admin to add class', async () => {
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(validClassData())
-                    .expect(httpStatus.CREATED);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(validClassData()).
+                expect(httpStatus.CREATED);
 
                 expect(response.body.message).toBe('Class added successfully');
                 expect(response.body.data).toHaveProperty('id');
             });
 
-            
         });
 
         describe('Input Validation', () => {
@@ -232,11 +236,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 delete classData.teacherId;
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe('Teacher ID is required');
             });
@@ -245,11 +249,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 classData.teacherId = 'invalid-uuid';
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe('Teacher ID must be a valid UUID');
             });
@@ -258,11 +262,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 delete classData.startTime;
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe('Start time is required');
             });
@@ -271,11 +275,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 classData.startTime = '9:00';
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe('Start time must be in HH:mm:ss format');
             });
@@ -284,11 +288,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 delete classData.endTime;
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe('End time is required');
             });
@@ -297,11 +301,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 classData.endTime = '10:00';
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe('End time must be in HH:mm:ss format');
             });
@@ -310,11 +314,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 delete classData.dayOfWeek;
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe('Day of week is required');
             });
@@ -323,11 +327,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 delete classData.roomId;
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe('Room ID is required');
             });
@@ -336,11 +340,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 delete classData.activeFrom;
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe('Active from date is required');
             });
@@ -349,11 +353,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 delete classData.activeTill;
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe('Active till date is required');
             });
@@ -362,11 +366,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 delete classData.classType;
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe('Class type is required');
             });
@@ -375,11 +379,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 classData.classType = 'InvalidType';
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe("Class type must be 'Lecture', 'Tutorial' or 'Practical'");
             });
@@ -388,11 +392,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 delete classData.courseId;
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe('Course ID is required');
             });
@@ -401,11 +405,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 delete classData.timetableId;
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe('Timetable ID is required');
             });
@@ -416,11 +420,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 classData.teacherId = '550e8400-e29b-41d4-a716-446655440000';
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.NOT_FOUND);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.NOT_FOUND);
 
                 expect(response.body.message).toBe('Teacher not found');
             });
@@ -429,11 +433,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 classData.courseId = '550e8400-e29b-41d4-a716-446655440000';
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.NOT_FOUND);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.NOT_FOUND);
 
                 expect(response.body.message).toBe('Course not found');
             });
@@ -442,11 +446,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 classData.roomId = '550e8400-e29b-41d4-a716-446655440000';
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.NOT_FOUND);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.NOT_FOUND);
 
                 expect(response.body.message).toBe('Room not found');
             });
@@ -455,11 +459,11 @@ describe('Class API - addClass', () => {
                 const classData = validClassData();
                 classData.timetableId = '550e8400-e29b-41d4-a716-446655440000';
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.NOT_FOUND);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.NOT_FOUND);
 
                 expect(response.body.message).toBe('Timetable not found');
             });
@@ -469,91 +473,91 @@ describe('Class API - addClass', () => {
                 classData.classType = 'Tutorial';
                 classData.batchId = '550e8400-e29b-41d4-a716-446655440000';
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.NOT_FOUND);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.NOT_FOUND);
 
                 expect(response.body.message).toBe('Batch not found');
             });
 
             test('should return 400 if batch does not belong to same division as timetable', async () => {
-                // Create another division and batch
+
                 const anotherDivision = await Division.create({
                     divisionCode: 'B',
-                    semesterId: semester.id,
+                    semesterId: semester.id
                 });
                 const anotherBatch = await Batch.create({
                     batchCode: 'Batch 2',
-                    divisionId: anotherDivision.id,
+                    divisionId: anotherDivision.id
                 });
 
                 const classData = validClassData();
                 classData.classType = 'Tutorial';
                 classData.batchId = anotherBatch.id;
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe("Batch doesn't belong to the same division as the timetable");
             });
 
             test('should return 400 if course is not in syllabus for semester', async () => {
-                // Delete the BranchCourseSemester record
+
                 await branchCourseSemester.destroy();
 
                 const classData = validClassData();
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toContain("Course 'Programming Fundamentals' is not in syllabus for semester 1 of branch Computer Science");
             });
 
             test('should return 400 if activeFrom date is out of semester bounds', async () => {
                 const classData = validClassData();
-                classData.activeFrom = '2025-07-01'; // Before semester start
+                classData.activeFrom = '2025-07-01';
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toContain('Active from date is out of bounds');
             });
 
             test('should return 400 if activeTill date is out of semester bounds', async () => {
                 const classData = validClassData();
-                classData.activeTill = '2026-01-01'; // After semester end
+                classData.activeTill = '2026-01-01';
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toContain('Active till date is out of bounds');
             });
 
             test('should return 400 if teacher is not teaching the course', async () => {
-                // Delete the TeacherTeachesCourse record
+
                 await teacherTeachesCourse.destroy();
 
                 const classData = validClassData();
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.BAD_REQUEST);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.BAD_REQUEST);
 
                 expect(response.body.message).toBe('Teacher is not teaching this course');
             });
@@ -561,7 +565,7 @@ describe('Class API - addClass', () => {
 
         describe('Conflict Validation', () => {
             test('should return 409 if teacher has conflict', async () => {
-                // Create an existing class for the same teacher at the same time
+
                 await Class.create({
                     teacherId: teacher.id,
                     startTime: '09:30:00',
@@ -574,22 +578,22 @@ describe('Class API - addClass', () => {
                     classType: 'Lecture',
                     courseId: course.id,
                     timetableId: timetable.id,
-                    isExtraClass: false,
+                    isExtraClass: false
                 });
 
                 const classData = validClassData();
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.CONFLICT);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.CONFLICT);
 
                 expect(response.body.message).toContain('Teacher unavailable at this time');
             });
 
             test('should return 409 if room has conflict', async () => {
-                // Create another teacher and course
+
                 const anotherTeacher = await Teacher.create({
                     firstName: 'Jane',
                     lastName: 'Doe',
@@ -603,22 +607,20 @@ describe('Class API - addClass', () => {
                 const anotherCourse = await Course.create({
                     name: 'Data Structures',
                     code: 'CS102',
-                    schemeId: scheme.id,
+                    schemeId: scheme.id
                 });
 
-                // Create required mappings
                 await BranchCourseSemester.create({
                     branchId: branch.id,
                     courseId: anotherCourse.id,
-                    semesterNumber: 1,
+                    semesterNumber: 1
                 });
 
                 await TeacherTeachesCourse.create({
                     teacherId: anotherTeacher.id,
-                    courseId: anotherCourse.id,
+                    courseId: anotherCourse.id
                 });
 
-                // Create an existing class using the same room at the same time
                 await Class.create({
                     teacherId: anotherTeacher.id,
                     startTime: '09:30:00',
@@ -631,22 +633,22 @@ describe('Class API - addClass', () => {
                     classType: 'Lecture',
                     courseId: anotherCourse.id,
                     timetableId: timetable.id,
-                    isExtraClass: false,
+                    isExtraClass: false
                 });
 
                 const classData = validClassData();
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.CONFLICT);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.CONFLICT);
 
                 expect(response.body.message).toContain('Room unavailable at this time');
             });
 
             test('should return 409 if division has lecture conflict', async () => {
-                // Create another teacher and course
+
                 const anotherTeacher = await Teacher.create({
                     firstName: 'Bob',
                     lastName: 'Smith',
@@ -660,7 +662,7 @@ describe('Class API - addClass', () => {
                 const anotherCourse = await Course.create({
                     name: 'Mathematics',
                     code: 'MATH101',
-                    schemeId: scheme.id,
+                    schemeId: scheme.id
                 });
 
                 const anotherRoom = await Room.create({
@@ -668,19 +670,17 @@ describe('Class API - addClass', () => {
                     sittingCapacity: 60
                 });
 
-                // Create required mappings
                 await BranchCourseSemester.create({
                     branchId: branch.id,
                     courseId: anotherCourse.id,
-                    semesterNumber: 1,
+                    semesterNumber: 1
                 });
 
                 await TeacherTeachesCourse.create({
                     teacherId: anotherTeacher.id,
-                    courseId: anotherCourse.id,
+                    courseId: anotherCourse.id
                 });
 
-                // Create an existing lecture for the same division at the same time
                 await Class.create({
                     teacherId: anotherTeacher.id,
                     startTime: '09:30:00',
@@ -693,22 +693,22 @@ describe('Class API - addClass', () => {
                     classType: 'Lecture',
                     courseId: anotherCourse.id,
                     timetableId: timetable.id,
-                    isExtraClass: false,
+                    isExtraClass: false
                 });
 
                 const classData = validClassData();
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.CONFLICT);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.CONFLICT);
 
                 expect(response.body.message).toContain("Time slot isn't free");
             });
 
             test('should return 409 if batch has practical/tutorial conflict', async () => {
-                // Create another teacher and course
+
                 const anotherTeacher = await Teacher.create({
                     firstName: 'Alice',
                     lastName: 'Johnson',
@@ -722,7 +722,7 @@ describe('Class API - addClass', () => {
                 const anotherCourse = await Course.create({
                     name: 'Physics Lab',
                     code: 'PHY101',
-                    schemeId: scheme.id,
+                    schemeId: scheme.id
                 });
 
                 const anotherRoom = await Room.create({
@@ -730,19 +730,17 @@ describe('Class API - addClass', () => {
                     sittingCapacity: 30
                 });
 
-                // Create required mappings
                 await BranchCourseSemester.create({
                     branchId: branch.id,
                     courseId: anotherCourse.id,
-                    semesterNumber: 1,
+                    semesterNumber: 1
                 });
 
                 await TeacherTeachesCourse.create({
                     teacherId: anotherTeacher.id,
-                    courseId: anotherCourse.id,
+                    courseId: anotherCourse.id
                 });
 
-                // Create an existing practical for the same batch at the same time
                 await Class.create({
                     teacherId: anotherTeacher.id,
                     startTime: '09:30:00',
@@ -755,18 +753,18 @@ describe('Class API - addClass', () => {
                     classType: 'Practical',
                     courseId: anotherCourse.id,
                     timetableId: timetable.id,
-                    isExtraClass: false,
+                    isExtraClass: false
                 });
 
                 const classData = validClassData();
                 classData.classType = 'Tutorial';
                 classData.batchId = batch.id;
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.CONFLICT);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.CONFLICT);
 
                 expect(response.body.message).toContain("Time slot isn't free");
             });
@@ -776,11 +774,11 @@ describe('Class API - addClass', () => {
             test('should successfully create lecture class', async () => {
                 const classData = validClassData();
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.CREATED);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.CREATED);
 
                 expect(response.body.message).toBe('Class added successfully');
                 expect(response.body.data).toHaveProperty('id');
@@ -800,11 +798,11 @@ describe('Class API - addClass', () => {
                 classData.classType = 'Tutorial';
                 classData.batchId = batch.id;
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.CREATED);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.CREATED);
 
                 expect(response.body.message).toBe('Class added successfully');
                 expect(response.body.data).toHaveProperty('id');
@@ -817,11 +815,11 @@ describe('Class API - addClass', () => {
                 classData.classType = 'Practical';
                 classData.batchId = batch.id;
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.CREATED);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.CREATED);
 
                 expect(response.body.message).toBe('Class added successfully');
                 expect(response.body.data).toHaveProperty('id');
@@ -832,11 +830,11 @@ describe('Class API - addClass', () => {
             test('should verify class is stored in database', async () => {
                 const classData = validClassData();
 
-                const response = await request(app)
-                    .post('/api/v1/classes')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(classData)
-                    .expect(httpStatus.CREATED);
+                const response = await request(app).
+                post('/api/v1/classes').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(classData).
+                expect(httpStatus.CREATED);
 
                 const createdClass = await Class.findByPk(response.body.data.id);
                 expect(createdClass).toBeTruthy();

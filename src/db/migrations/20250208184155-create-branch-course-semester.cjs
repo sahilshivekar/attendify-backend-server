@@ -1,39 +1,39 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable(
-            'branch_course_semesters',
-            {
+            'branch_course_semesters', {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
                     primaryKey: true,
-                    field: 'branch_course_semester_id',
+                    field: 'branch_course_semester_id'
                 },
                 branchId: {
                     type: Sequelize.UUID,
                     allowNull: false,
                     references: {
-                        model: 'branches', // Table name for branches
-                        key: 'branch_id', // Primary key of branches table
-                    }, onDelete: 'CASCADE',
-                    field: 'branch_id',
+                        model: 'branches',
+                        key: 'branch_id'
+                    },
+                    onDelete: 'CASCADE',
+                    field: 'branch_id'
                 },
                 courseId: {
                     type: Sequelize.UUID,
                     allowNull: false,
                     references: {
-                        model: 'courses', // Table name for courses
-                        key: 'course_id', // Primary key of courses table
-                    }, onDelete: 'CASCADE',
-                    field: 'course_id',
+                        model: 'courses',
+                        key: 'course_id'
+                    },
+                    onDelete: 'CASCADE',
+                    field: 'course_id'
                 },
                 semesterNumber: {
                     type: Sequelize.INTEGER,
                     allowNull: false,
-                    field: 'semester_number',
+                    field: 'semester_number'
                 },
                 createdAt: {
                     type: Sequelize.DATE,
@@ -46,11 +46,10 @@ module.exports = {
                     allowNull: false,
                     field: 'updated_at',
                     defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-                },
-            },
-            {
+                }
+            }, {
                 timestamps: true,
-                freezeTableName: true,
+                freezeTableName: true
             }
         );
 
@@ -60,5 +59,5 @@ module.exports = {
 
     async down(queryInterface, Sequelize) {
         await queryInterface.dropTable('branch_course_semesters');
-    },
+    }
 };

@@ -14,113 +14,151 @@ import Semester from '../../../db/models/semester.model.js';
 setupTestDb();
 
 describe('Semester API - GET /api/v1/semesters/:id', () => {
-  let adminToken;
-  let teacherToken;
-  let studentToken;
-  let university;
-  let branch;
-  let scheme;
-  let semester;
+    let adminToken;
+    let teacherToken;
+    let studentToken;
+    let university;
+    let branch;
+    let scheme;
+    let semester;
 
-  beforeEach(async () => {
-    try {
-      // Admin + login
-      await Admin.create({ email: 'admin@example.com', username: 'adminuser', password: 'Admin@12345' });
-      const adminLoginRes = await request(app)
-        .post('/api/v1/auth/admins/login')
-        .send({ emailOrUsername: 'admin@example.com', password: 'Admin@12345' });
-      adminToken = adminLoginRes.body.data.accessToken;
+    beforeEach(async () => {
+        try {
 
-      // Teacher + login
-      await Teacher.create({ firstName: 'John', lastName: 'Doe', email: 'teacher@example.com', phoneNumber: '+911234567890', password: 'Teacher@123', gender: 'Male', role: 'Teacher' });
-      const teacherLoginRes = await request(app)
-        .post('/api/v1/auth/teachers/login')
-        .send({ email: 'teacher@example.com', password: 'Teacher@123' });
-      teacherToken = teacherLoginRes.body.data.accessToken;
+            await Admin.create({
+                email: 'admin@example.com',
+                username: 'adminuser',
+                password: 'Admin@12345'
+            });
+            const adminLoginRes = await request(app).
+            post('/api/v1/auth/admins/login').
+            send({
+                emailOrUsername: 'admin@example.com',
+                password: 'Admin@12345'
+            });
+            adminToken = adminLoginRes.body.data.accessToken;
 
-      // University/Branch/Scheme
-      university = await University.create({ name: 'Test University', abbreviation: 'TU' });
-      branch = await Branch.create({ name: 'Computer Science', abbreviation: 'CS' });
-      scheme = await Scheme.create({ name: 'CS 2026', universityId: university.id });
+            await Teacher.create({
+                firstName: 'John',
+                lastName: 'Doe',
+                email: 'teacher@example.com',
+                phoneNumber: '+911234567890',
+                password: 'Teacher@123',
+                gender: 'Male',
+                role: 'Teacher'
+            });
+            const teacherLoginRes = await request(app).
+            post('/api/v1/auth/teachers/login').
+            send({
+                email: 'teacher@example.com',
+                password: 'Teacher@123'
+            });
+            teacherToken = teacherLoginRes.body.data.accessToken;
 
-      // Student + login
-      await Student.create({ firstName: 'Jane', lastName: 'Smith', email: 'student1@example.com', phoneNumber: '+919876543210', prn: 'STU001', password: 'Student@123', schemeId: scheme.id, branchId: branch.id, admissionYear: 2025, admissionType: 'FE', gender: 'Male' });
-      const studentLoginRes = await request(app)
-        .post('/api/v1/auth/students/login')
-        .send({ emailOrPRN: 'student1@example.com', password: 'Student@123' });
-      studentToken = studentLoginRes.body.data.accessToken;
+            university = await University.create({
+                name: 'Test University',
+                abbreviation: 'TU'
+            });
+            branch = await Branch.create({
+                name: 'Computer Science',
+                abbreviation: 'CS'
+            });
+            scheme = await Scheme.create({
+                name: 'CS 2026',
+                universityId: university.id
+            });
 
-      // Create a semester
-      semester = await Semester.create({
-        branchId: branch.id,
-        schemeId: scheme.id,
-        semesterNumber: 1,
-        academicStartYear: 2026,
-        academicEndYear: 2026,
-        startDate: '2026-01-01',
-        endDate: '2026-06-01'
-      });
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('beforeEach setup error:', err);
-      throw err;
-    }
-  });
+            await Student.create({
+                firstName: 'Jane',
+                lastName: 'Smith',
+                email: 'student1@example.com',
+                phoneNumber: '+919876543210',
+                prn: 'STU001',
+                password: 'Student@123',
+                schemeId: scheme.id,
+                branchId: branch.id,
+                admissionYear: 2025,
+                admissionType: 'FE',
+                gender: 'Male'
+            });
+            const studentLoginRes = await request(app).
+            post('/api/v1/auth/students/login').
+            send({
+                emailOrPRN: 'student1@example.com',
+                password: 'Student@123'
+            });
+            studentToken = studentLoginRes.body.data.accessToken;
 
-  test('should return 401 when no token is provided', async () => {
-    const res = await request(app).get(`/api/v1/semesters/${semester.id}`);
-    expect(res.status).toBe(httpStatus.UNAUTHORIZED);
-  });
+            semester = await Semester.create({
+                branchId: branch.id,
+                schemeId: scheme.id,
+                semesterNumber: 1,
+                academicStartYear: 2026,
+                academicEndYear: 2026,
+                startDate: '2026-01-01',
+                endDate: '2026-06-01'
+            });
+        } catch (err) {
 
-  test('should return 401 when invalid token is provided', async () => {
-    const res = await request(app)
-      .get(`/api/v1/semesters/${semester.id}`)
-      .set('Authorization', 'Bearer invalidtoken');
-    expect(res.status).toBe(httpStatus.UNAUTHORIZED);
-  });
+            console.error('beforeEach setup error:', err);
+            throw err;
+        }
+    });
 
-  test('should return 400 when id is not a UUID', async () => {
-    const res = await request(app)
-      .get('/api/v1/semesters/not-a-uuid')
-      .set('Authorization', `Bearer ${adminToken}`);
-    expect(res.status).toBe(httpStatus.BAD_REQUEST);
-    expect(res.body.message).toContain('Semester ID must be a valid UUID');
-  });
+    test('should return 401 when no token is provided', async () => {
+        const res = await request(app).get(`/api/v1/semesters/${semester.id}`);
+        expect(res.status).toBe(httpStatus.UNAUTHORIZED);
+    });
 
-  test('should return 404 when semester not found', async () => {
-    const nonExistId = '8e9efb3e-0a92-4e4f-9a9b-6f0f7b0b1234';
-    const res = await request(app)
-      .get(`/api/v1/semesters/${nonExistId}`)
-      .set('Authorization', `Bearer ${adminToken}`);
-    expect(res.status).toBe(httpStatus.NOT_FOUND);
-    expect(res.body.message).toBe('Semester not found');
-  });
+    test('should return 401 when invalid token is provided', async () => {
+        const res = await request(app).
+        get(`/api/v1/semesters/${semester.id}`).
+        set('Authorization', 'Bearer invalidtoken');
+        expect(res.status).toBe(httpStatus.UNAUTHORIZED);
+    });
 
-  test('should return semester for Admin (with Branch and Scheme)', async () => {
-    const res = await request(app)
-      .get(`/api/v1/semesters/${semester.id}`)
-      .set('Authorization', `Bearer ${adminToken}`);
-    expect(res.status).toBe(httpStatus.OK);
-    expect(res.body.success).toBe(true);
-    const hasBranch = res.body.data.Branch || res.body.data.branch;
-    const hasScheme = res.body.data.Scheme || res.body.data.scheme;
-    expect(hasBranch).toBeDefined();
-    expect(hasScheme).toBeDefined();
-  });
+    test('should return 400 when id is not a UUID', async () => {
+        const res = await request(app).
+        get('/api/v1/semesters/not-a-uuid').
+        set('Authorization', `Bearer ${adminToken}`);
+        expect(res.status).toBe(httpStatus.BAD_REQUEST);
+        expect(res.body.message).toContain('Semester ID must be a valid UUID');
+    });
 
-  test('should return semester for Teacher', async () => {
-    const res = await request(app)
-      .get(`/api/v1/semesters/${semester.id}`)
-      .set('Authorization', `Bearer ${teacherToken}`);
-    expect(res.status).toBe(httpStatus.OK);
-    expect(res.body.success).toBe(true);
-  });
+    test('should return 404 when semester not found', async () => {
+        const nonExistId = '8e9efb3e-0a92-4e4f-9a9b-6f0f7b0b1234';
+        const res = await request(app).
+        get(`/api/v1/semesters/${nonExistId}`).
+        set('Authorization', `Bearer ${adminToken}`);
+        expect(res.status).toBe(httpStatus.NOT_FOUND);
+        expect(res.body.message).toBe('Semester not found');
+    });
 
-  test('should return semester for Student', async () => {
-    const res = await request(app)
-      .get(`/api/v1/semesters/${semester.id}`)
-      .set('Authorization', `Bearer ${studentToken}`);
-    expect(res.status).toBe(httpStatus.OK);
-    expect(res.body.success).toBe(true);
-  });
+    test('should return semester for Admin (with Branch and Scheme)', async () => {
+        const res = await request(app).
+        get(`/api/v1/semesters/${semester.id}`).
+        set('Authorization', `Bearer ${adminToken}`);
+        expect(res.status).toBe(httpStatus.OK);
+        expect(res.body.success).toBe(true);
+        const hasBranch = res.body.data.Branch || res.body.data.branch;
+        const hasScheme = res.body.data.Scheme || res.body.data.scheme;
+        expect(hasBranch).toBeDefined();
+        expect(hasScheme).toBeDefined();
+    });
+
+    test('should return semester for Teacher', async () => {
+        const res = await request(app).
+        get(`/api/v1/semesters/${semester.id}`).
+        set('Authorization', `Bearer ${teacherToken}`);
+        expect(res.status).toBe(httpStatus.OK);
+        expect(res.body.success).toBe(true);
+    });
+
+    test('should return semester for Student', async () => {
+        const res = await request(app).
+        get(`/api/v1/semesters/${semester.id}`).
+        set('Authorization', `Bearer ${studentToken}`);
+        expect(res.status).toBe(httpStatus.OK);
+        expect(res.body.success).toBe(true);
+    });
 });

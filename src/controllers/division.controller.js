@@ -1,8 +1,16 @@
 import Division from '../db/models/division.model.js';
-import { ApiResponse } from '../utils/ApiResponse.js';
-import { ApiError } from '../utils/ApiError.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { Op } from 'sequelize';
+import {
+    ApiResponse
+} from '../utils/ApiResponse.js';
+import {
+    ApiError
+} from '../utils/ApiError.js';
+import {
+    asyncHandler
+} from '../utils/asyncHandler.js';
+import {
+    Op
+} from 'sequelize';
 import Semester from '../db/models/semester.model.js';
 import Branch from '../db/models/branch.model.js';
 import Scheme from '../db/models/scheme.model.js';
@@ -22,7 +30,7 @@ const getDivisions = asyncHandler(async (req, res) => {
         searchQuery,
         page = 1,
         limit = 10,
-        getAll = false,
+        getAll = false
     } = req.query;
 
     const searchClause = {};
@@ -30,7 +38,7 @@ const getDivisions = asyncHandler(async (req, res) => {
     if (searchQuery) {
         searchClause.divisionCode = {
             [Op.iLike]: `%${searchQuery}%`
-        }
+        };
     }
 
     const semesterWhereClause = {};
@@ -38,25 +46,25 @@ const getDivisions = asyncHandler(async (req, res) => {
     if (semesterNumber) {
         semesterWhereClause.semesterNumber = {
             [Op.eq]: semesterNumber
-        }
+        };
     }
 
     if (branchId) {
         semesterWhereClause.branchId = {
             [Op.eq]: branchId
-        }
+        };
     }
 
     if (academicStartYear) {
         semesterWhereClause.academicStartYear = {
             [Op.gte]: academicStartYear
-        }
+        };
     }
 
     if (academicEndYear) {
         semesterWhereClause.academicEndYear = {
             [Op.lte]: academicEndYear
-        }
+        };
     }
 
     const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
@@ -64,34 +72,41 @@ const getDivisions = asyncHandler(async (req, res) => {
         where: {
             [Op.and]: [
                 searchClause,
-                ...(semesterId ? [{ semesterId }] : []),
+                ...(semesterId ? [{
+                    semesterId
+                }] : [])
             ]
+
         },
-        include: [
-            {
+        include: [{
                 model: Semester,
                 required: true,
                 where: semesterWhereClause,
                 duplicating: false,
-                include: [
-                    {
+                include: [{
                         model: Branch,
                         required: true,
-                        duplicating: false,
+                        duplicating: false
                     },
                     {
                         model: Scheme,
                         required: true,
-                        duplicating: false,
+                        duplicating: false
                     }
                 ]
+
             },
             {
-                model: Batch,
+                model: Batch
             }
         ],
-        ...(limit ? { offset: offset, } : {}),
-        ...(limit && getAll === false ? { limit } : {})
+
+        ...(limit ? {
+            offset: offset
+        } : {}),
+        ...(limit && getAll === false ? {
+            limit
+        } : {})
     });
     res.status(httpStatus.OK).json(new ApiResponse(httpStatus.OK, "Divisions fetched successfully", {
         divisions: divisions.rows,
@@ -106,51 +121,51 @@ const addDivision = asyncHandler(async (req, res) => {
         optionalCourseIds
     } = req.body;
 
-    // Input validation is handled by @division.validation.js
-
     const semester = await Semester.findByPk(semesterId);
     if (!semester) {
         throw new ApiError(httpStatus.NOT_FOUND, "Semester not found");
     }
 
-    // Check for duplicate divisionCode in the same semester
     const existingDivision = await Division.findOne({
         where: {
             divisionCode: divisionCode,
-            semesterId: semesterId,
+            semesterId: semesterId
         }
     });
     if (existingDivision) {
         throw new ApiError(httpStatus.CONFLICT, "Duplicate Division Code in the same semester is not allowed");
     }
 
-    // Search for optional courses for this semester
     const courses = await Course.findAll({
         where: {
-            [Op.and]: [
-                { schemeId: semester.schemeId },
-                { optionalCourse: { [Op.ne]: null } }
-            ]
-        },
-        include: [
-            {
-                model: BranchCourseSemester,
-                required: true,
-                where: {
-                    branchId: semester.branchId,
-                    semesterNumber: semester.semesterNumber
+            [Op.and]: [{
+                    schemeId: semester.schemeId
                 },
-                duplicating: false,
-                include: {
-                    model: Branch,
-                    required: true,
-                    duplicating: false,
+                {
+                    optionalCourse: {
+                        [Op.ne]: null
+                    }
                 }
+            ]
+
+        },
+        include: [{
+            model: BranchCourseSemester,
+            required: true,
+            where: {
+                branchId: semester.branchId,
+                semesterNumber: semester.semesterNumber
+            },
+            duplicating: false,
+            include: {
+                model: Branch,
+                required: true,
+                duplicating: false
             }
-        ]
+        }]
+
     });
 
-    // Create a map of optional courses grouped by their optionalCourse field
     const requiredOptionalCourses = {};
     for (const course of courses) {
         if (requiredOptionalCourses[course.optionalCourse]) {
@@ -162,7 +177,6 @@ const addDivision = asyncHandler(async (req, res) => {
 
     const countOfRequiredOptionalCourses = Object.keys(requiredOptionalCourses).length;
 
-    // Validate optional courses if they exist for this semester
     if (countOfRequiredOptionalCourses > 0) {
         if (!optionalCourseIds || optionalCourseIds.length !== countOfRequiredOptionalCourses) {
             throw new ApiError(httpStatus.BAD_REQUEST, `Please give ${countOfRequiredOptionalCourses} optional courses`);
@@ -186,14 +200,13 @@ const addDivision = asyncHandler(async (req, res) => {
 
     const division = await Division.create({
         divisionCode: divisionCode,
-        semesterId: semesterId,
+        semesterId: semesterId
     });
 
     if (!division) {
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Some issue occured while adding division");
     }
 
-    // Add optional courses for this division
     if (optionalCourseIds && optionalCourseIds.length > 0) {
         for (let optionalCourseId of optionalCourseIds) {
             await DivisionCourse.create({
@@ -207,10 +220,13 @@ const addDivision = asyncHandler(async (req, res) => {
 });
 
 const updateDivision = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { divisionCode, optionalCourseIds } = req.body;
-
-    // Input validation is handled by @division.validation.js
+    const {
+        id
+    } = req.params;
+    const {
+        divisionCode,
+        optionalCourseIds
+    } = req.body;
 
     const division = await Division.findByPk(id);
 
@@ -223,7 +239,9 @@ const updateDivision = asyncHandler(async (req, res) => {
             where: {
                 divisionCode: divisionCode,
                 semesterId: division.semesterId,
-                id: { [Op.ne]: id }
+                id: {
+                    [Op.ne]: id
+                }
             }
         });
         if (existingDivision) {
@@ -234,35 +252,37 @@ const updateDivision = asyncHandler(async (req, res) => {
     division.divisionCode = divisionCode;
     await division.save();
 
-    // Handle optional course updates
     if (optionalCourseIds !== undefined) {
         const semester = await Semester.findByPk(division.semesterId);
         if (!semester) {
             throw new ApiError(httpStatus.NOT_FOUND, "Associated semester not found");
         }
 
-        // Search for optional courses for this semester
         const courses = await Course.findAll({
             where: {
-                [Op.and]: [
-                    { schemeId: semester.schemeId },
-                    { optionalCourse: { [Op.ne]: null } }
-                ]
-            },
-            include: [
-                {
-                    model: BranchCourseSemester,
-                    required: true,
-                    where: {
-                        branchId: semester.branchId,
-                        semesterNumber: semester.semesterNumber
+                [Op.and]: [{
+                        schemeId: semester.schemeId
                     },
-                    duplicating: false,
-                }
-            ]
+                    {
+                        optionalCourse: {
+                            [Op.ne]: null
+                        }
+                    }
+                ]
+
+            },
+            include: [{
+                model: BranchCourseSemester,
+                required: true,
+                where: {
+                    branchId: semester.branchId,
+                    semesterNumber: semester.semesterNumber
+                },
+                duplicating: false
+            }]
+
         });
 
-        // Create a map of optional courses grouped by their optionalCourse field
         const requiredOptionalCourses = {};
         for (const course of courses) {
             if (requiredOptionalCourses[course.optionalCourse]) {
@@ -274,7 +294,6 @@ const updateDivision = asyncHandler(async (req, res) => {
 
         const countOfRequiredOptionalCourses = Object.keys(requiredOptionalCourses).length;
 
-        // Validate optional courses if they exist
         if (countOfRequiredOptionalCourses > 0) {
             if (optionalCourseIds.length !== countOfRequiredOptionalCourses) {
                 throw new ApiError(httpStatus.BAD_REQUEST, `Please give ${countOfRequiredOptionalCourses} optional courses`);
@@ -296,24 +315,28 @@ const updateDivision = asyncHandler(async (req, res) => {
             }
         }
 
-        // Get existing optional courses
         const existingOptionalCourses = await DivisionCourse.findAll({
-            where: { divisionId: id },
+            where: {
+                divisionId: id
+            },
             attributes: ['courseId']
         });
-        const existingCourseIds = existingOptionalCourses.map(dc => dc.courseId);
+        const existingCourseIds = existingOptionalCourses.map((dc) => dc.courseId);
 
         const newCourseIds = optionalCourseIds;
         const arraysEqual = (a, b) => a.length === b.length && a.every((val, index) => val === b[index]);
         const hasChanged = !arraysEqual(existingCourseIds.sort(), newCourseIds.sort());
 
         if (hasChanged) {
-            const toAdd = newCourseIds.filter(id => !existingCourseIds.includes(id));
-            const toRemove = existingCourseIds.filter(id => !newCourseIds.includes(id));
+            const toAdd = newCourseIds.filter((id) => !existingCourseIds.includes(id));
+            const toRemove = existingCourseIds.filter((id) => !newCourseIds.includes(id));
 
             if (toRemove.length > 0) {
                 await DivisionCourse.destroy({
-                    where: { divisionId: id, courseId: toRemove }
+                    where: {
+                        divisionId: id,
+                        courseId: toRemove
+                    }
                 });
             }
 
@@ -330,9 +353,9 @@ const updateDivision = asyncHandler(async (req, res) => {
 });
 
 const removeDivision = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-
-    // Input validation is handled by @division.validation.js
+    const {
+        id
+    } = req.params;
 
     const division = await Division.findByPk(id);
 
@@ -346,52 +369,54 @@ const removeDivision = asyncHandler(async (req, res) => {
 });
 
 const getDivisionById = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-
-    // Input validation is handled by @division.validation.js
+    const {
+        id
+    } = req.params;
 
     const division = await Division.findOne({
-        where: { id: id },
-        include: [
-            {
+        where: {
+            id: id
+        },
+        include: [{
                 model: Semester,
                 required: true,
-                include: [
-                    {
+                include: [{
                         model: Branch,
-                        required: true,
+                        required: true
                     },
                     {
                         model: Scheme,
-                        required: true,
+                        required: true
                     }
                 ]
+
             },
             {
-                model: Batch,
+                model: Batch
             }
         ]
+
     });
 
     if (!division) {
         throw new ApiError(httpStatus.NOT_FOUND, "Division not found");
     }
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Division retrieved successfully",
-                division
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Division retrieved successfully",
+            division
+        )
+    );
 });
 
 const getCoursesOfDivision = asyncHandler(async (req, res) => {
-    const { divisionId } = req.query;
-
-    // Input validation is handled by @division.validation.js
+    const {
+        divisionId
+    } = req.query;
 
     const division = await Division.findByPk(divisionId);
     if (!division) {
@@ -412,12 +437,11 @@ const getCoursesOfDivision = asyncHandler(async (req, res) => {
             model: Course,
             required: true,
             where: {
-                [Op.and]: [
-                    {
-                        schemeId: semester.schemeId,
-                        optionalCourse: null
-                    }
-                ]
+                [Op.and]: [{
+                    schemeId: semester.schemeId,
+                    optionalCourse: null
+                }]
+
             }
         }
     });
@@ -428,22 +452,21 @@ const getCoursesOfDivision = asyncHandler(async (req, res) => {
         },
         include: {
             model: Course,
-            required: true,
-        },
+            required: true
+        }
     });
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Division courses retrieved successfully.",
-                {
-                    compulsoryCourses: compulsaryCourses.map(bcs => bcs.Course),
-                    optionalCourses: optionalCourses
-                }
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Division courses retrieved successfully.", {
+                compulsoryCourses: compulsaryCourses.map((bcs) => bcs.Course),
+                optionalCourses: optionalCourses
+            }
+        )
+    );
 });
 
 export {
@@ -453,4 +476,4 @@ export {
     removeDivision,
     getDivisionById,
     getCoursesOfDivision
-}
+};

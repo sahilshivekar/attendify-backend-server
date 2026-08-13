@@ -1,17 +1,21 @@
 'use strict';
 
-const { v4: uuidv4 } = require('uuid'); // Import the uuid function
+const {
+    v4: uuidv4
+} = require('uuid');
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
         const rooms = [];
 
         const getCapacity = (type) => {
             switch (type) {
-                case 'Classroom': return 90;
-                case 'Lab': return 30;
-                default: return 0;
+                case 'Classroom':
+                    return 90;
+                case 'Lab':
+                    return 30;
+                default:
+                    return 0;
             }
         };
 

@@ -1,11 +1,9 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable(
-            'divisions',
-            {
+            'divisions', {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
@@ -15,7 +13,7 @@ module.exports = {
                 divisionCode: {
                     type: Sequelize.STRING(255),
                     allowNull: false,
-                    field: 'division_code',
+                    field: 'division_code'
                 },
                 semesterId: {
                     type: Sequelize.UUID,
@@ -25,7 +23,7 @@ module.exports = {
                         model: 'semesters',
                         key: 'semester_id'
                     },
-                    onDelete: 'CASCADE',
+                    onDelete: 'CASCADE'
                 },
                 createdAt: {
                     type: Sequelize.DATE,
@@ -39,8 +37,7 @@ module.exports = {
                     field: 'updated_at',
                     defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
                 }
-            },
-            {
+            }, {
                 timestamps: true,
                 freezeTableName: true,
                 uniqueKeys: {

@@ -1,11 +1,22 @@
 import Teacher from '../db/models/teacher.model.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { ApiResponse } from '../utils/ApiResponse.js'
-import { ApiError } from '../utils/ApiError.js'
-import { Op } from 'sequelize'
+import {
+    asyncHandler
+} from '../utils/asyncHandler.js';
+import {
+    ApiResponse
+} from '../utils/ApiResponse.js';
+import {
+    ApiError
+} from '../utils/ApiError.js';
+import {
+    Op
+} from 'sequelize';
 import Sequelize from 'sequelize';
-import { uploadOnCloudinary, deleteFromCloudinary } from '../utils/cloudinary.js';
-import fs from "fs"
+import {
+    uploadOnCloudinary,
+    deleteFromCloudinary
+} from '../utils/cloudinary.js';
+import fs from "fs";
 import csvParser from 'csv-parser';
 import Course from '../db/models/course.model.js';
 import TeacherTeachesCourse from '../db/models/teacherTeachesCourse.model.js';
@@ -14,11 +25,9 @@ import httpStatus from 'http-status';
 import sequelize from '../config/db.connection.js';
 import teacherValidation from '../validators/teacher.validation.js';
 
-// All input validation is now handled in @teacher.validation.js
-
 const options = {
     httpOnly: true,
-    secure: true,
+    secure: true
 };
 
 const generateAccessAndRefreshTokens = async (teacher) => {
@@ -26,13 +35,15 @@ const generateAccessAndRefreshTokens = async (teacher) => {
         const newAccessToken = await teacher.generateAccessToken();
         const newRefreshToken = await teacher.generateRefreshToken();
 
-        return { newAccessToken, newRefreshToken };
+        return {
+            newAccessToken,
+            newRefreshToken
+        };
     } catch (err) {
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Something went wrong while generating tokens");
     }
 };
 
-//* get all the teacher
 const getTeacher = asyncHandler(async (req, res) => {
 
     const {
@@ -41,13 +52,11 @@ const getTeacher = asyncHandler(async (req, res) => {
         page = 1,
         limit = 10,
         getAll = "false",
-        isActive = "false",
+        isActive = "false"
     } = req.query;
 
-    // Normalize getAll to a boolean regardless of it coming as string or boolean
     const isGetAll = getAll === true || getAll === 'true';
 
-    // Normalize isActive to a boolean
     const filterByActive = isActive === true || isActive === 'true';
 
     const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
@@ -58,72 +67,98 @@ const getTeacher = asyncHandler(async (req, res) => {
     const terms = normalizedSearch.split(" ");
 
     searchClause = {
-        [Op.and]: terms.map(term => ({
-            [Op.or]: [
-                { firstName: { [Op.iLike]: `%${term}%` } },
-                { middleName: { [Op.iLike]: `%${term}%` } },
-                { lastName: { [Op.iLike]: `%${term}%` } },
-                { email: { [Op.iLike]: `%${term}%` } },
-                { phoneNumber: { [Op.iLike]: `%${term}%` } },
-                { highestQualification: { [Op.iLike]: `%${term}%` } },
-            ],
-        })),
+        [Op.and]: terms.map((term) => ({
+            [Op.or]: [{
+                    firstName: {
+                        [Op.iLike]: `%${term}%`
+                    }
+                },
+                {
+                    middleName: {
+                        [Op.iLike]: `%${term}%`
+                    }
+                },
+                {
+                    lastName: {
+                        [Op.iLike]: `%${term}%`
+                    }
+                },
+                {
+                    email: {
+                        [Op.iLike]: `%${term}%`
+                    }
+                },
+                {
+                    phoneNumber: {
+                        [Op.iLike]: `%${term}%`
+                    }
+                },
+                {
+                    highestQualification: {
+                        [Op.iLike]: `%${term}%`
+                    }
+                }
+            ]
+
+        }))
     };
 
     if (filterByActive) {
         searchClause.isActive = true;
     }
 
-    let courseIdFilterClause = {}
-    let includeClause = []
+    let courseIdFilterClause = {};
+    let includeClause = [];
 
     if (courseId) {
-        courseIdFilterClause.courseId = courseId
-        includeClause.push(
-            {
-                model: TeacherTeachesCourse,
+        courseIdFilterClause.courseId = courseId;
+        includeClause.push({
+            model: TeacherTeachesCourse,
+            required: true,
+            where: courseIdFilterClause,
+            duplicating: false,
+            include: [{
+                model: Course,
                 required: true,
-                where: courseIdFilterClause,
-                duplicating: false,
-                include: [
-                    {
-                        model: Course,
-                        required: true,
-                        duplicating: false,
-                    }
-                ]
-            }
-        )
+                duplicating: false
+            }]
+
+        });
     }
 
     const teacher = await Teacher.findAndCountAll({
         where: searchClause,
         include: includeClause,
-        order: [['firstName', 'ASC']],
-        ...(limit && !isGetAll ? { offset: offset, } : {}),
-        ...(limit && !isGetAll ? { limit: parseInt(limit, 10) } : {}),
-        distinct: true,
+        order: [
+            ['firstName', 'ASC']
+        ],
+        ...(limit && !isGetAll ? {
+            offset: offset
+        } : {}),
+        ...(limit && !isGetAll ? {
+            limit: parseInt(limit, 10)
+        } : {}),
+        distinct: true
     });
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Teachers retrieved successfully.",
-                {
-                    teacher: teacher.rows,
-                    totalTeacher: teacher.count
-                }
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Teachers retrieved successfully.", {
+                teacher: teacher.rows,
+                totalTeacher: teacher.count
+            }
+        )
+    );
 
 });
 
 const getTeacherById = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-
-    // Validation moved to @teacher.validation.js
+    const {
+        id
+    } = req.params;
 
     const teacher = await Teacher.findByPk(id);
 
@@ -131,18 +166,17 @@ const getTeacherById = asyncHandler(async (req, res) => {
         throw new ApiError(httpStatus.NOT_FOUND, "Teacher not found");
     }
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Teacher fetched successfully",
-                teacher
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Teacher fetched successfully",
+            teacher
+        )
+    );
 });
 
-//* add teacher
 const addTeacher = asyncHandler(async (req, res) => {
 
     const {
@@ -154,22 +188,23 @@ const addTeacher = asyncHandler(async (req, res) => {
         gender,
         highestQualification,
         role,
-        // password,
-        // confirmPassword,
+
         isActive
     } = req.body;
 
-    const teacherImageLocalPath = req.file?.path
+    const teacherImageLocalPath = req.file?.path;
 
-    // All input validation is now handled in @teacher.validation.js
-
-    const existingTeacherMember = await Teacher.findOne({ where: { email } })
+    const existingTeacherMember = await Teacher.findOne({
+        where: {
+            email
+        }
+    });
 
     if (existingTeacherMember) {
         if (teacherImageLocalPath) {
-            fs.unlinkSync(teacherImageLocalPath)
+            fs.unlinkSync(teacherImageLocalPath);
         }
-        throw new ApiError(httpStatus.BAD_REQUEST, "A teacher member with this email already exists")
+        throw new ApiError(httpStatus.BAD_REQUEST, "A teacher member with this email already exists");
     }
 
     let teacherImageUrl = null;
@@ -177,15 +212,15 @@ const addTeacher = asyncHandler(async (req, res) => {
 
     if (teacherImageLocalPath) {
 
-        const teacherImage = await uploadOnCloudinary(teacherImageLocalPath)
+        const teacherImage = await uploadOnCloudinary(teacherImageLocalPath);
 
         if (!teacherImage?.url) {
-            fs.unlinkSync(teacherImageLocalPath)
-            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Some issue occured while uploading the image")
+            fs.unlinkSync(teacherImageLocalPath);
+            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Some issue occured while uploading the image");
         }
 
-        teacherImageUrl = teacherImage.secure_url
-        teacherImagePublicId = teacherImage.public_id
+        teacherImageUrl = teacherImage.secure_url;
+        teacherImagePublicId = teacherImage.public_id;
     }
 
     const addedTeacherMember = await Teacher.create({
@@ -199,24 +234,23 @@ const addTeacher = asyncHandler(async (req, res) => {
         gender: gender,
         highestQualification: highestQualification || null,
         role: role,
-        // password: password,
+
         isActive: isActive !== undefined ? isActive : true
     });
 
-
     if (!addedTeacherMember) {
-        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Some issue occured while adding teacher member")
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Some issue occured while adding teacher member");
     }
 
-    res
-        .status(httpStatus.CREATED)
-        .json(
-            new ApiResponse(
-                httpStatus.CREATED,
-                'Teacher member added successfully',
-                addedTeacherMember
-            )
+    res.
+    status(httpStatus.CREATED).
+    json(
+        new ApiResponse(
+            httpStatus.CREATED,
+            'Teacher member added successfully',
+            addedTeacherMember
         )
+    );
 
 });
 
@@ -234,12 +268,10 @@ const updateTeacherDetails = asyncHandler(async (req, res) => {
         isActive
     } = req.body;
 
-    // Validation moved to @teacher.validation.js
-
     const teacher = await Teacher.findByPk(id);
 
     if (!teacher) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Teacher not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Teacher not found");
     }
 
     teacher.firstName = firstName || teacher.firstName;
@@ -250,21 +282,21 @@ const updateTeacherDetails = asyncHandler(async (req, res) => {
     teacher.gender = gender || teacher.gender;
     teacher.highestQualification = highestQualification || teacher.highestQualification;
     teacher.phoneNumber = phoneNumber || teacher.phoneNumber;
-    // Preserve explicit `false`; only fall back when the field is not provided.
+
     teacher.isActive = isActive !== undefined ? isActive : teacher.isActive;
 
     await teacher.save();
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Teacher updated successfully",
-                teacher
-            )
-        );
-})
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Teacher updated successfully",
+            teacher
+        )
+    );
+});
 
 const updateTeacherPassword = asyncHandler(async (req, res) => {
     const {
@@ -273,88 +305,83 @@ const updateTeacherPassword = asyncHandler(async (req, res) => {
         confirmPassword
     } = req.body;
 
-    // Validation moved to @teacher.validation.js
-
     const teacher = await Teacher.findByPk(id);
 
     if (!teacher) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Teacher not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Teacher not found");
     }
 
     teacher.password = password || '';
 
     await teacher.save();
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Teacher password updated successfully",
-                teacher
-            )
-        );
-})
-
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Teacher password updated successfully",
+            teacher
+        )
+    );
+});
 
 const updateTeacherImage = asyncHandler(async (req, res) => {
     const {
         id
     } = req.params;
-    const teacherImageLocalPath = req.file?.path
-
-    // Validation moved to @teacher.validation.js
+    const teacherImageLocalPath = req.file?.path;
 
     const teacher = await Teacher.findByPk(id);
 
     if (!teacher) {
         if (teacherImageLocalPath) {
-            fs.unlinkSync(teacherImageLocalPath)
+            fs.unlinkSync(teacherImageLocalPath);
         }
-        throw new ApiError(httpStatus.NOT_FOUND, "Teacher not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Teacher not found");
     }
 
     if (!teacherImageLocalPath) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Teacher image file is required")
+        throw new ApiError(httpStatus.BAD_REQUEST, "Teacher image file is required");
     }
 
-    const uploadedImageResponse = await uploadOnCloudinary(teacherImageLocalPath)
+    const uploadedImageResponse = await uploadOnCloudinary(teacherImageLocalPath);
 
     if (!uploadedImageResponse?.url) {
-        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Some issue occured while uploading the image")
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Some issue occured while uploading the image");
     }
 
-    teacher.teacherImageUrl = uploadedImageResponse.secure_url
-    teacher.teacherImagePublicId = uploadedImageResponse.public_id
+    teacher.teacherImageUrl = uploadedImageResponse.secure_url;
+    teacher.teacherImagePublicId = uploadedImageResponse.public_id;
 
     await teacher.save();
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Teacher image updated successfully",
-                teacher
-            )
-        );
-})
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Teacher image updated successfully",
+            teacher
+        )
+    );
+});
 
 const removeImage = asyncHandler(async (req, res) => {
-    const { id } = req.query;
-
-    // Validation moved to @teacher.validation.js
+    const {
+        id
+    } = req.query;
 
     const teacher = await Teacher.findByPk(id);
 
     if (!teacher) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Teacher not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Teacher not found");
     }
 
-    const deletedImage = await deleteFromCloudinary(teacher.teacherImagePublicId)
+    const deletedImage = await deleteFromCloudinary(teacher.teacherImagePublicId);
 
     if (!deletedImage) {
-        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Some issue occured while deleting the image")
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Some issue occured while deleting the image");
     }
 
     teacher.teacherImageUrl = null;
@@ -362,21 +389,22 @@ const removeImage = asyncHandler(async (req, res) => {
 
     await teacher.save();
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Teacher image deleted successfully",
-                teacher
-            )
-        );
-})
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Teacher image deleted successfully",
+            teacher
+        )
+    );
+});
 
-//* remove teacher
 const removeTeacher = asyncHandler(async (req, res) => {
 
-    const { id } = req.params;
+    const {
+        id
+    } = req.params;
 
     const teacher = await Teacher.findByPk(id);
 
@@ -386,81 +414,91 @@ const removeTeacher = asyncHandler(async (req, res) => {
 
     const transaction = await sequelize.transaction();
     try {
-        // Handle image deletion outside transaction (external service)
+
         if (teacher.teacherImagePublicId) {
-            const deletedImage = await deleteFromCloudinary(teacher.teacherImagePublicId)
+            const deletedImage = await deleteFromCloudinary(teacher.teacherImagePublicId);
             if (!deletedImage) {
                 await transaction.rollback();
-                throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Some issue occured while deleting the image")
+                throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Some issue occured while deleting the image");
             }
         }
 
-        await teacher.destroy({ transaction });
+        await teacher.destroy({
+            transaction
+        });
         await transaction.commit();
 
-        res
-            .status(httpStatus.OK)
-            .json(
-                new ApiResponse(
-                    httpStatus.OK,
-                    "Teacher deleted successfully",
-                    null
-                )
-            );
+        res.
+        status(httpStatus.OK).
+        json(
+            new ApiResponse(
+                httpStatus.OK,
+                "Teacher deleted successfully",
+                null
+            )
+        );
     } catch (error) {
         await transaction.rollback();
         throw error;
     }
 });
 
-//! logout is remaining
-
 const addTeachingCourse = asyncHandler(async (req, res) => {
-    const { teacherId, courseId } = req.body;
+    const {
+        teacherId,
+        courseId
+    } = req.body;
 
     const transaction = await sequelize.transaction();
     try {
-        const teacher = await Teacher.findByPk(teacherId, { transaction });
+        const teacher = await Teacher.findByPk(teacherId, {
+            transaction
+        });
         if (!teacher) {
             throw new ApiError(httpStatus.NOT_FOUND, "Teacher not found");
         }
-        const course = await Course.findByPk(courseId, { transaction });
+        const course = await Course.findByPk(courseId, {
+            transaction
+        });
         if (!course) {
             throw new ApiError(httpStatus.NOT_FOUND, "Course not found");
         }
         const alreadyAssigned = await TeacherTeachesCourse.findOne({
             where: {
                 teacherId: teacherId,
-                courseId: courseId,
+                courseId: courseId
             },
             transaction
         });
         if (alreadyAssigned) {
-            throw new ApiError(httpStatus.BAD_REQUEST, "Course is already assigned to this teacher member")
+            throw new ApiError(httpStatus.BAD_REQUEST, "Course is already assigned to this teacher member");
         }
         const teacherTeachesCourseEntry = await TeacherTeachesCourse.create({
             teacherId: teacherId,
-            courseId: courseId,
-        }, { transaction });
+            courseId: courseId
+        }, {
+            transaction
+        });
         await transaction.commit();
-        res
-            .status(httpStatus.CREATED)
-            .json(
-                new ApiResponse(
-                    httpStatus.CREATED,
-                    "Teaching course added successfully",
-                    teacherTeachesCourseEntry
-                )
-            );
+        res.
+        status(httpStatus.CREATED).
+        json(
+            new ApiResponse(
+                httpStatus.CREATED,
+                "Teaching course added successfully",
+                teacherTeachesCourseEntry
+            )
+        );
     } catch (error) {
         await transaction.rollback();
         throw error;
     }
 });
 
-
 const removeTeachingCourse = asyncHandler(async (req, res) => {
-    const { teacherTeachesCourseId } = req.params;
+    const {
+        teacherTeachesCourseId
+    } = req.params;
 
     const transaction = await sequelize.transaction();
     try {
@@ -470,17 +508,19 @@ const removeTeachingCourse = asyncHandler(async (req, res) => {
         if (!teacherCourse) {
             throw new ApiError(httpStatus.NOT_FOUND, "Teacher course not found");
         }
-        await teacherCourse.destroy({ transaction });
+        await teacherCourse.destroy({
+            transaction
+        });
         await transaction.commit();
-        res
-            .status(httpStatus.OK)
-            .json(
-                new ApiResponse(
-                    httpStatus.OK,
-                    "Teaching course deleted successfully",
-                    null
-                )
-            );
+        res.
+        status(httpStatus.OK).
+        json(
+            new ApiResponse(
+                httpStatus.OK,
+                "Teaching course deleted successfully",
+                null
+            )
+        );
     } catch (error) {
         await transaction.rollback();
         throw error;
@@ -488,9 +528,9 @@ const removeTeachingCourse = asyncHandler(async (req, res) => {
 });
 
 const getTeachingCourses = asyncHandler(async (req, res) => {
-    const { teacherId } = req.query;
-
-    // Validation moved to @teacher.validation.js
+    const {
+        teacherId
+    } = req.query;
 
     const teacher = await Teacher.findByPk(teacherId);
 
@@ -502,41 +542,37 @@ const getTeachingCourses = asyncHandler(async (req, res) => {
         where: {
             teacherId: teacherId
         },
-        include: [
-            {
-                model: Course,
-                required: true,
-                include: [
-                    {
-                        model: Scheme,
-                        required: true,
-                    }
-                ]
-            }
-        ]
+        include: [{
+            model: Course,
+            required: true,
+            include: [{
+                model: Scheme,
+                required: true
+            }]
+
+        }]
+
     });
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Teaching courses retrieved successfully",
-                teachingCourses
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Teaching courses retrieved successfully",
+            teachingCourses
+        )
+    );
 });
 
-
-//* Bulk Create Teachers
 const bulkCreateTeachers = asyncHandler(async (req, res) => {
-    const { teachers } = req.body;
+    const {
+        teachers
+    } = req.body;
 
     if (!teachers || !Array.isArray(teachers) || teachers.length === 0) {
         throw new ApiError(httpStatus.BAD_REQUEST, "Teachers array is required and must not be empty");
     }
-
-
 
     const transaction = await sequelize.transaction();
     try {
@@ -546,22 +582,29 @@ const bulkCreateTeachers = asyncHandler(async (req, res) => {
         for (let i = 0; i < teachers.length; i++) {
             const teacherData = teachers[i];
             try {
-                // Validate required fields
+
                 if (!teacherData.firstName || !teacherData.lastName ||
                     !teacherData.email || !teacherData.phoneNumber ||
                     !teacherData.gender || !teacherData.role) {
-                    errors.push({ index: i, error: "Missing required fields" });
+                    errors.push({
+                        index: i,
+                        error: "Missing required fields"
+                    });
                     continue;
                 }
 
-                // Check if email already exists
                 const existingTeacher = await Teacher.findOne({
-                    where: { email: teacherData.email },
+                    where: {
+                        email: teacherData.email
+                    },
                     transaction
                 });
 
                 if (existingTeacher) {
-                    errors.push({ index: i, error: `Email ${teacherData.email} already exists` });
+                    errors.push({
+                        index: i,
+                        error: `Email ${teacherData.email} already exists`
+                    });
                     continue;
                 }
 
@@ -575,24 +618,26 @@ const bulkCreateTeachers = asyncHandler(async (req, res) => {
                     highestQualification: teacherData.highestQualification || null,
                     role: teacherData.role,
                     isActive: teacherData.isActive !== undefined ? teacherData.isActive : true
-                }, { transaction });
+                }, {
+                    transaction
+                });
 
                 createdTeachers.push(teacher);
 
             } catch (error) {
-                errors.push({ index: i, error: error.message });
+                errors.push({
+                    index: i,
+                    error: error.message
+                });
             }
         }
 
         await transaction.commit();
 
-
-
         res.status(httpStatus.CREATED).json(
             new ApiResponse(
                 httpStatus.CREATED,
-                `Bulk teacher creation completed. Created: ${createdTeachers.length}, Errors: ${errors.length}`,
-                {
+                `Bulk teacher creation completed. Created: ${createdTeachers.length}, Errors: ${errors.length}`, {
                     createdTeachers,
                     errors,
                     summary: {
@@ -610,20 +655,23 @@ const bulkCreateTeachers = asyncHandler(async (req, res) => {
     }
 });
 
-//* Bulk Delete Teachers
 const bulkDeleteTeachers = asyncHandler(async (req, res) => {
-    const { teacherIds } = req.body;
+    const {
+        teacherIds
+    } = req.body;
 
     if (!teacherIds || !Array.isArray(teacherIds) || teacherIds.length === 0) {
         throw new ApiError(httpStatus.BAD_REQUEST, "Teacher IDs array is required and must not be empty");
     }
 
-
-
     const transaction = await sequelize.transaction();
     try {
         const teachers = await Teacher.findAll({
-            where: { id: { [Op.in]: teacherIds } },
+            where: {
+                id: {
+                    [Op.in]: teacherIds
+                }
+            },
             transaction
         });
 
@@ -631,8 +679,7 @@ const bulkDeleteTeachers = asyncHandler(async (req, res) => {
             throw new ApiError(httpStatus.NOT_FOUND, "No teachers found with provided IDs");
         }
 
-        // Delete images from cloudinary for teachers that have them
-        const teachersWithImages = teachers.filter(teacher => teacher.teacherImagePublicId);
+        const teachersWithImages = teachers.filter((teacher) => teacher.teacherImagePublicId);
         for (const teacher of teachersWithImages) {
             try {
                 await deleteFromCloudinary(teacher.teacherImagePublicId);
@@ -642,19 +689,20 @@ const bulkDeleteTeachers = asyncHandler(async (req, res) => {
         }
 
         const deletedCount = await Teacher.destroy({
-            where: { id: { [Op.in]: teacherIds } },
+            where: {
+                id: {
+                    [Op.in]: teacherIds
+                }
+            },
             transaction
         });
 
         await transaction.commit();
 
-
-
         res.status(httpStatus.OK).json(
             new ApiResponse(
                 httpStatus.OK,
-                "Teachers deleted successfully",
-                {
+                "Teachers deleted successfully", {
                     deletedCount,
                     requestedCount: teacherIds.length
                 }
@@ -667,7 +715,6 @@ const bulkDeleteTeachers = asyncHandler(async (req, res) => {
     }
 });
 
-//* Bulk Create Teachers from CSV
 const bulkCreateTeachersFromCSV = asyncHandler(async (req, res) => {
     const csvFilePath = req?.file?.path;
 
@@ -684,11 +731,11 @@ const bulkCreateTeachersFromCSV = asyncHandler(async (req, res) => {
     const parseCSV = () => {
         return new Promise((resolve, reject) => {
             const rows = [];
-            fs.createReadStream(csvFilePath)
-                .pipe(csvParser())
-                .on('data', (row) => rows.push(row))
-                .on('end', () => resolve(rows))
-                .on('error', (err) => reject(err));
+            fs.createReadStream(csvFilePath).
+            pipe(csvParser()).
+            on('data', (row) => rows.push(row)).
+            on('end', () => resolve(rows)).
+            on('error', (err) => reject(err));
         });
     };
 
@@ -710,14 +757,26 @@ const bulkCreateTeachersFromCSV = asyncHandler(async (req, res) => {
 
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
-        const rowNumber = i + 2; // header is row 1
+        const rowNumber = i + 2;
 
-        const { error, value } = teacherValidation.csvTeacherRowSchema.validate(row, { abortEarly: false });
+        const {
+            error,
+            value
+        } = teacherValidation.csvTeacherRowSchema.validate(row, {
+            abortEarly: false
+        });
         if (error) {
-            const errorMessages = error.details.map(d => d.message).join('; ');
-            validationErrors.push({ row: rowNumber, email: row.email || 'N/A', errors: errorMessages });
+            const errorMessages = error.details.map((d) => d.message).join('; ');
+            validationErrors.push({
+                row: rowNumber,
+                email: row.email || 'N/A',
+                errors: errorMessages
+            });
         } else {
-            validatedTeachers.push({ ...value, rowNumber });
+            validatedTeachers.push({
+                ...value,
+                rowNumber
+            });
         }
     }
 
@@ -733,48 +792,64 @@ const bulkCreateTeachersFromCSV = asyncHandler(async (req, res) => {
     const transaction = await sequelize.transaction();
     let committed = false;
     try {
-        const emails = validatedTeachers.map(t => t.email.toLowerCase());
-        const phoneNumbers = validatedTeachers.map(t => t.phoneNumber);
+        const emails = validatedTeachers.map((t) => t.email.toLowerCase());
+        const phoneNumbers = validatedTeachers.map((t) => t.phoneNumber);
 
-        // Duplicate emails within CSV
         const emailSet = new Set();
         const duplicateEmails = [];
         for (const t of validatedTeachers) {
             const e = t.email.toLowerCase();
-            if (emailSet.has(e)) duplicateEmails.push({ row: t.rowNumber, email: t.email });
+            if (emailSet.has(e)) duplicateEmails.push({
+                row: t.rowNumber,
+                email: t.email
+            });
             emailSet.add(e);
         }
         if (duplicateEmails.length > 0) {
             throw new ApiError(httpStatus.BAD_REQUEST, 'Duplicate emails found within CSV file', duplicateEmails);
         }
 
-        // Duplicate phones within CSV
         const phoneSet = new Set();
         const duplicatePhones = [];
         for (const t of validatedTeachers) {
             const p = t.phoneNumber;
-            if (phoneSet.has(p)) duplicatePhones.push({ row: t.rowNumber, phoneNumber: p });
+            if (phoneSet.has(p)) duplicatePhones.push({
+                row: t.rowNumber,
+                phoneNumber: p
+            });
             phoneSet.add(p);
         }
         if (duplicatePhones.length > 0) {
             throw new ApiError(httpStatus.BAD_REQUEST, 'Duplicate phone numbers found within CSV file', duplicatePhones);
         }
 
-        // Existing emails in DB
-        const existingByEmail = await Teacher.findAll({ where: { email: { [Op.in]: emails } }, transaction });
+        const existingByEmail = await Teacher.findAll({
+            where: {
+                email: {
+                    [Op.in]: emails
+                }
+            },
+            transaction
+        });
         if (existingByEmail.length > 0) {
-            const existingEmails = existingByEmail.map(t => t.email);
+            const existingEmails = existingByEmail.map((t) => t.email);
             throw new ApiError(httpStatus.BAD_REQUEST, `The following emails already exist in the database: ${existingEmails.join(', ')}`);
         }
 
-        // Existing phones in DB
-        const existingByPhone = await Teacher.findAll({ where: { phoneNumber: { [Op.in]: phoneNumbers } }, transaction });
+        const existingByPhone = await Teacher.findAll({
+            where: {
+                phoneNumber: {
+                    [Op.in]: phoneNumbers
+                }
+            },
+            transaction
+        });
         if (existingByPhone.length > 0) {
-            const existingPhones = existingByPhone.map(t => t.phoneNumber);
+            const existingPhones = existingByPhone.map((t) => t.phoneNumber);
             throw new ApiError(httpStatus.BAD_REQUEST, `The following phone numbers already exist in the database: ${existingPhones.join(', ')}`);
         }
 
-        const toCreate = validatedTeachers.map(t => ({
+        const toCreate = validatedTeachers.map((t) => ({
             firstName: t.firstName,
             middleName: t.middleName || null,
             lastName: t.lastName,
@@ -809,7 +884,6 @@ const bulkCreateTeachersFromCSV = asyncHandler(async (req, res) => {
     }
 });
 
-
 export {
     getTeacher,
     addTeacher,
@@ -825,4 +899,4 @@ export {
     bulkCreateTeachers,
     bulkDeleteTeachers,
     bulkCreateTeachersFromCSV
-}
+};

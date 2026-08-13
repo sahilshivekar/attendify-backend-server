@@ -1,4 +1,6 @@
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.js';
 import setupTestDb from '../../util/setupTestDb.js';
@@ -20,35 +22,33 @@ describe('Debug updateStudentPassword edge cases', () => {
 
     beforeEach(async () => {
         try {
-            // Create admin and login
+
             await Admin.create({
                 email: 'admin@example.com',
                 username: 'adminuser',
-                password: 'Admin@12345',
+                password: 'Admin@12345'
             });
-            const adminLoginRes = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send({
-                    emailOrUsername: 'admin@example.com',
-                    password: 'Admin@12345',
-                });
+            const adminLoginRes = await request(app).
+            post('/api/v1/auth/admins/login').
+            send({
+                emailOrUsername: 'admin@example.com',
+                password: 'Admin@12345'
+            });
             adminToken = adminLoginRes.body.data.accessToken;
 
-            // Create dependencies
             university = await University.create({
                 name: 'Test University',
-                abbreviation: 'TU',
+                abbreviation: 'TU'
             });
             branch = await Branch.create({
                 name: 'Computer Science',
-                abbreviation: 'CS',
+                abbreviation: 'CS'
             });
             scheme = await Scheme.create({
                 name: 'CS 2026 Scheme',
-                universityId: university.id,
+                universityId: university.id
             });
 
-            // Create student
             student = await Student.create({
                 firstName: 'John',
                 lastName: 'Doe',
@@ -69,35 +69,35 @@ describe('Debug updateStudentPassword edge cases', () => {
     });
 
     test('should debug minimum password length', async () => {
-        const minPassword = '12345678'; // exactly 8 characters
+        const minPassword = '12345678';
         console.log('Min password length:', minPassword.length);
-        
-        const res = await request(app)
-            .put('/api/v1/students/password')
-            .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-                id: student.id,
-                password: minPassword,
-                confirmPassword: minPassword
-            });
-        
+
+        const res = await request(app).
+        put('/api/v1/students/password').
+        set('Authorization', `Bearer ${adminToken}`).
+        send({
+            id: student.id,
+            password: minPassword,
+            confirmPassword: minPassword
+        });
+
         console.log('Min password - Response status:', res.status);
         console.log('Min password - Response body:', JSON.stringify(res.body, null, 2));
     });
 
     test('should debug maximum password length', async () => {
-        const maxPassword = 'a'.repeat(128); // exactly 128 characters
+        const maxPassword = 'a'.repeat(128);
         console.log('Max password length:', maxPassword.length);
-        
-        const res = await request(app)
-            .put('/api/v1/students/password')
-            .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-                id: student.id,
-                password: maxPassword,
-                confirmPassword: maxPassword
-            });
-        
+
+        const res = await request(app).
+        put('/api/v1/students/password').
+        set('Authorization', `Bearer ${adminToken}`).
+        send({
+            id: student.id,
+            password: maxPassword,
+            confirmPassword: maxPassword
+        });
+
         console.log('Max password - Response status:', res.status);
         console.log('Max password - Response body:', JSON.stringify(res.body, null, 2));
     });

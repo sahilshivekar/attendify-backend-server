@@ -1,4 +1,6 @@
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.js';
 import setupTestDb from '../../util/setupTestDb.js';
@@ -19,37 +21,35 @@ describe('Teacher API - bulkCreateTeachers', () => {
 
     beforeEach(async () => {
         try {
-            // Create test university first
+
             university = await University.create({
                 name: 'Test University',
-                abbreviation: 'TU',
+                abbreviation: 'TU'
             });
             branch = await Branch.create({
                 name: 'Computer Science',
-                abbreviation: 'CS',
+                abbreviation: 'CS'
             });
 
             scheme = await Scheme.create({
                 name: 'CS 2026 Scheme',
-                universityId: university.id,
+                universityId: university.id
             });
 
-            // Create admin
             const admin = await Admin.create({
                 email: 'testadmin@example.com',
                 username: 'testadmin',
-                password: 'Admin@12345',
+                password: 'Admin@12345'
             });
 
-            const adminLoginRes = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send({
-                    emailOrUsername: 'testadmin@example.com',
-                    password: 'Admin@12345',
-                });
+            const adminLoginRes = await request(app).
+            post('/api/v1/auth/admins/login').
+            send({
+                emailOrUsername: 'testadmin@example.com',
+                password: 'Admin@12345'
+            });
             adminToken = adminLoginRes.body.data.accessToken;
 
-            // Create teacher
             await Teacher.create({
                 firstName: 'Test',
                 lastName: 'Teacher',
@@ -60,15 +60,14 @@ describe('Teacher API - bulkCreateTeachers', () => {
                 role: 'Teacher'
             });
 
-            const teacherLoginRes = await request(app)
-                .post('/api/v1/auth/teachers/login')
-                .send({
-                    email: 'testteacher@example.com',
-                    password: 'Teacher@123',
-                });
+            const teacherLoginRes = await request(app).
+            post('/api/v1/auth/teachers/login').
+            send({
+                email: 'testteacher@example.com',
+                password: 'Teacher@123'
+            });
             teacherToken = teacherLoginRes.body.data.accessToken;
 
-            // Create student
             await Student.create({
                 firstName: 'Test',
                 lastName: 'Student',
@@ -83,12 +82,12 @@ describe('Teacher API - bulkCreateTeachers', () => {
                 gender: 'Male'
             });
 
-            const studentLoginRes = await request(app)
-                .post('/api/v1/auth/students/login')
-                .send({
-                    emailOrPRN: 'teststudent@example.com',
-                    password: 'Student@123',
-                });
+            const studentLoginRes = await request(app).
+            post('/api/v1/auth/students/login').
+            send({
+                emailOrPRN: 'teststudent@example.com',
+                password: 'Student@123'
+            });
             studentToken = studentLoginRes.body.data.accessToken;
 
         } catch (error) {
@@ -99,8 +98,7 @@ describe('Teacher API - bulkCreateTeachers', () => {
 
     describe('POST /api/v1/teachers/bulk/create', () => {
         const validTeachersData = () => ({
-            teachers: [
-                {
+            teachers: [{
                     firstName: 'Alice',
                     lastName: 'Johnson',
                     email: 'alice.teacher@example.com',
@@ -117,22 +115,23 @@ describe('Teacher API - bulkCreateTeachers', () => {
                     role: 'Teacher'
                 }
             ]
+
         });
 
         describe('Authentication', () => {
             test('should return 401 if no token provided', async () => {
-                const response = await request(app)
-                    .post('/api/v1/teachers/bulk/create')
-                    .send({
-                        teachers: [{
-                            firstName: 'Test',
-                            lastName: 'Teacher',
-                            email: 'test@example.com',
-                            phoneNumber: '+919876543210',
-                            gender: 'Male',
-                            role: 'Teacher'
-                        }]
-                    });
+                const response = await request(app).
+                post('/api/v1/teachers/bulk/create').
+                send({
+                    teachers: [{
+                        firstName: 'Test',
+                        lastName: 'Teacher',
+                        email: 'test@example.com',
+                        phoneNumber: '+919876543210',
+                        gender: 'Male',
+                        role: 'Teacher'
+                    }]
+                });
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
@@ -140,57 +139,57 @@ describe('Teacher API - bulkCreateTeachers', () => {
             });
 
             test('should return 401 if invalid token provided', async () => {
-                const response = await request(app)
-                    .post('/api/v1/teachers/bulk/create')
-                    .set('Authorization', 'Bearer invalidtoken')
-                    .send({
-                        teachers: [{
-                            firstName: 'Test',
-                            lastName: 'Teacher',
-                            email: 'test@example.com',
-                            phoneNumber: '+919876543210',
-                            gender: 'Male',
-                            role: 'Teacher'
-                        }]
-                    });
+                const response = await request(app).
+                post('/api/v1/teachers/bulk/create').
+                set('Authorization', 'Bearer invalidtoken').
+                send({
+                    teachers: [{
+                        firstName: 'Test',
+                        lastName: 'Teacher',
+                        email: 'test@example.com',
+                        phoneNumber: '+919876543210',
+                        gender: 'Male',
+                        role: 'Teacher'
+                    }]
+                });
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
             });
 
             test('should return 403 if student tries to bulk create', async () => {
-                const response = await request(app)
-                    .post('/api/v1/teachers/bulk/create')
-                    .set('Authorization', `Bearer ${studentToken}`)
-                    .send({
-                        teachers: [{
-                            firstName: 'Test',
-                            lastName: 'Teacher',
-                            email: 'test@example.com',
-                            phoneNumber: '+919876543210',
-                            gender: 'Male',
-                            role: 'Teacher'
-                        }]
-                    });
+                const response = await request(app).
+                post('/api/v1/teachers/bulk/create').
+                set('Authorization', `Bearer ${studentToken}`).
+                send({
+                    teachers: [{
+                        firstName: 'Test',
+                        lastName: 'Teacher',
+                        email: 'test@example.com',
+                        phoneNumber: '+919876543210',
+                        gender: 'Male',
+                        role: 'Teacher'
+                    }]
+                });
 
                 expect(response.status).toBe(httpStatus.FORBIDDEN);
                 expect(response.body.success).toBe(false);
             });
 
             test('should return 403 if teacher tries to bulk create', async () => {
-                const response = await request(app)
-                    .post('/api/v1/teachers/bulk/create')
-                    .set('Authorization', `Bearer ${teacherToken}`)
-                    .send({
-                        teachers: [{
-                            firstName: 'Test',
-                            lastName: 'Teacher',
-                            email: 'test@example.com',
-                            phoneNumber: '+919876543210',
-                            gender: 'Male',
-                            role: 'Teacher'
-                        }]
-                    });
+                const response = await request(app).
+                post('/api/v1/teachers/bulk/create').
+                set('Authorization', `Bearer ${teacherToken}`).
+                send({
+                    teachers: [{
+                        firstName: 'Test',
+                        lastName: 'Teacher',
+                        email: 'test@example.com',
+                        phoneNumber: '+919876543210',
+                        gender: 'Male',
+                        role: 'Teacher'
+                    }]
+                });
 
                 expect(response.status).toBe(httpStatus.FORBIDDEN);
                 expect(response.body.success).toBe(false);
@@ -199,10 +198,10 @@ describe('Teacher API - bulkCreateTeachers', () => {
 
         describe('Validation', () => {
             test('should return 400 if teachers array is missing', async () => {
-                const response = await request(app)
-                    .post('/api/v1/teachers/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send({});
+                const response = await request(app).
+                post('/api/v1/teachers/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send({});
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -210,10 +209,12 @@ describe('Teacher API - bulkCreateTeachers', () => {
             });
 
             test('should return 400 if teachers array is empty', async () => {
-                const response = await request(app)
-                    .post('/api/v1/teachers/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send({ teachers: [] });
+                const response = await request(app).
+                post('/api/v1/teachers/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send({
+                    teachers: []
+                });
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -221,7 +222,9 @@ describe('Teacher API - bulkCreateTeachers', () => {
             });
 
             test('should handle large teacher arrays within limits', async () => {
-                const teachers = Array.from({ length: 10 }, (_, index) => ({
+                const teachers = Array.from({
+                    length: 10
+                }, (_, index) => ({
                     firstName: `Teacher${index}`,
                     lastName: 'Test',
                     email: `teacher${index}@example.com`,
@@ -230,10 +233,12 @@ describe('Teacher API - bulkCreateTeachers', () => {
                     role: 'Teacher'
                 }));
 
-                const response = await request(app)
-                    .post('/api/v1/teachers/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send({ teachers });
+                const response = await request(app).
+                post('/api/v1/teachers/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send({
+                    teachers
+                });
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);
@@ -242,13 +247,15 @@ describe('Teacher API - bulkCreateTeachers', () => {
             });
 
             test('should return 400 if firstName is missing', async () => {
-                const invalidData = { ...validTeachersData() };
+                const invalidData = {
+                    ...validTeachersData()
+                };
                 delete invalidData.teachers[0].firstName;
 
-                const response = await request(app)
-                    .post('/api/v1/teachers/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                post('/api/v1/teachers/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -256,13 +263,15 @@ describe('Teacher API - bulkCreateTeachers', () => {
             });
 
             test('should return 400 if email format is invalid', async () => {
-                const invalidData = { ...validTeachersData() };
+                const invalidData = {
+                    ...validTeachersData()
+                };
                 invalidData.teachers[0].email = 'invalid-email';
 
-                const response = await request(app)
-                    .post('/api/v1/teachers/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                post('/api/v1/teachers/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -270,13 +279,15 @@ describe('Teacher API - bulkCreateTeachers', () => {
             });
 
             test('should return 400 if gender is missing', async () => {
-                const invalidData = { ...validTeachersData() };
+                const invalidData = {
+                    ...validTeachersData()
+                };
                 delete invalidData.teachers[0].gender;
 
-                const response = await request(app)
-                    .post('/api/v1/teachers/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                post('/api/v1/teachers/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -286,13 +297,15 @@ describe('Teacher API - bulkCreateTeachers', () => {
 
         describe('Business Logic Validation', () => {
             test('should handle duplicate emails in request gracefully', async () => {
-                const duplicateData = { ...validTeachersData() };
-                duplicateData.teachers[1].email = duplicateData.teachers[0].email; // Same email
+                const duplicateData = {
+                    ...validTeachersData()
+                };
+                duplicateData.teachers[1].email = duplicateData.teachers[0].email;
 
-                const response = await request(app)
-                    .post('/api/v1/teachers/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(duplicateData);
+                const response = await request(app).
+                post('/api/v1/teachers/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(duplicateData);
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);
@@ -301,20 +314,20 @@ describe('Teacher API - bulkCreateTeachers', () => {
             });
 
             test('should handle existing email in database gracefully', async () => {
-                // First create a teacher with the same email as in validTeachersData
+
                 await Teacher.create({
                     firstName: 'Existing',
                     lastName: 'Teacher',
-                    email: 'alice.teacher@example.com', // Same as in validTeachersData
+                    email: 'alice.teacher@example.com',
                     phoneNumber: '+919876543299',
                     gender: 'Female',
                     role: 'Teacher'
                 });
 
-                const response = await request(app)
-                    .post('/api/v1/teachers/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(validTeachersData());
+                const response = await request(app).
+                post('/api/v1/teachers/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(validTeachersData());
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);
@@ -325,10 +338,10 @@ describe('Teacher API - bulkCreateTeachers', () => {
 
         describe('Success Cases', () => {
             test('should bulk create teachers successfully', async () => {
-                const response = await request(app)
-                    .post('/api/v1/teachers/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(validTeachersData());
+                const response = await request(app).
+                post('/api/v1/teachers/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(validTeachersData());
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);
@@ -343,7 +356,6 @@ describe('Teacher API - bulkCreateTeachers', () => {
                 expect(response.body.data.summary.created).toBe(2);
                 expect(response.body.data.summary.failed).toBe(0);
 
-                // Verify teachers exist in database
                 const createdTeachers = await Teacher.findAll({
                     where: {
                         email: ['alice.teacher@example.com', 'bob.teacher@example.com']
@@ -357,10 +369,10 @@ describe('Teacher API - bulkCreateTeachers', () => {
                     teachers: [validTeachersData().teachers[0]]
                 };
 
-                const response = await request(app)
-                    .post('/api/v1/teachers/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(singleTeacherData);
+                const response = await request(app).
+                post('/api/v1/teachers/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(singleTeacherData);
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);
@@ -369,15 +381,17 @@ describe('Teacher API - bulkCreateTeachers', () => {
             });
 
             test('should handle optional fields correctly', async () => {
-                const dataWithOptionals = { ...validTeachersData() };
+                const dataWithOptionals = {
+                    ...validTeachersData()
+                };
                 dataWithOptionals.teachers[0].middleName = 'Marie';
                 dataWithOptionals.teachers[0].highestQualification = 'PhD';
                 dataWithOptionals.teachers[0].isActive = true;
 
-                const response = await request(app)
-                    .post('/api/v1/teachers/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(dataWithOptionals);
+                const response = await request(app).
+                post('/api/v1/teachers/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(dataWithOptionals);
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);

@@ -1,4 +1,6 @@
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.js';
 import setupTestDb from '../../util/setupTestDb.js';
@@ -15,14 +17,23 @@ import Course from '../../../db/models/course.model.js';
 import Room from '../../../db/models/room.model.js';
 import Timetable from '../../../db/models/timetable.model.js';
 import Class from '../../../db/models/class.model.js';
-import { Attendance, AttendanceStudent } from '../../../db/models/attendance.model.js';
+import {
+    Attendance,
+    AttendanceStudent
+} from '../../../db/models/attendance.model.js';
 import StudentSemester from '../../../db/models/studentSemester.model.js';
 import StudentDivision from '../../../db/models/studentDivision.model.js';
 import StudentBatch from '../../../db/models/studentBatch.model.js';
-import { faker } from '@faker-js/faker';
+import {
+    faker
+} from '@faker-js/faker';
 import httpStatus from 'http-status';
-import { ROLES } from '../../../config/roles.js';
-import { logger } from '../../../config/logger.js';
+import {
+    ROLES
+} from '../../../config/roles.js';
+import {
+    logger
+} from '../../../config/logger.js';
 
 setupTestDb();
 
@@ -47,32 +58,31 @@ describe('Attendance API - createAttendance', () => {
     let attendance;
 
     beforeEach(async () => {
-        // Create admin and login
+
         await Admin.create({
             email: 'admin@example.com',
             username: 'adminuser',
-            password: 'Admin@12345',
+            password: 'Admin@12345'
         });
-        const adminLoginRes = await request(app)
-            .post('/api/v1/auth/admins/login')
-            .send({
-                emailOrUsername: 'admin@example.com',
-                password: 'Admin@12345',
-            });
+        const adminLoginRes = await request(app).
+        post('/api/v1/auth/admins/login').
+        send({
+            emailOrUsername: 'admin@example.com',
+            password: 'Admin@12345'
+        });
         adminToken = adminLoginRes.body.data.accessToken;
 
-        // Create dependencies
         university = await University.create({
             name: 'Test University',
-            abbreviation: 'TU',
+            abbreviation: 'TU'
         });
         branch = await Branch.create({
             name: 'Computer Science',
-            abbreviation: 'CS',
+            abbreviation: 'CS'
         });
         scheme = await Scheme.create({
             name: 'CS 2026 Scheme',
-            universityId: university.id,
+            universityId: university.id
         });
         semester = await Semester.create({
             semesterNumber: 1,
@@ -81,18 +91,17 @@ describe('Attendance API - createAttendance', () => {
             academicEndYear: 2026,
             startDate: '2025-08-01',
             endDate: '2025-12-31',
-            schemeId: scheme.id,
+            schemeId: scheme.id
         });
         division = await Division.create({
             divisionCode: 'A',
-            semesterId: semester.id,
+            semesterId: semester.id
         });
         batch = await Batch.create({
             batchCode: 'Batch 1',
-            divisionId: division.id,
+            divisionId: division.id
         });
 
-        // Create teacher
         teacher = await Teacher.create({
             firstName: 'John',
             lastName: 'Doe',
@@ -102,15 +111,14 @@ describe('Attendance API - createAttendance', () => {
             gender: 'Male',
             role: 'Teacher'
         });
-        const teacherLoginRes = await request(app)
-            .post('/api/v1/auth/teachers/login')
-            .send({
-                email: 'teacher@example.com',
-                password: 'Teacher@123',
-            });
+        const teacherLoginRes = await request(app).
+        post('/api/v1/auth/teachers/login').
+        send({
+            email: 'teacher@example.com',
+            password: 'Teacher@123'
+        });
         teacherToken = teacherLoginRes.body.data.accessToken;
 
-        // Create students
         student1 = await Student.create({
             firstName: 'Jane',
             lastName: 'Smith',
@@ -151,72 +159,70 @@ describe('Attendance API - createAttendance', () => {
             gender: 'Male'
         });
 
-        const studentLoginRes = await request(app)
-            .post('/api/v1/auth/students/login')
-            .send({
-                emailOrPRN: 'student1@example.com',
-                password: 'Student@123',
-            });
+        const studentLoginRes = await request(app).
+        post('/api/v1/auth/students/login').
+        send({
+            emailOrPRN: 'student1@example.com',
+            password: 'Student@123'
+        });
         studentToken = studentLoginRes.body.data.accessToken;
 
-        // Add students to semester, division, and batch
         await StudentSemester.create({
             studentId: student1.id,
-            semesterId: semester.id,
+            semesterId: semester.id
         });
         await StudentSemester.create({
             studentId: student2.id,
-            semesterId: semester.id,
+            semesterId: semester.id
         });
         await StudentSemester.create({
             studentId: student3.id,
-            semesterId: semester.id,
+            semesterId: semester.id
         });
 
         await StudentDivision.create({
             studentId: student1.id,
             divisionId: division.id,
-            startDate: '2025-08-01',
+            startDate: '2025-08-01'
         });
         await StudentDivision.create({
             studentId: student2.id,
             divisionId: division.id,
-            startDate: '2025-08-01',
+            startDate: '2025-08-01'
         });
         await StudentDivision.create({
             studentId: student3.id,
             divisionId: division.id,
-            startDate: '2025-08-01',
+            startDate: '2025-08-01'
         });
 
         await StudentBatch.create({
             studentId: student1.id,
             batchId: batch.id,
-            startDate: '2025-08-01',
+            startDate: '2025-08-01'
         });
         await StudentBatch.create({
             studentId: student2.id,
             batchId: batch.id,
-            startDate: '2025-08-01',
+            startDate: '2025-08-01'
         });
         await StudentBatch.create({
             studentId: student3.id,
             batchId: batch.id,
-            startDate: '2025-08-01',
+            startDate: '2025-08-01'
         });
 
-        // Create course, room, timetable, class
         course = await Course.create({
             name: 'Programming Fundamentals',
             code: 'CS101',
-            schemeId: scheme.id,
+            schemeId: scheme.id
         });
         room = await Room.create({
             roomNumber: '101',
             sittingCapacity: 60
         });
         timetable = await Timetable.create({
-            divisionId: division.id,
+            divisionId: division.id
         });
         classEntity = await Class.create({
             teacherId: teacher.id,
@@ -229,27 +235,22 @@ describe('Attendance API - createAttendance', () => {
             activeTill: '2025-10-31',
             classType: 'Lecture',
             courseId: course.id,
-            timetableId: timetable.id,
+            timetableId: timetable.id
         });
 
-        // Create attendance
-        // attendance = await Attendance.create({
-        //     classId: classEntity.id,
-        //     date: '2025-09-10',
-        // });
     });
 
     describe('POST /api/v1/attendances', () => {
         const validAttendanceData = () => ({
             classId: classEntity.id,
-            date: '2025-09-10',
+            date: '2025-09-10'
         });
 
         describe('Authentication', () => {
             test('should return 401 if no token provided', async () => {
-                const response = await request(app)
-                    .post('/api/v1/attendances')
-                    .send(validAttendanceData());
+                const response = await request(app).
+                post('/api/v1/attendances').
+                send(validAttendanceData());
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
@@ -257,20 +258,20 @@ describe('Attendance API - createAttendance', () => {
             });
 
             test('should return 401 if invalid token provided', async () => {
-                const response = await request(app)
-                    .post('/api/v1/attendances')
-                    .set('Authorization', 'Bearer invalidtoken')
-                    .send(validAttendanceData());
+                const response = await request(app).
+                post('/api/v1/attendances').
+                set('Authorization', 'Bearer invalidtoken').
+                send(validAttendanceData());
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
             });
 
             test('should return 403 if student tries to create attendance', async () => {
-                const response = await request(app)
-                    .post('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${studentToken}`)
-                    .send(validAttendanceData());
+                const response = await request(app).
+                post('/api/v1/attendances').
+                set('Authorization', `Bearer ${studentToken}`).
+                send(validAttendanceData());
 
                 expect(response.status).toBe(httpStatus.FORBIDDEN);
                 expect(response.body.success).toBe(false);
@@ -280,13 +281,15 @@ describe('Attendance API - createAttendance', () => {
 
         describe('Validation', () => {
             test('should return 400 if classId is missing', async () => {
-                const invalidData = { ...validAttendanceData() };
+                const invalidData = {
+                    ...validAttendanceData()
+                };
                 delete invalidData.classId;
 
-                const response = await request(app)
-                    .post('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                post('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -294,12 +297,15 @@ describe('Attendance API - createAttendance', () => {
             });
 
             test('should return 400 if classId is not a valid UUID', async () => {
-                const invalidData = { ...validAttendanceData(), classId: 'invalid-uuid' };
+                const invalidData = {
+                    ...validAttendanceData(),
+                    classId: 'invalid-uuid'
+                };
 
-                const response = await request(app)
-                    .post('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                post('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -307,13 +313,15 @@ describe('Attendance API - createAttendance', () => {
             });
 
             test('should return 400 if date is missing', async () => {
-                const invalidData = { ...validAttendanceData() };
+                const invalidData = {
+                    ...validAttendanceData()
+                };
                 delete invalidData.date;
 
-                const response = await request(app)
-                    .post('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                post('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -321,12 +329,15 @@ describe('Attendance API - createAttendance', () => {
             });
 
             test('should return 400 if date format is invalid', async () => {
-                const invalidData = { ...validAttendanceData(), date: '15-01-2025' };
+                const invalidData = {
+                    ...validAttendanceData(),
+                    date: '15-01-2025'
+                };
 
-                const response = await request(app)
-                    .post('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                post('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -334,12 +345,15 @@ describe('Attendance API - createAttendance', () => {
             });
 
             test('should return 400 if date is invalid', async () => {
-                const invalidData = { ...validAttendanceData(), date: '2025-13-32' };
+                const invalidData = {
+                    ...validAttendanceData(),
+                    date: '2025-13-32'
+                };
 
-                const response = await request(app)
-                    .post('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                post('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -349,11 +363,11 @@ describe('Attendance API - createAttendance', () => {
 
         describe('Success Cases', () => {
             test('should create attendance successfully with admin token', async () => {
-                const response = await request(app)
-                    .post('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(validAttendanceData());
-                    
+                const response = await request(app).
+                post('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(validAttendanceData());
+
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);
                 expect(response.body.message).toContain('created successfully');
@@ -361,7 +375,6 @@ describe('Attendance API - createAttendance', () => {
                 expect(response.body.data.classId).toBe(classEntity.id);
                 expect(response.body.data.date).toBe('2025-09-10');
 
-                // Verify in database
                 const attendance = await Attendance.findByPk(response.body.data.id);
                 expect(attendance).toBeTruthy();
                 expect(attendance.classId).toBe(classEntity.id);
@@ -369,10 +382,10 @@ describe('Attendance API - createAttendance', () => {
             });
 
             test('should create attendance successfully with teacher token', async () => {
-                const response = await request(app)
-                    .post('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${teacherToken}`)
-                    .send(validAttendanceData());
+                const response = await request(app).
+                post('/api/v1/attendances').
+                set('Authorization', `Bearer ${teacherToken}`).
+                send(validAttendanceData());
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);
@@ -383,15 +396,15 @@ describe('Attendance API - createAttendance', () => {
             });
 
             test('should return 404 if class does not exist', async () => {
-                const invalidData = { 
-                    ...validAttendanceData(), 
-                    classId: faker.string.uuid() 
+                const invalidData = {
+                    ...validAttendanceData(),
+                    classId: faker.string.uuid()
                 };
 
-                const response = await request(app)
-                    .post('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                post('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.NOT_FOUND);
                 expect(response.body.success).toBe(false);
@@ -399,17 +412,16 @@ describe('Attendance API - createAttendance', () => {
             });
 
             test('should return 409 if attendance already exists for the class and date', async () => {
-                // Create first attendance
-                await request(app)
-                    .post('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(validAttendanceData());
 
-                // Try to create duplicate attendance
-                const response = await request(app)
-                    .post('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(validAttendanceData());
+                await request(app).
+                post('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(validAttendanceData());
+
+                const response = await request(app).
+                post('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(validAttendanceData());
 
                 expect(response.status).toBe(httpStatus.CONFLICT);
                 expect(response.body.success).toBe(false);

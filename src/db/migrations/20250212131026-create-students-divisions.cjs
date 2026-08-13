@@ -1,6 +1,5 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable('students_divisions', {
@@ -33,7 +32,7 @@ module.exports = {
             rollNo: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
-                field: 'roll_no',
+                field: 'roll_no'
             },
             startDate: {
                 type: Sequelize.DATEONLY,

@@ -1,83 +1,78 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        // await queryInterface.sequelize.query(`
-        //     CREATE TYPE public.enum_students_admission_type AS ENUM ('DSE', 'FE');
-        //   `);
-        // Create the ENUM type for biometric verification status
+
         await queryInterface.sequelize.query(`
             CREATE TYPE "enum_students_biometric_verification_status" AS ENUM ('Not Submitted', 'Pending Review', 'Approved', 'Rejected');
         `);
 
         await queryInterface.createTable(
-            'students',
-            {
+            'students', {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
                     primaryKey: true,
-                    field: 'student_id',
+                    field: 'student_id'
                 },
                 prn: {
                     type: Sequelize.STRING,
                     allowNull: false,
                     unique: true,
-                    field: 'student_prn',
+                    field: 'student_prn'
                 },
                 firstName: {
                     type: Sequelize.STRING,
                     allowNull: false,
-                    field: 'first_name',
+                    field: 'first_name'
                 },
                 lastName: {
                     type: Sequelize.STRING,
                     allowNull: false,
-                    field: 'last_name',
+                    field: 'last_name'
                 },
                 middleName: {
                     type: Sequelize.STRING,
                     allowNull: true,
-                    field: 'middle_name',
+                    field: 'middle_name'
                 },
                 dob: {
                     type: Sequelize.DATEONLY,
                     allowNull: true,
-                    field: 'dob',
+                    field: 'dob'
                 },
                 gender: {
                     type: Sequelize.STRING,
                     allowNull: false,
-                    field: 'gender',
+                    field: 'gender'
                 },
                 email: {
                     type: Sequelize.STRING,
                     allowNull: false,
                     unique: true,
-                    field: 'email',
+                    field: 'email'
                 },
                 phoneNumber: {
                     type: Sequelize.STRING,
                     allowNull: false,
                     unique: true,
-                    field: 'phone_number',
+                    field: 'phone_number'
                 },
                 parentEmail: {
                     type: Sequelize.STRING,
                     allowNull: true,
                     unique: false,
-                    field: 'parent_email',
+                    field: 'parent_email'
                 },
                 admissionYear: {
                     type: Sequelize.INTEGER,
                     allowNull: false,
-                    field: 'admission_year',
+                    field: 'admission_year'
                 },
                 admissionType: {
                     type: Sequelize.ENUM('DSE', 'FE'),
                     allowNull: false,
-                    field: 'admission_type',
+                    field: 'admission_type'
                 },
                 password: {
                     type: Sequelize.STRING,
@@ -93,48 +88,49 @@ module.exports = {
                 studentImgUrl: {
                     type: Sequelize.TEXT,
                     allowNull: true,
-                    field: 'student_img_url',
+                    field: 'student_img_url'
                 },
                 studentImgPublicId: {
                     type: Sequelize.TEXT,
                     allowNull: true,
-                    field: 'student_img_public_id',
+                    field: 'student_img_public_id'
                 },
                 schemeId: {
                     type: Sequelize.UUID,
                     allowNull: false,
                     references: {
-                        model: 'schemes', // Ensure 'schemes' table exists
-                        key: 'scheme_id',
-                    }, onDelete: 'CASCADE',
-                    field: 'scheme_id',
+                        model: 'schemes',
+                        key: 'scheme_id'
+                    },
+                    onDelete: 'CASCADE',
+                    field: 'scheme_id'
                 },
                 branchId: {
                     type: Sequelize.UUID,
                     allowNull: false,
                     references: {
-                        model: 'branches', // Ensure 'branches' table exists
-                        key: 'branch_id',
+                        model: 'branches',
+                        key: 'branch_id'
                     },
                     onDelete: 'CASCADE',
-                    field: 'branch_id',
+                    field: 'branch_id'
                 },
                 faceDescriptor: {
                     type: Sequelize.ARRAY(Sequelize.FLOAT),
                     allowNull: true,
-                    field: 'face_descriptor',
+                    field: 'face_descriptor'
                 },
                 biometricVerificationStatus: {
                     type: Sequelize.ENUM('Not Submitted', 'Pending Review', 'Approved', 'Rejected'),
                     allowNull: false,
                     defaultValue: 'Not Submitted',
-                    field: 'biometric_verification_status',
+                    field: 'biometric_verification_status'
                 },
                 faceImageKeys: {
                     type: Sequelize.ARRAY(Sequelize.TEXT),
                     allowNull: true,
                     defaultValue: [],
-                    field: 'face_image_keys',
+                    field: 'face_image_keys'
                 },
                 createdAt: {
                     type: Sequelize.DATE,
@@ -148,10 +144,9 @@ module.exports = {
                     field: 'updated_at',
                     defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
                 }
-            },
-            {
-                timestamps: true, // Enables automatic 'createdAt' and 'updatedAt'
-                freezeTableName: true,
+            }, {
+                timestamps: true,
+                freezeTableName: true
             }
         );
 
@@ -166,9 +161,8 @@ module.exports = {
     async down(queryInterface, Sequelize) {
         await queryInterface.dropTable('students');
 
-        // Drop the ENUM type
         await queryInterface.sequelize.query(`
             DROP TYPE IF EXISTS "enum_students_biometric_verification_status";
         `);
-    },
+    }
 };

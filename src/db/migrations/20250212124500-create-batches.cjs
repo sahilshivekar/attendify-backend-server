@@ -1,11 +1,9 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable(
-            'batches',
-            {
+            'batches', {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
@@ -15,7 +13,7 @@ module.exports = {
                 batchCode: {
                     type: Sequelize.STRING(255),
                     allowNull: false,
-                    field: 'batch_code',
+                    field: 'batch_code'
                 },
                 divisionId: {
                     type: Sequelize.UUID,
@@ -25,7 +23,7 @@ module.exports = {
                         model: 'divisions',
                         key: 'division_id'
                     },
-                    onDelete: 'CASCADE',
+                    onDelete: 'CASCADE'
                 },
                 createdAt: {
                     type: Sequelize.DATE,
@@ -39,8 +37,7 @@ module.exports = {
                     field: 'updated_at',
                     defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
                 }
-            },
-            {
+            }, {
                 timestamps: true,
                 freezeTableName: true,
                 uniqueKeys: {

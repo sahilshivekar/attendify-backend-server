@@ -1,4 +1,6 @@
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.js';
 import setupTestDb from '../../util/setupTestDb.js';
@@ -10,8 +12,12 @@ import Scheme from '../../../db/models/scheme.model.js';
 import httpStatus from 'http-status';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { faker } from '@faker-js/faker';
+import {
+    fileURLToPath
+} from 'url';
+import {
+    faker
+} from '@faker-js/faker';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,27 +31,27 @@ describe('Student API - POST /api/v1/students/bulk/csv', () => {
     let scheme;
     let tempDir;
 
-    // Helper function to create a temporary CSV file
     const createTempCSV = (content, filename = 'test_students.csv') => {
         tempDir = path.join(__dirname, '..', '..', '..', '..', 'public', 'temp');
         if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
+            fs.mkdirSync(tempDir, {
+                recursive: true
+            });
         }
         const filePath = path.join(tempDir, filename);
         fs.writeFileSync(filePath, content);
         return filePath;
     };
 
-    // Helper function to clean up temp files
     const cleanupTempFiles = () => {
         if (tempDir && fs.existsSync(tempDir)) {
             const files = fs.readdirSync(tempDir);
-            files.forEach(file => {
+            files.forEach((file) => {
                 if (file.startsWith('test_') && file.endsWith('.csv')) {
                     try {
                         fs.unlinkSync(path.join(tempDir, file));
                     } catch (e) {
-                        // Ignore cleanup errors
+
                     }
                 }
             });
@@ -54,32 +60,31 @@ describe('Student API - POST /api/v1/students/bulk/csv', () => {
 
     beforeEach(async () => {
         try {
-            // Create admin and login
+
             await Admin.create({
                 email: 'admin@example.com',
                 username: 'adminuser',
-                password: 'Admin@12345',
+                password: 'Admin@12345'
             });
-            const adminLoginRes = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send({
-                    emailOrUsername: 'admin@example.com',
-                    password: 'Admin@12345',
-                });
+            const adminLoginRes = await request(app).
+            post('/api/v1/auth/admins/login').
+            send({
+                emailOrUsername: 'admin@example.com',
+                password: 'Admin@12345'
+            });
             adminToken = adminLoginRes.body.data.accessToken;
 
-            // Create dependencies
             university = await University.create({
                 name: 'Test University',
-                abbreviation: 'TU',
+                abbreviation: 'TU'
             });
             branch = await Branch.create({
                 name: 'Computer Science',
-                abbreviation: 'CS',
+                abbreviation: 'CS'
             });
             scheme = await Scheme.create({
                 name: 'CS 2026 Scheme',
-                universityId: university.id,
+                universityId: university.id
             });
         } catch (err) {
             console.error('beforeEach setup error:', err);
@@ -97,9 +102,9 @@ describe('Student API - POST /api/v1/students/bulk/csv', () => {
 STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent);
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.UNAUTHORIZED);
         });
@@ -109,10 +114,10 @@ STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branc
 STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent);
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', 'Bearer invalidtoken')
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', 'Bearer invalidtoken').
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.UNAUTHORIZED);
         });
@@ -120,9 +125,9 @@ STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branc
 
     describe('File Validation Tests', () => {
         test('should return 400 when no file is provided', async () => {
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`);
 
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
             expect(res.body.message).toContain('CSV file is required');
@@ -132,10 +137,10 @@ STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branc
             const csvContent = `prn,firstName,lastName,email,phoneNumber,gender,schemeId,admissionYear,admissionType,branchId`;
             const filePath = createTempCSV(csvContent, 'test_empty.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
             expect(res.body.message).toContain('CSV file is empty or contains no valid data');
@@ -148,10 +153,10 @@ STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branc
 ,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_missing_prn.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
             expect(res.body.message).toContain('Validation failed');
@@ -162,10 +167,10 @@ STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branc
 STU001,John,Doe,invalid-email,+919876543210,Male,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_invalid_email.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
             expect(res.body.message).toContain('Validation failed');
@@ -176,10 +181,10 @@ STU001,John,Doe,invalid-email,+919876543210,Male,${scheme.id},2025,FE,${branch.i
 STU001,John,Doe,john@example.com,+919876543210,InvalidGender,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_invalid_gender.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
             expect(res.body.message).toContain('Validation failed');
@@ -190,10 +195,10 @@ STU001,John,Doe,john@example.com,+919876543210,InvalidGender,${scheme.id},2025,F
 STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,INVALID,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_invalid_admission_type.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
             expect(res.body.message).toContain('Validation failed');
@@ -204,10 +209,10 @@ STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,INVALID,${
 STU001,John,Doe,john@example.com,+919876543210,Male,invalid-uuid,2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_invalid_schemeid.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
             expect(res.body.message).toContain('Validation failed');
@@ -218,10 +223,10 @@ STU001,John,Doe,john@example.com,+919876543210,Male,invalid-uuid,2025,FE,${branc
 STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,invalid-uuid`;
             const filePath = createTempCSV(csvContent, 'test_invalid_branchid.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
             expect(res.body.message).toContain('Validation failed');
@@ -235,10 +240,10 @@ STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branc
 STU002,Jane,Smith,john@example.com,+919876543211,Female,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_dup_emails.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
             expect(res.body.message).toContain('Duplicate emails found within CSV file');
@@ -250,17 +255,17 @@ STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branc
 STU001,Jane,Smith,jane@example.com,+919876543211,Female,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_dup_prns.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
             expect(res.body.message).toContain('Duplicate PRNs found within CSV file');
         });
 
         test('should return 400 when email already exists in database', async () => {
-            // First create a student
+
             await Student.create({
                 prn: 'EXISTING001',
                 firstName: 'Existing',
@@ -278,17 +283,17 @@ STU001,Jane,Smith,jane@example.com,+919876543211,Female,${scheme.id},2025,FE,${b
 STU001,John,Doe,existing@example.com,+919876543210,Male,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_existing_email.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
             expect(res.body.message).toContain('already exist in the database');
         });
 
         test('should return 400 when PRN already exists in database', async () => {
-            // First create a student
+
             await Student.create({
                 prn: 'EXISTING001',
                 firstName: 'Existing',
@@ -306,17 +311,17 @@ STU001,John,Doe,existing@example.com,+919876543210,Male,${scheme.id},2025,FE,${b
 EXISTING001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_existing_prn.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
             expect(res.body.message).toContain('already exist in the database');
         });
 
         test('should return 400 when phone number already exists in database', async () => {
-            // First create a student
+
             await Student.create({
                 prn: 'EXISTING001',
                 firstName: 'Existing',
@@ -334,10 +339,10 @@ EXISTING001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${
 STU001,John,Doe,john@example.com,+919876543200,Male,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_existing_phone.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
             expect(res.body.message).toContain('already exist in the database');
@@ -351,10 +356,10 @@ STU001,John,Doe,john@example.com,+919876543200,Male,${scheme.id},2025,FE,${branc
 STU001,John,Doe,john@example.com,+919876543210,Male,${fakeSchemeId},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_invalid_scheme.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.NOT_FOUND);
             expect(res.body.message).toContain('scheme IDs do not exist');
@@ -366,10 +371,10 @@ STU001,John,Doe,john@example.com,+919876543210,Male,${fakeSchemeId},2025,FE,${br
 STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${fakeBranchId}`;
             const filePath = createTempCSV(csvContent, 'test_invalid_branch.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.NOT_FOUND);
             expect(res.body.message).toContain('branch IDs do not exist');
@@ -382,10 +387,10 @@ STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${fakeB
 STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_single_success.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.CREATED);
             expect(res.body.message).toContain('Successfully created 1 students from CSV');
@@ -395,8 +400,11 @@ STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branc
             expect(res.body.data.students[0].firstName).toBe('John');
             expect(res.body.data.students[0].email).toBe('john@example.com');
 
-            // Verify in database
-            const student = await Student.findOne({ where: { prn: 'STU001' } });
+            const student = await Student.findOne({
+                where: {
+                    prn: 'STU001'
+                }
+            });
             expect(student).toBeTruthy();
             expect(student.firstName).toBe('John');
             expect(student.email).toBe('john@example.com');
@@ -409,17 +417,16 @@ STU002,Jane,Smith,jane@example.com,+919876543211,Female,${scheme.id},2025,DSE,${
 STU003,Bob,Wilson,bob@example.com,+919876543212,Male,${scheme.id},2023,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_multiple_success.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.CREATED);
             expect(res.body.message).toContain('Successfully created 3 students from CSV');
             expect(res.body.data.createdCount).toBe(3);
             expect(res.body.data.students).toHaveLength(3);
 
-            // Verify in database
             const students = await Student.findAll();
             expect(students).toHaveLength(3);
         });
@@ -429,16 +436,19 @@ STU003,Bob,Wilson,bob@example.com,+919876543212,Male,${scheme.id},2023,FE,${bran
 STU001,John,Michael,Doe,john@example.com,+919876543210,Male,1999/01/15,${scheme.id},2025,FE,${branch.id},parent@example.com`;
             const filePath = createTempCSV(csvContent, 'test_optional_fields.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.CREATED);
             expect(res.body.data.createdCount).toBe(1);
 
-            // Verify in database
-            const student = await Student.findOne({ where: { prn: 'STU001' } });
+            const student = await Student.findOne({
+                where: {
+                    prn: 'STU001'
+                }
+            });
             expect(student).toBeTruthy();
             expect(student.middleName).toBe('Michael');
             expect(student.parentEmail).toBe('parent@example.com');
@@ -450,15 +460,18 @@ STU001,John,Michael,Doe,john@example.com,+919876543210,Male,1999/01/15,${scheme.
 STU001,John,Doe,JOHN@EXAMPLE.COM,+919876543210,Male,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_email_normalize.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.CREATED);
 
-            // Verify email is lowercased in database
-            const student = await Student.findOne({ where: { prn: 'STU001' } });
+            const student = await Student.findOne({
+                where: {
+                    prn: 'STU001'
+                }
+            });
             expect(student.email).toBe('john@example.com');
         });
 
@@ -469,15 +482,19 @@ STU002,Jane,Smith,jane@example.com,+919876543211,Female,${scheme.id},2025,FE,${b
 STU003,Alex,Other,alex@example.com,+919876543212,Other,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_genders.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.CREATED);
             expect(res.body.data.createdCount).toBe(3);
 
-            const students = await Student.findAll({ order: [['prn', 'ASC']] });
+            const students = await Student.findAll({
+                order: [
+                    ['prn', 'ASC']
+                ]
+            });
             expect(students[0].gender).toBe('Male');
             expect(students[1].gender).toBe('Female');
             expect(students[2].gender).toBe('Other');
@@ -488,58 +505,59 @@ STU003,Alex,Other,alex@example.com,+919876543212,Other,${scheme.id},2025,FE,${br
 STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_default_password.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.CREATED);
 
-            // Verify student can login with default password
-            const student = await Student.findOne({ where: { prn: 'STU001' } });
+            const student = await Student.findOne({
+                where: {
+                    prn: 'STU001'
+                }
+            });
             expect(student).toBeTruthy();
-            expect(student.password).toBeTruthy(); // Password should be hashed
-            expect(student.password).not.toBe('Student@123'); // Should be hashed, not plaintext
+            expect(student.password).toBeTruthy();
+            expect(student.password).not.toBe('Student@123');
         });
     });
 
     describe('Transaction Rollback Tests', () => {
         test('should rollback all changes if validation fails for any row', async () => {
-            // Row 3 has invalid email
+
             const csvContent = `prn,firstName,lastName,email,phoneNumber,gender,schemeId,admissionYear,admissionType,branchId
 STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branch.id}
 STU002,Jane,Smith,jane@example.com,+919876543211,Female,${scheme.id},2025,FE,${branch.id}
 STU003,Bob,Wilson,invalid-email,+919876543212,Male,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_partial_invalid.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.BAD_REQUEST);
 
-            // Verify no students were created
             const students = await Student.findAll();
             expect(students).toHaveLength(0);
         });
 
         test('should rollback if foreign key constraint fails', async () => {
             const fakeSchemeId = faker.string.uuid();
-            // First row is valid, second row has invalid schemeId
+
             const csvContent = `prn,firstName,lastName,email,phoneNumber,gender,schemeId,admissionYear,admissionType,branchId
 STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branch.id}
 STU002,Jane,Smith,jane@example.com,+919876543211,Female,${fakeSchemeId},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_fk_rollback.csv');
 
-            const res = await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            const res = await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
             expect(res.status).toBe(httpStatus.NOT_FOUND);
 
-            // Verify no students were created
             const students = await Student.findAll();
             expect(students).toHaveLength(0);
         });
@@ -550,17 +568,14 @@ STU002,Jane,Smith,jane@example.com,+919876543211,Female,${fakeSchemeId},2025,FE,
             const csvContent = `prn,firstName,lastName,email,phoneNumber,gender,schemeId,admissionYear,admissionType,branchId
 STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_cleanup_success.csv');
-            
-            // Verify file exists before request
+
             expect(fs.existsSync(filePath)).toBe(true);
 
-            await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
-            // Note: The file is cleaned up by the controller, so we can't check here
-            // as the file path we created is different from what multer saves
         });
 
         test('should clean up temp file after validation error', async () => {
@@ -568,12 +583,11 @@ STU001,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branc
 ,John,Doe,john@example.com,+919876543210,Male,${scheme.id},2025,FE,${branch.id}`;
             const filePath = createTempCSV(csvContent, 'test_cleanup_error.csv');
 
-            await request(app)
-                .post('/api/v1/students/bulk/csv')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .attach('csvFile', filePath);
+            await request(app).
+            post('/api/v1/students/bulk/csv').
+            set('Authorization', `Bearer ${adminToken}`).
+            attach('csvFile', filePath);
 
-            // Note: The file is cleaned up by the controller
         });
     });
 });

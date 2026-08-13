@@ -1,27 +1,37 @@
-import { Op } from 'sequelize';
+import {
+    Op
+} from 'sequelize';
 import Student from '../db/models/student.model.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { ApiError } from '../utils/ApiError.js';
-import { ApiResponse } from '../utils/ApiResponse.js';
-import Dropout from '../db/models/dropout.model.js'
+import {
+    asyncHandler
+} from '../utils/asyncHandler.js';
+import {
+    ApiError
+} from '../utils/ApiError.js';
+import {
+    ApiResponse
+} from '../utils/ApiResponse.js';
+import Dropout from '../db/models/dropout.model.js';
 import Semester from '../db/models/semester.model.js';
 import StudentSemester from '../db/models/studentSemester.model.js';
 import sequelize from '../config/db.connection.js';
 import httpStatus from 'http-status';
 
 const addStudentToDropout = asyncHandler(async (req, res) => {
-    const { studentId, academicStartYear, academicEndYear } = req.body
+    const {
+        studentId,
+        academicStartYear,
+        academicEndYear
+    } = req.body;
 
-    // Input validation is handled by @dropout.validation.js
-
-    const student = await Student.findByPk(studentId)
+    const student = await Student.findByPk(studentId);
 
     if (!student) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Student not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Student not found");
     }
 
     if (academicStartYear < student.admissionYear) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Academic start year cannot be before student's admission year")
+        throw new ApiError(httpStatus.BAD_REQUEST, "Academic start year cannot be before student's admission year");
     }
 
     const isAlreayInDropout = await Dropout.findOne({
@@ -30,15 +40,14 @@ const addStudentToDropout = asyncHandler(async (req, res) => {
             academicStartYear,
             academicEndYear
         }
-    })
+    });
 
     if (isAlreayInDropout) {
-        throw new ApiError(httpStatus.CONFLICT, "Student is already in dropout")
+        throw new ApiError(httpStatus.CONFLICT, "Student is already in dropout");
     }
 
-    // Use transaction to ensure data consistency
     const dropout = await sequelize.transaction(async (t) => {
-        // Find all semesters for the given academic year
+
         const semesters = await Semester.findAll({
             where: {
                 academicStartYear,
@@ -46,11 +55,10 @@ const addStudentToDropout = asyncHandler(async (req, res) => {
             },
             attributes: ['id'],
             transaction: t
-        })
+        });
 
-        const semesterIds = semesters.map(sem => sem.id)
+        const semesterIds = semesters.map((sem) => sem.id);
 
-        // Remove all StudentSemester assignments for this student in the academic year
         if (semesterIds.length > 0) {
             await StudentSemester.destroy({
                 where: {
@@ -60,43 +68,46 @@ const addStudentToDropout = asyncHandler(async (req, res) => {
                     }
                 },
                 transaction: t
-            })
+            });
         }
 
-        // Create the dropout record
         const dropoutRecord = await Dropout.create({
             studentId,
             academicStartYear,
             academicEndYear
-        }, { transaction: t })
+        }, {
+            transaction: t
+        });
 
-        return dropoutRecord
-    })
+        return dropoutRecord;
+    });
 
-    res
-        .status(httpStatus.CREATED)
-        .json(
-            new ApiResponse(
-                httpStatus.CREATED,
-                "Student added to dropout successfully",
-                dropout
-            )
+    res.
+    status(httpStatus.CREATED).
+    json(
+        new ApiResponse(
+            httpStatus.CREATED,
+            "Student added to dropout successfully",
+            dropout
         )
-})
+    );
+});
 
 const removeStudentFromDropout = asyncHandler(async (req, res) => {
-    const { studentId, academicStartYear, academicEndYear } = req.query
+    const {
+        studentId,
+        academicStartYear,
+        academicEndYear
+    } = req.query;
 
-    // Input validation is handled by @dropout.validation.js
-
-    const student = await Student.findByPk(studentId)
+    const student = await Student.findByPk(studentId);
 
     if (!student) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Student not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Student not found");
     }
-    
+
     if (academicStartYear < student.admissionYear) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Academic start year cannot be before student's admission year")
+        throw new ApiError(httpStatus.BAD_REQUEST, "Academic start year cannot be before student's admission year");
     }
 
     const isAlreayInDropout = await Dropout.findOne({
@@ -105,29 +116,29 @@ const removeStudentFromDropout = asyncHandler(async (req, res) => {
             academicStartYear,
             academicEndYear
         }
-    })
+    });
 
     if (!isAlreayInDropout) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Student is not in dropout")
+        throw new ApiError(httpStatus.NOT_FOUND, "Student is not in dropout");
     }
 
-    await isAlreayInDropout.destroy()
+    await isAlreayInDropout.destroy();
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Student removed from dropout successfully",
-                null
-            )
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Student removed from dropout successfully",
+            null
         )
-})
+    );
+});
 
 const getDropoutById = asyncHandler(async (req, res) => {
-    const { id } = req.params
-
-    // Input validation is handled by @dropout.validation.js
+    const {
+        id
+    } = req.params;
 
     const dropout = await Dropout.findOne({
         where: {
@@ -138,27 +149,27 @@ const getDropoutById = asyncHandler(async (req, res) => {
             required: true,
             duplicating: false
         }
-    })
+    });
 
     if (!dropout) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Dropout details for given input not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Dropout details for given input not found");
     }
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Dropout fetched successfully",
-                dropout
-            )
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Dropout fetched successfully",
+            dropout
         )
-})
+    );
+});
 
 const getDropoutDetailsOfStudent = asyncHandler(async (req, res) => {
-    const { studentId } = req.query
-
-    // Input validation is handled by @dropout.validation.js
+    const {
+        studentId
+    } = req.query;
 
     const student = await Student.findByPk(studentId);
     if (!student) {
@@ -171,20 +182,20 @@ const getDropoutDetailsOfStudent = asyncHandler(async (req, res) => {
         }
     });
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Dropout fetched successfully",
-                dropouts
-            )
-        );
-})
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Dropout fetched successfully",
+            dropouts
+        )
+    );
+});
 
 export {
     addStudentToDropout,
     removeStudentFromDropout,
     getDropoutById,
     getDropoutDetailsOfStudent
-}
+};

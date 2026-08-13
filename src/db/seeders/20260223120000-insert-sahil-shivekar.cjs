@@ -1,34 +1,39 @@
 'use strict';
 
 const bcrypt = require('bcrypt');
-const { v4: uuidv4 } = require('uuid');
+const {
+    v4: uuidv4
+} = require('uuid');
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        // 1. Fetch foreign key data
+
         const branches = await queryInterface.sequelize.query(
-            `SELECT branch_id, branch_name FROM branches;`,
-            { type: queryInterface.sequelize.QueryTypes.SELECT }
+            `SELECT branch_id, branch_name FROM branches;`, {
+                type: queryInterface.sequelize.QueryTypes.SELECT
+            }
         );
         const schemes = await queryInterface.sequelize.query(
-            `SELECT scheme_id, scheme_name FROM schemes;`,
-            { type: queryInterface.sequelize.QueryTypes.SELECT }
+            `SELECT scheme_id, scheme_name FROM schemes;`, {
+                type: queryInterface.sequelize.QueryTypes.SELECT
+            }
         );
         const semesters = await queryInterface.sequelize.query(
-            `SELECT semester_id, branch_id, semester_number, academic_start_year, academic_end_year FROM semesters;`,
-            { type: queryInterface.sequelize.QueryTypes.SELECT }
+            `SELECT semester_id, branch_id, semester_number, academic_start_year, academic_end_year FROM semesters;`, {
+                type: queryInterface.sequelize.QueryTypes.SELECT
+            }
         );
         const divisions = await queryInterface.sequelize.query(
-            `SELECT division_id, semester_id, division_code FROM divisions;`,
-            { type: queryInterface.sequelize.QueryTypes.SELECT }
+            `SELECT division_id, semester_id, division_code FROM divisions;`, {
+                type: queryInterface.sequelize.QueryTypes.SELECT
+            }
         );
         const batches = await queryInterface.sequelize.query(
-            `SELECT batch_id, division_id, batch_code FROM batches;`,
-            { type: queryInterface.sequelize.QueryTypes.SELECT }
+            `SELECT batch_id, division_id, batch_code FROM batches;`, {
+                type: queryInterface.sequelize.QueryTypes.SELECT
+            }
         );
 
-        // 2. Create lookup maps
         const branchIdMap = branches.reduce((map, branch) => {
             map[branch.branch_name] = branch.branch_id;
             return map;
@@ -39,45 +44,40 @@ module.exports = {
             return map;
         }, {});
 
-        const revScheme = schemes.find(s => s.scheme_name.includes('REV-2019') && s.scheme_name.includes('Scheme'));
+        const revScheme = schemes.find((s) => s.scheme_name.includes('REV-2019') && s.scheme_name.includes('Scheme'));
         if (!branchIdMap['Computer Engineering'] || !revScheme) {
             throw new Error('Required branches or schemes not found for student seeding.');
         }
 
-        // Find semester: Sem 7, academic year 2026-2027, Comp Engg
         const compBranchId = branchIdMap['Computer Engineering'];
-        const semester = semesters.find(s => 
-            s.branch_id === compBranchId && 
-            s.semester_number === 7 && 
-            s.academic_start_year === 2026 && 
+        const semester = semesters.find((s) =>
+            s.branch_id === compBranchId &&
+            s.semester_number === 7 &&
+            s.academic_start_year === 2026 &&
             s.academic_end_year === 2027
         );
         if (!semester) {
             throw new Error('Required semester not found.');
         }
 
-        // Find division B for that semester
-        const division = divisions.find(d => 
-            d.semester_id === semester.semester_id && 
+        const division = divisions.find((d) =>
+            d.semester_id === semester.semester_id &&
             d.division_code === 'B'
         );
         if (!division) {
             throw new Error('Required division not found.');
         }
 
-        // Find batch BB1 for that division
-        const batch = batches.find(b => 
-            b.division_id === division.division_id && 
+        const batch = batches.find((b) =>
+            b.division_id === division.division_id &&
             b.batch_code === 'BB1'
         );
         if (!batch) {
             throw new Error('Required batch not found.');
         }
 
-        // 3. Hash the password
         const password = await bcrypt.hash('Sahil@124', Number(process.env.BCRYPT_SALT));
 
-        // 4. Create the student
         const studentId = uuidv4();
         const student = {
             student_id: studentId,
@@ -103,7 +103,6 @@ module.exports = {
 
         await queryInterface.bulkInsert('students', [student], {});
 
-        // 5. Assign to semester
         await queryInterface.bulkInsert('students_semesters', [{
             student_semester_id: uuidv4(),
             student_id: studentId,
@@ -112,21 +111,21 @@ module.exports = {
             updated_at: new Date()
         }], {});
 
-        // 6. Assign to division with correct semester-wide roll_no
-        const semesterDivisions = divisions.filter(d => d.semester_id === semester.semester_id);
+        const semesterDivisions = divisions.filter((d) => d.semester_id === semester.semester_id);
         if (!semesterDivisions.length) {
             throw new Error('No divisions found for the target semester when assigning roll_no.');
         }
 
-        const divisionIdListSql = semesterDivisions
-            .map(d => `'${d.division_id}'`)
-            .join(', ');
+        const divisionIdListSql = semesterDivisions.
+        map((d) => `'${d.division_id}'`).
+        join(', ');
 
         const maxRollRows = await queryInterface.sequelize.query(
             `SELECT COALESCE(MAX(roll_no), 0) AS max_roll_no
              FROM students_divisions
-             WHERE division_id IN (${divisionIdListSql});`,
-            { type: queryInterface.sequelize.QueryTypes.SELECT }
+             WHERE division_id IN (${divisionIdListSql});`, {
+                type: queryInterface.sequelize.QueryTypes.SELECT
+            }
         );
 
         const maxRollNo = maxRollRows?.[0]?.max_roll_no || 0;
@@ -142,7 +141,6 @@ module.exports = {
             updated_at: new Date()
         }], {});
 
-        // 7. Assign to batch
         await queryInterface.bulkInsert('students_batches', [{
             student_batch_id: uuidv4(),
             student_id: studentId,
@@ -155,17 +153,26 @@ module.exports = {
     },
 
     async down(queryInterface, Sequelize) {
-        // Remove the student and assignments
+
         const student = await queryInterface.sequelize.query(
-            `SELECT student_id FROM students WHERE student_prn = '2023016401760532';`,
-            { type: queryInterface.sequelize.QueryTypes.SELECT }
+            `SELECT student_id FROM students WHERE student_prn = '2023016401760532';`, {
+                type: queryInterface.sequelize.QueryTypes.SELECT
+            }
         );
         if (student.length > 0) {
             const studentId = student[0].student_id;
-            await queryInterface.bulkDelete('students_batches', { student_id: studentId }, {});
-            await queryInterface.bulkDelete('students_divisions', { student_id: studentId }, {});
-            await queryInterface.bulkDelete('students_semesters', { student_id: studentId }, {});
+            await queryInterface.bulkDelete('students_batches', {
+                student_id: studentId
+            }, {});
+            await queryInterface.bulkDelete('students_divisions', {
+                student_id: studentId
+            }, {});
+            await queryInterface.bulkDelete('students_semesters', {
+                student_id: studentId
+            }, {});
         }
-        await queryInterface.bulkDelete('students', { student_prn: '2023016401760532' }, {});
+        await queryInterface.bulkDelete('students', {
+            student_prn: '2023016401760532'
+        }, {});
     }
 };

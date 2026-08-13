@@ -1,6 +1,5 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable('attendances', {
@@ -43,7 +42,6 @@ module.exports = {
         await queryInterface.addIndex('attendances', ['class_id', 'attendance_date']);
         await queryInterface.addIndex('attendances', ['attendance_date']);
 
-        // Create the join table for students and attendance
         await queryInterface.createTable('attendance_students', {
             id: {
                 type: Sequelize.UUID,
@@ -100,7 +98,7 @@ module.exports = {
     },
 
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('attendance_students'); // Drop the join table first
+        await queryInterface.dropTable('attendance_students');
         await queryInterface.dropTable('attendances');
     }
 };

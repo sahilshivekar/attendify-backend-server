@@ -20,7 +20,7 @@ describe('Student API - GET /api/v1/students/:id/semesters', () => {
 
     beforeEach(async () => {
         try {
-            // Create Admin
+
             const adminData = {
                 username: 'admin',
                 firstName: 'Admin',
@@ -30,23 +30,21 @@ describe('Student API - GET /api/v1/students/:id/semesters', () => {
                 role: 'Admin',
                 university: {
                     universityName: 'Test University',
-                    password: 'Admin@12345',
+                    password: 'Admin@12345'
                 }
             };
 
             await Admin.create(adminData);
 
-            // Login Admin
-            const adminLoginRes = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send({
-                    emailOrUsername: 'admin@test.com',
-                    password: 'Admin@12345'
-                });
+            const adminLoginRes = await request(app).
+            post('/api/v1/auth/admins/login').
+            send({
+                emailOrUsername: 'admin@test.com',
+                password: 'Admin@12345'
+            });
 
             adminToken = adminLoginRes.body.data.accessToken;
 
-            // Create University
             const university = await University.create({
                 name: 'Test University',
                 abbreviation: 'TU',
@@ -57,7 +55,6 @@ describe('Student API - GET /api/v1/students/:id/semesters', () => {
                 websiteUrl: 'https://testuniversity.com'
             });
 
-            // Create Branch
             const branch = await Branch.create({
                 name: 'Computer Science',
                 abbreviation: 'CS',
@@ -67,7 +64,6 @@ describe('Student API - GET /api/v1/students/:id/semesters', () => {
                 isActive: true
             });
 
-            // Create Scheme
             const scheme = await Scheme.create({
                 name: 'Test Scheme 2025',
                 schemeCode: 'TS2025',
@@ -80,7 +76,6 @@ describe('Student API - GET /api/v1/students/:id/semesters', () => {
                 isActive: true
             });
 
-            // Create Student
             student = await Student.create({
                 prn: 'TEST123456',
                 firstName: 'John',
@@ -96,17 +91,15 @@ describe('Student API - GET /api/v1/students/:id/semesters', () => {
                 branchId: branch.id
             });
 
-            // Login Student
-            const studentLoginRes = await request(app)
-                .post('/api/v1/auth/students/login')
-                .send({
-                    emailOrPRN: 'john.doe@test.com',
-                    password: 'Student@123'
-                });
+            const studentLoginRes = await request(app).
+            post('/api/v1/auth/students/login').
+            send({
+                emailOrPRN: 'john.doe@test.com',
+                password: 'Student@123'
+            });
 
             studentToken = studentLoginRes.body.data.accessToken;
 
-            // Create Semesters
             semester1 = await Semester.create({
                 semesterNumber: 1,
                 branchId: branch.id,
@@ -127,7 +120,6 @@ describe('Student API - GET /api/v1/students/:id/semesters', () => {
                 endDate: '2026-06-01'
             });
 
-            // Create StudentSemester associations
             await StudentSemester.create({
                 studentId: student.id,
                 semesterId: semester1.id
@@ -145,37 +137,37 @@ describe('Student API - GET /api/v1/students/:id/semesters', () => {
 
     describe('Authentication Tests', () => {
         test('should return 401 without token', async () => {
-            const res = await request(app)
-                .get(`/api/v1/students/${student.id}/semesters`)
-                .expect(httpStatus.UNAUTHORIZED);
+            const res = await request(app).
+            get(`/api/v1/students/${student.id}/semesters`).
+            expect(httpStatus.UNAUTHORIZED);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Unauthorized request: No token provided');
         });
 
         test('should return 401 with invalid token', async () => {
-            const res = await request(app)
-                .get(`/api/v1/students/${student.id}/semesters`)
-                .set('Authorization', 'Bearer invalidtoken')
-                .expect(httpStatus.UNAUTHORIZED);
+            const res = await request(app).
+            get(`/api/v1/students/${student.id}/semesters`).
+            set('Authorization', 'Bearer invalidtoken').
+            expect(httpStatus.UNAUTHORIZED);
 
             expect(res.body.success).toBe(false);
         });
 
         test('should allow Admin to access student semesters', async () => {
-            const res = await request(app)
-                .get(`/api/v1/students/${student.id}/semesters`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            get(`/api/v1/students/${student.id}/semesters`).
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.OK);
 
             expect(res.body.success).toBe(true);
         });
 
         test('should allow Student to access their own semesters', async () => {
-            const res = await request(app)
-                .get(`/api/v1/students/${student.id}/semesters`)
-                .set('Authorization', `Bearer ${studentToken}`)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            get(`/api/v1/students/${student.id}/semesters`).
+            set('Authorization', `Bearer ${studentToken}`).
+            expect(httpStatus.OK);
 
             expect(res.body.success).toBe(true);
         });
@@ -183,10 +175,10 @@ describe('Student API - GET /api/v1/students/:id/semesters', () => {
 
     describe('Validation Tests', () => {
         test('should return 400 for invalid UUID format', async () => {
-            const res = await request(app)
-                .get('/api/v1/students/invalid-uuid/semesters')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            get('/api/v1/students/invalid-uuid/semesters').
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Student ID must be a valid UUID');
@@ -196,18 +188,18 @@ describe('Student API - GET /api/v1/students/:id/semesters', () => {
     describe('Business Logic Tests', () => {
         test('should return 404 for non-existent student', async () => {
             const nonExistentId = 'b84c9e52-c8b4-4a19-8b1d-123456789abc';
-            
-            const res = await request(app)
-                .get(`/api/v1/students/${nonExistentId}/semesters`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.NOT_FOUND);
+
+            const res = await request(app).
+            get(`/api/v1/students/${nonExistentId}/semesters`).
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.NOT_FOUND);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Student not found');
         });
 
         test('should return empty array for student with no semesters', async () => {
-            // Create student without semesters
+
             const studentWithoutSemesters = await Student.create({
                 prn: 'TEST999999',
                 firstName: 'Jane',
@@ -222,10 +214,10 @@ describe('Student API - GET /api/v1/students/:id/semesters', () => {
                 branchId: student.branchId
             });
 
-            const res = await request(app)
-                .get(`/api/v1/students/${studentWithoutSemesters.id}/semesters`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            get(`/api/v1/students/${studentWithoutSemesters.id}/semesters`).
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.OK);
 
             expect(res.body.success).toBe(true);
             expect(res.body.data).toEqual([]);
@@ -234,17 +226,16 @@ describe('Student API - GET /api/v1/students/:id/semesters', () => {
 
     describe('Success Tests', () => {
         test('should return student semesters with associations', async () => {
-            const res = await request(app)
-                .get(`/api/v1/students/${student.id}/semesters`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            get(`/api/v1/students/${student.id}/semesters`).
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.OK);
 
             expect(res.body.success).toBe(true);
             expect(res.body.message).toBe('Student semesters fetched successfully');
             expect(Array.isArray(res.body.data)).toBe(true);
             expect(res.body.data).toHaveLength(2);
-            
-            // Check first semester association
+
             expect(res.body.data[0]).toHaveProperty('studentId', student.id);
             expect(res.body.data[0]).toHaveProperty('semesterId');
             expect(res.body.data[0]).toHaveProperty('Semester');
@@ -253,25 +244,25 @@ describe('Student API - GET /api/v1/students/:id/semesters', () => {
         });
 
         test('should return correct semester data', async () => {
-            const res = await request(app)
-                .get(`/api/v1/students/${student.id}/semesters`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            get(`/api/v1/students/${student.id}/semesters`).
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.OK);
 
             expect(res.body.success).toBe(true);
-            
-            const semesterNumbers = res.body.data.map(ss => ss.Semester.semesterNumber).sort();
+
+            const semesterNumbers = res.body.data.map((ss) => ss.Semester.semesterNumber).sort();
             expect(semesterNumbers).toEqual([1, 2]);
-            
-            const academicYears = res.body.data.map(ss => ss.Semester.academicStartYear).sort();
+
+            const academicYears = res.body.data.map((ss) => ss.Semester.academicStartYear).sort();
             expect(academicYears).toEqual([2025, 2025]);
         });
 
         test('should return proper API response structure', async () => {
-            const res = await request(app)
-                .get(`/api/v1/students/${student.id}/semesters`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            get(`/api/v1/students/${student.id}/semesters`).
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.OK);
 
             expect(res.body).toHaveProperty('success', true);
             expect(res.body).toHaveProperty('message', 'Student semesters fetched successfully');
@@ -280,15 +271,15 @@ describe('Student API - GET /api/v1/students/:id/semesters', () => {
         });
 
         test('should maintain data consistency across calls', async () => {
-            const res1 = await request(app)
-                .get(`/api/v1/students/${student.id}/semesters`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.OK);
+            const res1 = await request(app).
+            get(`/api/v1/students/${student.id}/semesters`).
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.OK);
 
-            const res2 = await request(app)
-                .get(`/api/v1/students/${student.id}/semesters`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.OK);
+            const res2 = await request(app).
+            get(`/api/v1/students/${student.id}/semesters`).
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.OK);
 
             expect(res1.body.data).toEqual(res2.body.data);
         });

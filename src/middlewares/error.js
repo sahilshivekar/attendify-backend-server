@@ -1,8 +1,16 @@
 import httpStatus from 'http-status';
-import { config } from '../config/config.js';
-import { logger } from '../config/logger.js';
-import { ApiError } from '../utils/ApiError.js';
-import { ApiResponse } from '../utils/ApiResponse.js';
+import {
+    config
+} from '../config/config.js';
+import {
+    logger
+} from '../config/logger.js';
+import {
+    ApiError
+} from '../utils/ApiError.js';
+import {
+    ApiResponse
+} from '../utils/ApiResponse.js';
 
 const errorConverter = (err, req, res, next) => {
     let error = err;
@@ -17,9 +25,11 @@ const errorConverter = (err, req, res, next) => {
     next(error);
 };
 
-
 const errorHandler = (err, req, res, next) => {
-    let { statusCode, message } = err;
+    let {
+        statusCode,
+        message
+    } = err;
     if (config.env === 'production' && !err.isOperational) {
         statusCode = httpStatus.INTERNAL_SERVER_ERROR;
         message = httpStatus[httpStatus.INTERNAL_SERVER_ERROR];
@@ -37,13 +47,20 @@ const errorHandler = (err, req, res, next) => {
         statusCode,
         message,
         success: false,
-        ...(shouldIncludeDebugInfo && Array.isArray(err.errors) && err.errors.length >= 0 && { errors: err.errors }),
-        ...(shouldIncludeDebugInfo && { stack: err.stack }),
+        ...(shouldIncludeDebugInfo && Array.isArray(err.errors) && err.errors.length >= 0 && {
+            errors: err.errors
+        }),
+        ...(shouldIncludeDebugInfo && {
+            stack: err.stack
+        })
     };
 
-    res
-        .status(statusCode)
-        .json(response);
+    res.
+    status(statusCode).
+    json(response);
 };
 
-export { errorConverter, errorHandler };
+export {
+    errorConverter,
+    errorHandler
+};

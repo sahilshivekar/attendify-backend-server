@@ -1,4 +1,6 @@
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.js';
 import setupTestDb from '../../util/setupTestDb.js';
@@ -12,9 +14,13 @@ import Semester from '../../../db/models/semester.model.js';
 import Division from '../../../db/models/division.model.js';
 import Batch from '../../../db/models/batch.model.js';
 import httpStatus from 'http-status';
-import { v4 as uuidv4 } from 'uuid';
+import {
+    v4 as uuidv4
+} from 'uuid';
 import jwt from 'jsonwebtoken';
-import { config } from '../../../config/config.js';
+import {
+    config
+} from '../../../config/config.js';
 
 setupTestDb();
 
@@ -25,25 +31,22 @@ describe('Student API - bulkCreateStudents', () => {
 
     beforeEach(async () => {
         try {
-            // Create test university first
+
             university = await University.create({
                 name: 'Test University',
-                abbreviation: 'TU',
+                abbreviation: 'TU'
             });
 
-            // Create test branch
             branch = await Branch.create({
                 name: 'Computer Science',
-                abbreviation: 'CS',
+                abbreviation: 'CS'
             });
 
-            // Create test scheme
             scheme = await Scheme.create({
                 name: 'CS 2026 Scheme',
-                universityId: university.id,
+                universityId: university.id
             });
 
-            // Create test semester
             semester = await Semester.create({
                 semesterNumber: 1,
                 branchId: branch.id,
@@ -54,7 +57,6 @@ describe('Student API - bulkCreateStudents', () => {
                 schemeId: scheme.id
             });
 
-            // Create admin
             admin = await Admin.create({
                 firstName: 'Test',
                 lastName: 'Admin',
@@ -66,9 +68,11 @@ describe('Student API - bulkCreateStudents', () => {
                 universityId: university.id
             });
 
-            adminToken = jwt.sign({ id: admin.id, role: 'admin' }, config.jwt.accessTokenSecret || 'test-secret');
+            adminToken = jwt.sign({
+                id: admin.id,
+                role: 'admin'
+            }, config.jwt.accessTokenSecret || 'test-secret');
 
-            // Create teacher
             teacher = await Teacher.create({
                 firstName: 'Test',
                 lastName: 'Teacher',
@@ -82,9 +86,11 @@ describe('Student API - bulkCreateStudents', () => {
                 universityId: university.id
             });
 
-            teacherToken = jwt.sign({ id: teacher.id, role: 'teacher' }, config.jwt.accessTokenSecret || 'test-secret');
+            teacherToken = jwt.sign({
+                id: teacher.id,
+                role: 'teacher'
+            }, config.jwt.accessTokenSecret || 'test-secret');
 
-            // Create student
             student = await Student.create({
                 prn: 'STU001',
                 firstName: 'Test',
@@ -100,7 +106,10 @@ describe('Student API - bulkCreateStudents', () => {
                 admissionType: 'FE'
             });
 
-            studentToken = jwt.sign({ id: student.id, role: 'student' }, config.jwt.accessTokenSecret || 'test-secret');
+            studentToken = jwt.sign({
+                id: student.id,
+                role: 'student'
+            }, config.jwt.accessTokenSecret || 'test-secret');
 
         } catch (error) {
             console.error('Setup error:', error);
@@ -110,8 +119,7 @@ describe('Student API - bulkCreateStudents', () => {
 
     describe('POST /api/v1/students/bulk/create', () => {
         const validStudentsData = () => ({
-            students: [
-                {
+            students: [{
                     firstName: 'Alice',
                     lastName: 'Johnson',
                     email: 'alice@example.com',
@@ -136,13 +144,14 @@ describe('Student API - bulkCreateStudents', () => {
                     gender: 'Male'
                 }
             ]
+
         });
 
         describe('Authentication', () => {
             test('should return 401 if no token provided', async () => {
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .send(validStudentsData());
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                send(validStudentsData());
 
                 console.log('Response body:', response.body);
                 console.log('Response status:', response.status);
@@ -153,30 +162,30 @@ describe('Student API - bulkCreateStudents', () => {
             });
 
             test('should return 401 if invalid token provided', async () => {
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', 'Bearer invalidtoken')
-                    .send(validStudentsData());
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', 'Bearer invalidtoken').
+                send(validStudentsData());
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
             });
 
             test('should return 403 if student tries to bulk create', async () => {
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${studentToken}`)
-                    .send(validStudentsData());
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${studentToken}`).
+                send(validStudentsData());
 
                 expect(response.status).toBe(httpStatus.FORBIDDEN);
                 expect(response.body.success).toBe(false);
             });
 
             test('should return 403 if teacher tries to bulk create', async () => {
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${teacherToken}`)
-                    .send(validStudentsData());
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${teacherToken}`).
+                send(validStudentsData());
 
                 expect(response.status).toBe(httpStatus.FORBIDDEN);
                 expect(response.body.success).toBe(false);
@@ -185,10 +194,10 @@ describe('Student API - bulkCreateStudents', () => {
 
         describe('Validation', () => {
             test('should return 400 if students array is missing', async () => {
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send({});
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send({});
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -196,10 +205,12 @@ describe('Student API - bulkCreateStudents', () => {
             });
 
             test('should return 400 if students array is empty', async () => {
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send({ students: [] });
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send({
+                    students: []
+                });
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -207,7 +218,9 @@ describe('Student API - bulkCreateStudents', () => {
             });
 
             test('should return 413 for very large student arrays', async () => {
-                const students = Array.from({ length: 101 }, (_, index) => ({
+                const students = Array.from({
+                    length: 101
+                }, (_, index) => ({
                     firstName: `Student${index}`,
                     lastName: 'Test',
                     email: `student${index}@example.com`,
@@ -220,23 +233,27 @@ describe('Student API - bulkCreateStudents', () => {
                     gender: 'Male'
                 }));
 
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send({ students });
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send({
+                    students
+                });
 
-                expect(response.status).toBe(413); // Request Entity Too Large
+                expect(response.status).toBe(413);
                 expect(response.body.success).toBe(false);
             });
 
             test('should return 400 if firstName is missing', async () => {
-                const invalidData = { ...validStudentsData() };
+                const invalidData = {
+                    ...validStudentsData()
+                };
                 delete invalidData.students[0].firstName;
 
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -244,13 +261,15 @@ describe('Student API - bulkCreateStudents', () => {
             });
 
             test('should return 400 if email format is invalid', async () => {
-                const invalidData = { ...validStudentsData() };
+                const invalidData = {
+                    ...validStudentsData()
+                };
                 invalidData.students[0].email = 'invalid-email';
 
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -258,13 +277,15 @@ describe('Student API - bulkCreateStudents', () => {
             });
 
             test('should return 400 if schemeId is not a valid UUID', async () => {
-                const invalidData = { ...validStudentsData() };
+                const invalidData = {
+                    ...validStudentsData()
+                };
                 invalidData.students[0].schemeId = 'invalid-uuid';
 
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -274,43 +295,49 @@ describe('Student API - bulkCreateStudents', () => {
 
         describe('Business Logic Validation', () => {
             test('should handle invalid scheme IDs gracefully', async () => {
-                const invalidData = { ...validStudentsData() };
-                invalidData.students[0].schemeId = uuidv4(); // Non-existent UUID
+                const invalidData = {
+                    ...validStudentsData()
+                };
+                invalidData.students[0].schemeId = uuidv4();
 
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);
                 expect(response.body.data.errors).toHaveLength(2);
-                expect(response.body.data.createdStudents).toHaveLength(0); // None created due to transaction rollback
+                expect(response.body.data.createdStudents).toHaveLength(0);
             });
 
             test('should handle invalid branch IDs gracefully', async () => {
-                const invalidData = { ...validStudentsData() };
-                invalidData.students[0].branchId = uuidv4(); // Non-existent UUID
+                const invalidData = {
+                    ...validStudentsData()
+                };
+                invalidData.students[0].branchId = uuidv4();
 
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);
                 expect(response.body.data.errors).toHaveLength(2);
-                expect(response.body.data.createdStudents).toHaveLength(0); // None created due to transaction rollback
+                expect(response.body.data.createdStudents).toHaveLength(0);
             });
 
             test('should handle duplicate PRNs in request gracefully', async () => {
-                const duplicateData = { ...validStudentsData() };
-                duplicateData.students[1].prn = duplicateData.students[0].prn; // Same PRN
+                const duplicateData = {
+                    ...validStudentsData()
+                };
+                duplicateData.students[1].prn = duplicateData.students[0].prn;
 
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(duplicateData);
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(duplicateData);
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);
@@ -319,13 +346,15 @@ describe('Student API - bulkCreateStudents', () => {
             });
 
             test('should handle duplicate emails in request gracefully', async () => {
-                const duplicateData = { ...validStudentsData() };
-                duplicateData.students[1].email = duplicateData.students[0].email; // Same email
+                const duplicateData = {
+                    ...validStudentsData()
+                };
+                duplicateData.students[1].email = duplicateData.students[0].email;
 
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(duplicateData);
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(duplicateData);
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);
@@ -334,13 +363,13 @@ describe('Student API - bulkCreateStudents', () => {
             });
 
             test('should handle existing PRN in database gracefully', async () => {
-                // First create a student with the same PRN as in validStudentsData
+
                 await Student.create({
                     firstName: 'Existing',
                     lastName: 'Student',
                     email: 'existing@example.com',
                     phoneNumber: '+919876543299',
-                    prn: 'STU101', // Same as in validStudentsData
+                    prn: 'STU101',
                     schemeId: scheme.id,
                     branchId: branch.id,
                     admissionYear: 2025,
@@ -348,10 +377,10 @@ describe('Student API - bulkCreateStudents', () => {
                     gender: 'Male'
                 });
 
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(validStudentsData());
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(validStudentsData());
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);
@@ -362,10 +391,10 @@ describe('Student API - bulkCreateStudents', () => {
 
         describe('Success Cases', () => {
             test('should bulk create students successfully', async () => {
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(validStudentsData());
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(validStudentsData());
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);
@@ -376,7 +405,6 @@ describe('Student API - bulkCreateStudents', () => {
                 expect(response.body.data.createdStudents[0]).toHaveProperty('prn');
                 expect(response.body.data.errors).toHaveLength(0);
 
-                // Verify students exist in database
                 const createdStudents = await Student.findAll({
                     where: {
                         prn: ['STU101', 'STU102']
@@ -390,10 +418,10 @@ describe('Student API - bulkCreateStudents', () => {
                     students: [validStudentsData().students[0]]
                 };
 
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(singleStudentData);
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(singleStudentData);
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);
@@ -402,15 +430,17 @@ describe('Student API - bulkCreateStudents', () => {
             });
 
             test('should handle optional fields correctly', async () => {
-                const dataWithOptionals = { ...validStudentsData() };
+                const dataWithOptionals = {
+                    ...validStudentsData()
+                };
                 dataWithOptionals.students[0].middleName = 'Marie';
                 dataWithOptionals.students[0].parentEmail = 'parent@example.com';
                 dataWithOptionals.students[0].dob = '2000/05/15';
 
-                const response = await request(app)
-                    .post('/api/v1/students/bulk/create')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(dataWithOptionals);
+                const response = await request(app).
+                post('/api/v1/students/bulk/create').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(dataWithOptionals);
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);

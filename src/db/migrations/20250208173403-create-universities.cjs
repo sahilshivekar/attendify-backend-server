@@ -1,11 +1,9 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable(
-            'universities',
-            {
+            'universities', {
                 id: {
                     type: Sequelize.UUID,
                     defaultValue: Sequelize.UUIDV4,
@@ -35,18 +33,15 @@ module.exports = {
                     allowNull: false,
                     field: 'updated_at',
                     defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-                },
-            },
-            {
+                }
+            }, {
                 timestamps: true,
-                freezeTableName: true,
+                freezeTableName: true
             }
-        )
+        );
     },
 
-
-
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('universities')
+        await queryInterface.dropTable('universities');
     }
 };

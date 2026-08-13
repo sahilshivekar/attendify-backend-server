@@ -15,82 +15,113 @@ import Timetable from '../../../db/models/timetable.model.js';
 setupTestDb();
 
 describe('Timetable API - DELETE /api/v1/timetables/:id', () => {
-  let adminToken;
-  let teacherToken;
-  let timetable;
+    let adminToken;
+    let teacherToken;
+    let timetable;
 
-  beforeEach(async () => {
-    try {
-      // Admin + login
-      await Admin.create({ email: 'admin@example.com', username: 'adminuser', password: 'Admin@12345' });
-      const adminLoginRes = await request(app).post('/api/v1/auth/admins/login').send({ emailOrUsername: 'admin@example.com', password: 'Admin@12345' });
-      adminToken = adminLoginRes.body.data.accessToken;
+    beforeEach(async () => {
+        try {
 
-      // Teacher + login
-      await Teacher.create({ firstName: 'John', lastName: 'Doe', email: 'teacher@example.com', phoneNumber: '+911234567890', password: 'Teacher@123', gender: 'Male', role: 'Teacher' });
-      const teacherLoginRes = await request(app).post('/api/v1/auth/teachers/login').send({ email: 'teacher@example.com', password: 'Teacher@123' });
-      teacherToken = teacherLoginRes.body.data.accessToken;
+            await Admin.create({
+                email: 'admin@example.com',
+                username: 'adminuser',
+                password: 'Admin@12345'
+            });
+            const adminLoginRes = await request(app).post('/api/v1/auth/admins/login').send({
+                emailOrUsername: 'admin@example.com',
+                password: 'Admin@12345'
+            });
+            adminToken = adminLoginRes.body.data.accessToken;
 
-      // Seed minimal hierarchy for timetable
-      const university = await University.create({ name: 'Test University', abbreviation: 'TU' });
-      const branch = await Branch.create({ name: 'Computer Science', abbreviation: 'CS' });
-      const scheme = await Scheme.create({ name: 'CS 2026', universityId: university.id });
-      const semester = await Semester.create({
-        semesterNumber: 1,
-        branchId: branch.id,
-        academicStartYear: 2025,
-        academicEndYear: 2026,
-        startDate: '2025-08-01',
-        endDate: '2025-12-31',
-        schemeId: scheme.id,
-      });
-      const division = await Division.create({ divisionCode: 'A', semesterId: semester.id });
-      timetable = await Timetable.create({ divisionId: division.id, timetableVersion: 1 });
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('beforeEach setup error:', err);
-      throw err;
-    }
-  });
+            await Teacher.create({
+                firstName: 'John',
+                lastName: 'Doe',
+                email: 'teacher@example.com',
+                phoneNumber: '+911234567890',
+                password: 'Teacher@123',
+                gender: 'Male',
+                role: 'Teacher'
+            });
+            const teacherLoginRes = await request(app).post('/api/v1/auth/teachers/login').send({
+                email: 'teacher@example.com',
+                password: 'Teacher@123'
+            });
+            teacherToken = teacherLoginRes.body.data.accessToken;
 
-  const url = (id) => `/api/v1/timetables/${id}`;
+            const university = await University.create({
+                name: 'Test University',
+                abbreviation: 'TU'
+            });
+            const branch = await Branch.create({
+                name: 'Computer Science',
+                abbreviation: 'CS'
+            });
+            const scheme = await Scheme.create({
+                name: 'CS 2026',
+                universityId: university.id
+            });
+            const semester = await Semester.create({
+                semesterNumber: 1,
+                branchId: branch.id,
+                academicStartYear: 2025,
+                academicEndYear: 2026,
+                startDate: '2025-08-01',
+                endDate: '2025-12-31',
+                schemeId: scheme.id
+            });
+            const division = await Division.create({
+                divisionCode: 'A',
+                semesterId: semester.id
+            });
+            timetable = await Timetable.create({
+                divisionId: division.id,
+                timetableVersion: 1
+            });
+        } catch (err) {
 
-  test('should return 401 when no token is provided', async () => {
-    const res = await request(app).delete(url(timetable.id));
-    expect(res.status).toBe(httpStatus.UNAUTHORIZED);
-  });
+            console.error('beforeEach setup error:', err);
+            throw err;
+        }
+    });
 
-  test('should return 401 when invalid token is provided', async () => {
-    const res = await request(app).delete(url(timetable.id)).set('Authorization', 'Bearer invalidtoken');
-    expect(res.status).toBe(httpStatus.UNAUTHORIZED);
-  });
+    const url = (id) => `/api/v1/timetables/${id}`;
 
-  test('should return 403 for Teacher role', async () => {
-    const res = await request(app).delete(url(timetable.id)).set('Authorization', `Bearer ${teacherToken}`);
-    expect(res.status).toBe(httpStatus.FORBIDDEN);
-  });
+    test('should return 401 when no token is provided', async () => {
+        const res = await request(app).delete(url(timetable.id));
+        expect(res.status).toBe(httpStatus.UNAUTHORIZED);
+    });
 
-  test('should return 400 for invalid UUID id', async () => {
-    const res = await request(app).delete('/api/v1/timetables/not-a-uuid').set('Authorization', `Bearer ${adminToken}`);
-    expect(res.status).toBe(httpStatus.BAD_REQUEST);
-    expect(res.body.message).toContain('Timetable ID must be a valid UUID');
-  });
+    test('should return 401 when invalid token is provided', async () => {
+        const res = await request(app).delete(url(timetable.id)).set('Authorization', 'Bearer invalidtoken');
+        expect(res.status).toBe(httpStatus.UNAUTHORIZED);
+    });
 
-  test('should return 404 when timetable not found', async () => {
-    const res = await request(app)
-      .delete('/api/v1/timetables/8e9efb3e-0a92-4e4f-9a9b-6f0f7b0b1234')
-      .set('Authorization', `Bearer ${adminToken}`);
-    expect(res.status).toBe(httpStatus.NOT_FOUND);
-    expect(res.body.message).toBe('Timetable not found');
-  });
+    test('should return 403 for Teacher role', async () => {
+        const res = await request(app).delete(url(timetable.id)).set('Authorization', `Bearer ${teacherToken}`);
+        expect(res.status).toBe(httpStatus.FORBIDDEN);
+    });
 
-  test('should delete timetable successfully (204)', async () => {
-    const res = await request(app)
-      .delete(url(timetable.id))
-      .set('Authorization', `Bearer ${adminToken}`);
-    expect(res.status).toBe(httpStatus.OK);
-    // Some frameworks still send a body with 204; we just ensure no error and entity removed
-    const found = await Timetable.findByPk(timetable.id);
-    expect(found).toBeNull();
-  });
+    test('should return 400 for invalid UUID id', async () => {
+        const res = await request(app).delete('/api/v1/timetables/not-a-uuid').set('Authorization', `Bearer ${adminToken}`);
+        expect(res.status).toBe(httpStatus.BAD_REQUEST);
+        expect(res.body.message).toContain('Timetable ID must be a valid UUID');
+    });
+
+    test('should return 404 when timetable not found', async () => {
+        const res = await request(app).
+        delete('/api/v1/timetables/8e9efb3e-0a92-4e4f-9a9b-6f0f7b0b1234').
+        set('Authorization', `Bearer ${adminToken}`);
+        expect(res.status).toBe(httpStatus.NOT_FOUND);
+        expect(res.body.message).toBe('Timetable not found');
+    });
+
+    test('should delete timetable successfully (204)', async () => {
+        const res = await request(app).
+        delete(url(timetable.id)).
+        set('Authorization', `Bearer ${adminToken}`);
+        expect(res.status).toBe(httpStatus.OK);
+
+        const found = await Timetable.findByPk(timetable.id);
+        expect(found).toBeNull();
+    });
 });

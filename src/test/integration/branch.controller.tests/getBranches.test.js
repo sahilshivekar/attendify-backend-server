@@ -1,4 +1,6 @@
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.js';
 import setupTestDb from '../../util/setupTestDb.js';
@@ -15,13 +17,20 @@ import Course from '../../../db/models/course.model.js';
 import Room from '../../../db/models/room.model.js';
 import Timetable from '../../../db/models/timetable.model.js';
 import Class from '../../../db/models/class.model.js';
-import { Attendance, AttendanceStudent } from '../../../db/models/attendance.model.js';
+import {
+    Attendance,
+    AttendanceStudent
+} from '../../../db/models/attendance.model.js';
 import StudentSemester from '../../../db/models/studentSemester.model.js';
 import StudentDivision from '../../../db/models/studentDivision.model.js';
 import StudentBatch from '../../../db/models/studentBatch.model.js';
-import { faker } from '@faker-js/faker';
+import {
+    faker
+} from '@faker-js/faker';
 import httpStatus from 'http-status';
-import { ROLES } from '../../../config/roles.js';
+import {
+    ROLES
+} from '../../../config/roles.js';
 
 setupTestDb();
 
@@ -36,47 +45,43 @@ describe('Branch API - getBranches', () => {
 
     beforeEach(async () => {
         try {
-            // Create admin and login
+
             await Admin.create({
                 email: 'admin@example.com',
                 username: 'adminuser',
-                password: 'Admin@12345',
+                password: 'Admin@12345'
             });
-            const adminLoginRes = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send({
-                    emailOrUsername: 'admin@example.com',
-                    password: 'Admin@12345',
-                });
+            const adminLoginRes = await request(app).
+            post('/api/v1/auth/admins/login').
+            send({
+                emailOrUsername: 'admin@example.com',
+                password: 'Admin@12345'
+            });
             adminToken = adminLoginRes.body.data.accessToken;
 
-            // Create dependencies
             university = await University.create({
                 name: 'Test University',
-                abbreviation: 'TU',
+                abbreviation: 'TU'
             });
 
-            // Create branches
             branch1 = await Branch.create({
                 name: 'Computer Science',
-                abbreviation: 'CS',
+                abbreviation: 'CS'
             });
             branch2 = await Branch.create({
                 name: 'Information Technology',
-                abbreviation: 'IT',
+                abbreviation: 'IT'
             });
             branch3 = await Branch.create({
                 name: 'Mechanical Engineering',
-                abbreviation: 'ME',
+                abbreviation: 'ME'
             });
 
-            // Create dependencies for student
             const scheme = await Scheme.create({
                 name: 'CS 2026 Scheme',
-                universityId: university.id,
+                universityId: university.id
             });
 
-            // Create teacher
             await Teacher.create({
                 firstName: 'John',
                 lastName: 'Doe',
@@ -86,15 +91,14 @@ describe('Branch API - getBranches', () => {
                 gender: 'Male',
                 role: 'Teacher'
             });
-            const teacherLoginRes = await request(app)
-                .post('/api/v1/auth/teachers/login')
-                .send({
-                    email: 'teacher@example.com',
-                    password: 'Teacher@123',
-                });
+            const teacherLoginRes = await request(app).
+            post('/api/v1/auth/teachers/login').
+            send({
+                email: 'teacher@example.com',
+                password: 'Teacher@123'
+            });
             teacherToken = teacherLoginRes.body.data.accessToken;
 
-            // Create student
             await Student.create({
                 firstName: 'Jane',
                 lastName: 'Smith',
@@ -108,12 +112,12 @@ describe('Branch API - getBranches', () => {
                 admissionType: 'FE',
                 gender: 'Male'
             });
-            const studentLoginRes = await request(app)
-                .post('/api/v1/auth/students/login')
-                .send({
-                    emailOrPRN: 'student1@example.com',
-                    password: 'Student@123',
-                });
+            const studentLoginRes = await request(app).
+            post('/api/v1/auth/students/login').
+            send({
+                emailOrPRN: 'student1@example.com',
+                password: 'Student@123'
+            });
             studentToken = studentLoginRes.body.data.accessToken;
         } catch (error) {
             console.error('Error in beforeEach:', error);
@@ -124,8 +128,8 @@ describe('Branch API - getBranches', () => {
     describe('GET /api/v1/branches', () => {
         describe('Authentication', () => {
             test('should return 401 if no token provided', async () => {
-                const response = await request(app)
-                    .get('/api/v1/branches');
+                const response = await request(app).
+                get('/api/v1/branches');
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
@@ -133,9 +137,9 @@ describe('Branch API - getBranches', () => {
             });
 
             test('should return 401 if invalid token provided', async () => {
-                const response = await request(app)
-                    .get('/api/v1/branches')
-                    .set('Authorization', 'Bearer invalidtoken');
+                const response = await request(app).
+                get('/api/v1/branches').
+                set('Authorization', 'Bearer invalidtoken');
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
@@ -144,9 +148,9 @@ describe('Branch API - getBranches', () => {
 
         describe('Success Cases', () => {
             test('should get all branches successfully with admin token', async () => {
-                const response = await request(app)
-                    .get('/api/v1/branches')
-                    .set('Authorization', `Bearer ${adminToken}`);
+                const response = await request(app).
+                get('/api/v1/branches').
+                set('Authorization', `Bearer ${adminToken}`);
 
                 expect(response.status).toBe(httpStatus.OK);
                 expect(response.body.success).toBe(true);
@@ -154,7 +158,6 @@ describe('Branch API - getBranches', () => {
                 expect(Array.isArray(response.body.data)).toBe(true);
                 expect(response.body.data.length).toBeGreaterThanOrEqual(3);
 
-                // Check structure of response
                 const branch = response.body.data[0];
                 expect(branch).toHaveProperty('id');
                 expect(branch).toHaveProperty('name');
@@ -162,10 +165,12 @@ describe('Branch API - getBranches', () => {
             });
 
             test('should get branches with search query', async () => {
-                const response = await request(app)
-                    .get('/api/v1/branches')
-                    .query({ searchQuery: 'Computer' })
-                    .set('Authorization', `Bearer ${adminToken}`);
+                const response = await request(app).
+                get('/api/v1/branches').
+                query({
+                    searchQuery: 'Computer'
+                }).
+                set('Authorization', `Bearer ${adminToken}`);
 
                 expect(response.status).toBe(httpStatus.OK);
                 expect(response.body.success).toBe(true);
@@ -175,10 +180,12 @@ describe('Branch API - getBranches', () => {
             });
 
             test('should get branches with case insensitive search', async () => {
-                const response = await request(app)
-                    .get('/api/v1/branches')
-                    .query({ searchQuery: 'computer' })
-                    .set('Authorization', `Bearer ${adminToken}`);
+                const response = await request(app).
+                get('/api/v1/branches').
+                query({
+                    searchQuery: 'computer'
+                }).
+                set('Authorization', `Bearer ${adminToken}`);
 
                 expect(response.status).toBe(httpStatus.OK);
                 expect(response.body.success).toBe(true);
@@ -188,10 +195,12 @@ describe('Branch API - getBranches', () => {
             });
 
             test('should get branches with partial search match', async () => {
-                const response = await request(app)
-                    .get('/api/v1/branches')
-                    .query({ searchQuery: 'Eng' })
-                    .set('Authorization', `Bearer ${adminToken}`);
+                const response = await request(app).
+                get('/api/v1/branches').
+                query({
+                    searchQuery: 'Eng'
+                }).
+                set('Authorization', `Bearer ${adminToken}`);
 
                 expect(response.status).toBe(httpStatus.OK);
                 expect(response.body.success).toBe(true);
@@ -201,10 +210,12 @@ describe('Branch API - getBranches', () => {
             });
 
             test('should return empty array when no branches match search', async () => {
-                const response = await request(app)
-                    .get('/api/v1/branches')
-                    .query({ searchQuery: 'NonExistentBranch' })
-                    .set('Authorization', `Bearer ${adminToken}`);
+                const response = await request(app).
+                get('/api/v1/branches').
+                query({
+                    searchQuery: 'NonExistentBranch'
+                }).
+                set('Authorization', `Bearer ${adminToken}`);
 
                 expect(response.status).toBe(httpStatus.OK);
                 expect(response.body.success).toBe(true);
@@ -213,9 +224,9 @@ describe('Branch API - getBranches', () => {
             });
 
             test('should get branches with teacher token', async () => {
-                const response = await request(app)
-                    .get('/api/v1/branches')
-                    .set('Authorization', `Bearer ${teacherToken}`);
+                const response = await request(app).
+                get('/api/v1/branches').
+                set('Authorization', `Bearer ${teacherToken}`);
 
                 expect(response.status).toBe(httpStatus.OK);
                 expect(response.body.success).toBe(true);
@@ -223,9 +234,9 @@ describe('Branch API - getBranches', () => {
             });
 
             test('should get branches with student token', async () => {
-                const response = await request(app)
-                    .get('/api/v1/branches')
-                    .set('Authorization', `Bearer ${studentToken}`);
+                const response = await request(app).
+                get('/api/v1/branches').
+                set('Authorization', `Bearer ${studentToken}`);
 
                 expect(response.status).toBe(httpStatus.OK);
                 expect(response.body.success).toBe(true);

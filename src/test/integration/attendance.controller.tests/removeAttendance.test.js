@@ -14,10 +14,17 @@ import Course from '../../../db/models/course.model.js';
 import Room from '../../../db/models/room.model.js';
 import Timetable from '../../../db/models/timetable.model.js';
 import Class from '../../../db/models/class.model.js';
-import { Attendance, AttendanceStudent } from '../../../db/models/attendance.model.js';
-import { faker } from '@faker-js/faker';
+import {
+    Attendance,
+    AttendanceStudent
+} from '../../../db/models/attendance.model.js';
+import {
+    faker
+} from '@faker-js/faker';
 import httpStatus from 'http-status';
-import { ROLES } from '../../../config/roles.js';
+import {
+    ROLES
+} from '../../../config/roles.js';
 
 setupTestDb();
 
@@ -41,32 +48,31 @@ describe('Attendance API - removeAttendance', () => {
     let attendance;
 
     beforeEach(async () => {
-        // Create admin and login
+
         await Admin.create({
             email: 'admin@example.com',
             username: 'adminuser',
-            password: 'Admin@12345',
+            password: 'Admin@12345'
         });
-        const adminLoginRes = await request(app)
-            .post('/api/v1/auth/admins/login')
-            .send({
-                emailOrUsername: 'admin@example.com',
-                password: 'Admin@12345',
-            });
+        const adminLoginRes = await request(app).
+        post('/api/v1/auth/admins/login').
+        send({
+            emailOrUsername: 'admin@example.com',
+            password: 'Admin@12345'
+        });
         adminToken = adminLoginRes.body.data.accessToken;
 
-        // Create dependencies
         university = await University.create({
             name: 'Test University',
-            abbreviation: 'TU',
+            abbreviation: 'TU'
         });
         branch = await Branch.create({
             name: 'Computer Science',
-            abbreviation: 'CS',
+            abbreviation: 'CS'
         });
         scheme = await Scheme.create({
             name: 'CS 2026 Scheme',
-            universityId: university.id,
+            universityId: university.id
         });
         semester = await Semester.create({
             semesterNumber: 1,
@@ -75,18 +81,17 @@ describe('Attendance API - removeAttendance', () => {
             academicEndYear: 2026,
             startDate: '2025-08-01',
             endDate: '2025-12-31',
-            schemeId: scheme.id,
+            schemeId: scheme.id
         });
         division = await Division.create({
             divisionCode: 'A',
-            semesterId: semester.id,
+            semesterId: semester.id
         });
         batch = await Batch.create({
             batchCode: 'Batch 1',
-            divisionId: division.id,
+            divisionId: division.id
         });
 
-        // Create teacher
         teacher = await Teacher.create({
             firstName: 'John',
             lastName: 'Doe',
@@ -96,15 +101,14 @@ describe('Attendance API - removeAttendance', () => {
             gender: 'Male',
             role: 'Teacher'
         });
-        const teacherLoginRes = await request(app)
-            .post('/api/v1/auth/teachers/login')
-            .send({
-                email: 'teacher@example.com',
-                password: 'Teacher@123',
-            });
+        const teacherLoginRes = await request(app).
+        post('/api/v1/auth/teachers/login').
+        send({
+            email: 'teacher@example.com',
+            password: 'Teacher@123'
+        });
         teacherToken = teacherLoginRes.body.data.accessToken;
 
-        // Create students
         student1 = await Student.create({
             firstName: 'Jane',
             lastName: 'Smith',
@@ -132,26 +136,25 @@ describe('Attendance API - removeAttendance', () => {
             gender: 'Male'
         });
 
-        const studentLoginRes = await request(app)
-            .post('/api/v1/auth/students/login')
-            .send({
-                emailOrPRN: 'student1@example.com',
-                password: 'Student@123',
-            });
+        const studentLoginRes = await request(app).
+        post('/api/v1/auth/students/login').
+        send({
+            emailOrPRN: 'student1@example.com',
+            password: 'Student@123'
+        });
         studentToken = studentLoginRes.body.data.accessToken;
 
-        // Create course, room, timetable, class
         course = await Course.create({
             name: 'Programming Fundamentals',
             code: 'CS101',
-            schemeId: scheme.id,
+            schemeId: scheme.id
         });
         room = await Room.create({
             roomNumber: '101',
             sittingCapacity: 60
         });
         timetable = await Timetable.create({
-            divisionId: division.id,
+            divisionId: division.id
         });
         classEntity = await Class.create({
             teacherId: teacher.id,
@@ -164,34 +167,35 @@ describe('Attendance API - removeAttendance', () => {
             activeTill: '2025-12-31',
             classType: 'Lecture',
             courseId: course.id,
-            timetableId: timetable.id,
+            timetableId: timetable.id
         });
 
-        // Create attendance with student records
         attendance = await Attendance.create({
             classId: classEntity.id,
-            date: '2025-01-15',
+            date: '2025-01-15'
         });
 
         await AttendanceStudent.create({
             attendanceId: attendance.id,
             studentId: student1.id,
-            attendanceStatus: true,
+            attendanceStatus: true
         });
 
         await AttendanceStudent.create({
             attendanceId: attendance.id,
             studentId: student2.id,
-            attendanceStatus: false,
+            attendanceStatus: false
         });
     });
 
     describe('DELETE /api/v1/attendances', () => {
         describe('Authentication', () => {
             test('should return 401 if no token provided', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/attendances')
-                    .query({ attendanceId: attendance.id });
+                const response = await request(app).
+                delete('/api/v1/attendances').
+                query({
+                    attendanceId: attendance.id
+                });
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
@@ -199,20 +203,24 @@ describe('Attendance API - removeAttendance', () => {
             });
 
             test('should return 401 if invalid token provided', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/attendances')
-                    .set('Authorization', 'Bearer invalidtoken')
-                    .query({ attendanceId: attendance.id });
+                const response = await request(app).
+                delete('/api/v1/attendances').
+                set('Authorization', 'Bearer invalidtoken').
+                query({
+                    attendanceId: attendance.id
+                });
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
             });
 
             test('should return 403 if student tries to remove attendance', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${studentToken}`)
-                    .query({ attendanceId: attendance.id });
+                const response = await request(app).
+                delete('/api/v1/attendances').
+                set('Authorization', `Bearer ${studentToken}`).
+                query({
+                    attendanceId: attendance.id
+                });
 
                 expect(response.status).toBe(httpStatus.FORBIDDEN);
                 expect(response.body.success).toBe(false);
@@ -222,9 +230,9 @@ describe('Attendance API - removeAttendance', () => {
 
         describe('Validation', () => {
             test('should return 400 if attendanceId is missing', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`);
+                const response = await request(app).
+                delete('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -232,10 +240,12 @@ describe('Attendance API - removeAttendance', () => {
             });
 
             test('should return 400 if attendanceId is not a valid UUID', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .query({ attendanceId: 'invalid-uuid' });
+                const response = await request(app).
+                delete('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                query({
+                    attendanceId: 'invalid-uuid'
+                });
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -243,10 +253,12 @@ describe('Attendance API - removeAttendance', () => {
             });
 
             test('should return 400 if attendanceId is empty string', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .query({ attendanceId: '' });
+                const response = await request(app).
+                delete('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                query({
+                    attendanceId: ''
+                });
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -256,58 +268,62 @@ describe('Attendance API - removeAttendance', () => {
 
         describe('Success Cases', () => {
             test('should remove attendance successfully with admin token', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .query({ attendanceId: attendance.id });
+                const response = await request(app).
+                delete('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                query({
+                    attendanceId: attendance.id
+                });
 
                 expect(response.status).toBe(httpStatus.OK);
                 expect(response.body.success).toBe(true);
                 expect(response.body.message).toContain('Attendance removed successfully');
 
-                // Verify attendance is deleted from database
                 const deletedAttendance = await Attendance.findByPk(attendance.id);
                 expect(deletedAttendance).toBeNull();
 
-                // Verify all related attendance student records are also deleted
                 const attendanceStudents = await AttendanceStudent.findAll({
-                    where: { attendanceId: attendance.id }
+                    where: {
+                        attendanceId: attendance.id
+                    }
                 });
                 expect(attendanceStudents).toHaveLength(0);
             });
 
             test('should remove attendance successfully with teacher token', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${teacherToken}`)
-                    .query({ attendanceId: attendance.id });
+                const response = await request(app).
+                delete('/api/v1/attendances').
+                set('Authorization', `Bearer ${teacherToken}`).
+                query({
+                    attendanceId: attendance.id
+                });
 
                 expect(response.status).toBe(httpStatus.OK);
                 expect(response.body.success).toBe(true);
                 expect(response.body.message).toContain('Attendance removed successfully');
 
-                // Verify attendance is deleted from database
                 const deletedAttendance = await Attendance.findByPk(attendance.id);
                 expect(deletedAttendance).toBeNull();
             });
 
             test('should remove attendance with no student records', async () => {
-                // Create attendance without student records
+
                 const emptyAttendance = await Attendance.create({
                     classId: classEntity.id,
-                    date: '2025-01-20',
+                    date: '2025-01-20'
                 });
 
-                const response = await request(app)
-                    .delete('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .query({ attendanceId: emptyAttendance.id });
+                const response = await request(app).
+                delete('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                query({
+                    attendanceId: emptyAttendance.id
+                });
 
                 expect(response.status).toBe(httpStatus.OK);
                 expect(response.body.success).toBe(true);
                 expect(response.body.message).toContain('Attendance removed successfully');
 
-                // Verify attendance is deleted from database
                 const deletedAttendance = await Attendance.findByPk(emptyAttendance.id);
                 expect(deletedAttendance).toBeNull();
             });
@@ -315,10 +331,12 @@ describe('Attendance API - removeAttendance', () => {
             test('should return 404 if attendance does not exist', async () => {
                 const nonExistentId = faker.string.uuid();
 
-                const response = await request(app)
-                    .delete('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .query({ attendanceId: nonExistentId });
+                const response = await request(app).
+                delete('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                query({
+                    attendanceId: nonExistentId
+                });
 
                 expect(response.status).toBe(httpStatus.NOT_FOUND);
                 expect(response.body.success).toBe(false);
@@ -326,17 +344,20 @@ describe('Attendance API - removeAttendance', () => {
             });
 
             test('should return 404 if trying to delete already deleted attendance', async () => {
-                // Delete attendance first time
-                await request(app)
-                    .delete('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .query({ attendanceId: attendance.id });
 
-                // Try to delete again
-                const response = await request(app)
-                    .delete('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .query({ attendanceId: attendance.id });
+                await request(app).
+                delete('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                query({
+                    attendanceId: attendance.id
+                });
+
+                const response = await request(app).
+                delete('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                query({
+                    attendanceId: attendance.id
+                });
 
                 expect(response.status).toBe(httpStatus.NOT_FOUND);
                 expect(response.body.success).toBe(false);
@@ -349,35 +370,35 @@ describe('Attendance API - removeAttendance', () => {
                 const attendanceId = attendance.id;
                 const classId = classEntity.id;
 
-                // Verify initial state
                 const initialAttendanceStudents = await AttendanceStudent.findAll({
-                    where: { attendanceId }
+                    where: {
+                        attendanceId
+                    }
                 });
                 expect(initialAttendanceStudents).toHaveLength(2);
 
-                // Delete attendance
-                const response = await request(app)
-                    .delete('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .query({ attendanceId });
+                const response = await request(app).
+                delete('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                query({
+                    attendanceId
+                });
 
                 expect(response.status).toBe(httpStatus.OK);
 
-                // Verify attendance is deleted
                 const deletedAttendance = await Attendance.findByPk(attendanceId);
                 expect(deletedAttendance).toBeNull();
 
-                // Verify all related attendance student records are deleted
                 const remainingAttendanceStudents = await AttendanceStudent.findAll({
-                    where: { attendanceId }
+                    where: {
+                        attendanceId
+                    }
                 });
                 expect(remainingAttendanceStudents).toHaveLength(0);
 
-                // Verify class still exists (should not be affected)
                 const remainingClass = await Class.findByPk(classId);
                 expect(remainingClass).toBeTruthy();
 
-                // Verify students still exist (should not be affected)
                 const remainingStudent1 = await Student.findByPk(student1.id);
                 const remainingStudent2 = await Student.findByPk(student2.id);
                 expect(remainingStudent1).toBeTruthy();
@@ -385,41 +406,44 @@ describe('Attendance API - removeAttendance', () => {
             });
 
             test('should handle cascade deletion correctly with multiple attendances', async () => {
-                // Create another attendance for the same class
+
                 const attendance2 = await Attendance.create({
                     classId: classEntity.id,
-                    date: '2025-01-16',
+                    date: '2025-01-16'
                 });
 
                 await AttendanceStudent.create({
                     attendanceId: attendance2.id,
                     studentId: student1.id,
-                    attendanceStatus: false,
+                    attendanceStatus: false
                 });
 
-                // Delete first attendance
-                const response = await request(app)
-                    .delete('/api/v1/attendances')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .query({ attendanceId: attendance.id });
+                const response = await request(app).
+                delete('/api/v1/attendances').
+                set('Authorization', `Bearer ${adminToken}`).
+                query({
+                    attendanceId: attendance.id
+                });
 
                 expect(response.status).toBe(httpStatus.OK);
 
-                // Verify first attendance and its records are deleted
                 const deletedAttendance = await Attendance.findByPk(attendance.id);
                 expect(deletedAttendance).toBeNull();
 
                 const deletedAttendanceStudents = await AttendanceStudent.findAll({
-                    where: { attendanceId: attendance.id }
+                    where: {
+                        attendanceId: attendance.id
+                    }
                 });
                 expect(deletedAttendanceStudents).toHaveLength(0);
 
-                // Verify second attendance and its records still exist
                 const remainingAttendance = await Attendance.findByPk(attendance2.id);
                 expect(remainingAttendance).toBeTruthy();
 
                 const remainingAttendanceStudents = await AttendanceStudent.findAll({
-                    where: { attendanceId: attendance2.id }
+                    where: {
+                        attendanceId: attendance2.id
+                    }
                 });
                 expect(remainingAttendanceStudents).toHaveLength(1);
             });

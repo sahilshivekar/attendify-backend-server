@@ -1,4 +1,6 @@
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.js';
 import setupTestDb from '../../util/setupTestDb.js';
@@ -10,7 +12,9 @@ import Branch from '../../../db/models/branch.model.js';
 import Scheme from '../../../db/models/scheme.model.js';
 import Course from '../../../db/models/course.model.js';
 import httpStatus from 'http-status';
-import { v4 as uuidv4 } from 'uuid';
+import {
+    v4 as uuidv4
+} from 'uuid';
 
 setupTestDb();
 
@@ -21,40 +25,36 @@ describe('Course API - bulkDeleteCourses', () => {
 
     beforeEach(async () => {
         try {
-            // Create test university first
+
             university = await University.create({
                 name: 'Test University',
-                abbreviation: 'TU',
+                abbreviation: 'TU'
             });
 
-            // Create test branch
             branch = await Branch.create({
                 name: 'Computer Science',
-                abbreviation: 'CS',
+                abbreviation: 'CS'
             });
 
-            // Create test scheme
             scheme = await Scheme.create({
                 name: 'CS 2026 Scheme',
-                universityId: university.id,
+                universityId: university.id
             });
 
-            // Create admin and login
             await Admin.create({
                 email: 'testadmin@example.com',
                 username: 'testadmin',
-                password: 'Admin@12345',
+                password: 'Admin@12345'
             });
 
-            const adminLoginRes = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send({
-                    emailOrUsername: 'testadmin@example.com',
-                    password: 'Admin@12345',
-                });
+            const adminLoginRes = await request(app).
+            post('/api/v1/auth/admins/login').
+            send({
+                emailOrUsername: 'testadmin@example.com',
+                password: 'Admin@12345'
+            });
             adminToken = adminLoginRes.body.data.accessToken;
 
-            // Create teacher and login
             await Teacher.create({
                 firstName: 'Test',
                 lastName: 'Teacher',
@@ -65,15 +65,14 @@ describe('Course API - bulkDeleteCourses', () => {
                 role: 'Teacher'
             });
 
-            const teacherLoginRes = await request(app)
-                .post('/api/v1/auth/teachers/login')
-                .send({
-                    email: 'testteacher@example.com',
-                    password: 'Teacher@123',
-                });
+            const teacherLoginRes = await request(app).
+            post('/api/v1/auth/teachers/login').
+            send({
+                email: 'testteacher@example.com',
+                password: 'Teacher@123'
+            });
             teacherToken = teacherLoginRes.body.data.accessToken;
 
-            // Create student and login
             await Student.create({
                 firstName: 'Test',
                 lastName: 'Student',
@@ -88,15 +87,14 @@ describe('Course API - bulkDeleteCourses', () => {
                 gender: 'Male'
             });
 
-            const studentLoginRes = await request(app)
-                .post('/api/v1/auth/students/login')
-                .send({
-                    emailOrPRN: 'teststudent@example.com',
-                    password: 'Student@123',
-                });
+            const studentLoginRes = await request(app).
+            post('/api/v1/auth/students/login').
+            send({
+                emailOrPRN: 'teststudent@example.com',
+                password: 'Student@123'
+            });
             studentToken = studentLoginRes.body.data.accessToken;
 
-            // Create test courses for deletion
             course1 = await Course.create({
                 code: 'CS101',
                 name: 'Introduction to Computer Science',
@@ -128,11 +126,11 @@ describe('Course API - bulkDeleteCourses', () => {
 
         describe('Authentication', () => {
             test('should return 401 if no token provided', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/courses/bulk/delete')
-                    .send({
-                        courseIds: [course1.id, course2.id]
-                    });
+                const response = await request(app).
+                delete('/api/v1/courses/bulk/delete').
+                send({
+                    courseIds: [course1.id, course2.id]
+                });
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
@@ -140,36 +138,36 @@ describe('Course API - bulkDeleteCourses', () => {
             });
 
             test('should return 401 if invalid token provided', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/courses/bulk/delete')
-                    .set('Authorization', 'Bearer invalidtoken')
-                    .send({
-                        courseIds: [course1.id, course2.id]
-                    });
+                const response = await request(app).
+                delete('/api/v1/courses/bulk/delete').
+                set('Authorization', 'Bearer invalidtoken').
+                send({
+                    courseIds: [course1.id, course2.id]
+                });
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
             });
 
             test('should return 403 if student tries to bulk delete', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/courses/bulk/delete')
-                    .set('Authorization', `Bearer ${studentToken}`)
-                    .send({
-                        courseIds: [course1.id, course2.id]
-                    });
+                const response = await request(app).
+                delete('/api/v1/courses/bulk/delete').
+                set('Authorization', `Bearer ${studentToken}`).
+                send({
+                    courseIds: [course1.id, course2.id]
+                });
 
                 expect(response.status).toBe(httpStatus.FORBIDDEN);
                 expect(response.body.success).toBe(false);
             });
 
             test('should return 403 if teacher tries to bulk delete', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/courses/bulk/delete')
-                    .set('Authorization', `Bearer ${teacherToken}`)
-                    .send({
-                        courseIds: [course1.id, course2.id]
-                    });
+                const response = await request(app).
+                delete('/api/v1/courses/bulk/delete').
+                set('Authorization', `Bearer ${teacherToken}`).
+                send({
+                    courseIds: [course1.id, course2.id]
+                });
 
                 expect(response.status).toBe(httpStatus.FORBIDDEN);
                 expect(response.body.success).toBe(false);
@@ -178,10 +176,10 @@ describe('Course API - bulkDeleteCourses', () => {
 
         describe('Validation', () => {
             test('should return 400 if courseIds array is missing', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/courses/bulk/delete')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send({});
+                const response = await request(app).
+                delete('/api/v1/courses/bulk/delete').
+                set('Authorization', `Bearer ${adminToken}`).
+                send({});
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -189,10 +187,12 @@ describe('Course API - bulkDeleteCourses', () => {
             });
 
             test('should return 400 if courseIds array is empty', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/courses/bulk/delete')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send({ courseIds: [] });
+                const response = await request(app).
+                delete('/api/v1/courses/bulk/delete').
+                set('Authorization', `Bearer ${adminToken}`).
+                send({
+                    courseIds: []
+                });
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -200,12 +200,16 @@ describe('Course API - bulkDeleteCourses', () => {
             });
 
             test('should return 400 for very large course ID arrays', async () => {
-                const courseIds = Array.from({ length: 101 }, () => uuidv4());
+                const courseIds = Array.from({
+                    length: 101
+                }, () => uuidv4());
 
-                const response = await request(app)
-                    .delete('/api/v1/courses/bulk/delete')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send({ courseIds });
+                const response = await request(app).
+                delete('/api/v1/courses/bulk/delete').
+                set('Authorization', `Bearer ${adminToken}`).
+                send({
+                    courseIds
+                });
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -217,10 +221,10 @@ describe('Course API - bulkDeleteCourses', () => {
                     courseIds: ['invalid-uuid', course2.id]
                 };
 
-                const response = await request(app)
-                    .delete('/api/v1/courses/bulk/delete')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                delete('/api/v1/courses/bulk/delete').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -231,13 +235,13 @@ describe('Course API - bulkDeleteCourses', () => {
         describe('Business Logic Validation', () => {
             test('should return 404 for non-existent course IDs', async () => {
                 const invalidData = {
-                    courseIds: [uuidv4(), course2.id] // First ID doesn't exist
+                    courseIds: [uuidv4(), course2.id]
                 };
 
-                const response = await request(app)
-                    .delete('/api/v1/courses/bulk/delete')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(invalidData);
+                const response = await request(app).
+                delete('/api/v1/courses/bulk/delete').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(invalidData);
 
                 expect(response.status).toBe(httpStatus.NOT_FOUND);
                 expect(response.body.success).toBe(false);
@@ -246,31 +250,33 @@ describe('Course API - bulkDeleteCourses', () => {
 
             test('should handle duplicate course IDs in request', async () => {
                 const duplicateData = {
-                    courseIds: [course1.id, course1.id] // Same ID twice
+                    courseIds: [course1.id, course1.id]
                 };
 
-                const response = await request(app)
-                    .delete('/api/v1/courses/bulk/delete')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(duplicateData);
+                const response = await request(app).
+                delete('/api/v1/courses/bulk/delete').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(duplicateData);
 
-                // Controller validates that the number of found courses matches the number of requested IDs
-                // So duplicate IDs are treated as validation errors
                 expect(response.status).toBe(httpStatus.NOT_FOUND);
                 expect(response.body.success).toBe(false);
                 expect(response.body.message).toContain('Courses not found');
             });
 
             test('should return 404 for already deleted course IDs', async () => {
-                // First delete course1
-                await Course.destroy({ where: { id: course1.id } });
 
-                const response = await request(app)
-                    .delete('/api/v1/courses/bulk/delete')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send({
-                        courseIds: [course1.id, course2.id]
-                    });
+                await Course.destroy({
+                    where: {
+                        id: course1.id
+                    }
+                });
+
+                const response = await request(app).
+                delete('/api/v1/courses/bulk/delete').
+                set('Authorization', `Bearer ${adminToken}`).
+                send({
+                    courseIds: [course1.id, course2.id]
+                });
 
                 expect(response.status).toBe(httpStatus.NOT_FOUND);
                 expect(response.body.success).toBe(false);
@@ -280,19 +286,18 @@ describe('Course API - bulkDeleteCourses', () => {
 
         describe('Success Cases', () => {
             test('should bulk delete courses successfully', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/courses/bulk/delete')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send({
-                        courseIds: [course1.id, course2.id]
-                    });
+                const response = await request(app).
+                delete('/api/v1/courses/bulk/delete').
+                set('Authorization', `Bearer ${adminToken}`).
+                send({
+                    courseIds: [course1.id, course2.id]
+                });
 
                 expect(response.status).toBe(httpStatus.OK);
                 expect(response.body.success).toBe(true);
                 expect(response.body.message).toContain('courses deleted successfully');
                 expect(response.body.data.deletedCount).toBe(2);
 
-                // Verify courses are deleted from database
                 const remainingCourses = await Course.findAll({
                     where: {
                         id: [course1.id, course2.id]
@@ -300,7 +305,6 @@ describe('Course API - bulkDeleteCourses', () => {
                 });
                 expect(remainingCourses).toHaveLength(0);
 
-                // Verify course3 still exists
                 const course3Still = await Course.findByPk(course3.id);
                 expect(course3Still).toBeTruthy();
             });
@@ -310,17 +314,16 @@ describe('Course API - bulkDeleteCourses', () => {
                     courseIds: [course1.id]
                 };
 
-                const response = await request(app)
-                    .delete('/api/v1/courses/bulk/delete')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(singleDeleteData);
+                const response = await request(app).
+                delete('/api/v1/courses/bulk/delete').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(singleDeleteData);
 
                 expect(response.status).toBe(httpStatus.OK);
                 expect(response.body.success).toBe(true);
                 expect(response.body.message).toContain('courses deleted successfully');
                 expect(response.body.data.deletedCount).toBe(1);
 
-                // Verify only course1 is deleted
                 const deletedCourse = await Course.findByPk(course1.id);
                 expect(deletedCourse).toBeNull();
 

@@ -1,16 +1,23 @@
 import Timetable from '../db/models/timetable.model.js';
-import { ApiResponse } from '../utils/ApiResponse.js';
-import { ApiError } from '../utils/ApiError.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
+import {
+    ApiResponse
+} from '../utils/ApiResponse.js';
+import {
+    ApiError
+} from '../utils/ApiError.js';
+import {
+    asyncHandler
+} from '../utils/asyncHandler.js';
 import Division from '../db/models/division.model.js';
-import { Op } from 'sequelize';
+import {
+    Op
+} from 'sequelize';
 import Branch from '../db/models/branch.model.js';
 import Semester from '../db/models/semester.model.js';
 import Scheme from '../db/models/scheme.model.js';
 import StudentDivision from '../db/models/studentDivision.model.js';
 import httpStatus from 'http-status';
 
-//! Get all timetables
 const getTimetables = asyncHandler(async (req, res) => {
     const {
         semesterNumber,
@@ -33,49 +40,48 @@ const getTimetables = asyncHandler(async (req, res) => {
     if (academicStartYearOfSemester) {
         academicStartYearOfSemesterFilterClause.academicStartYear = {
             [Op.gte]: academicStartYearOfSemester
-        }
-    }   
+        };
+    }
 
     if (academicEndYearOfSemester) {
         academicEndYearOfSemesterFilterClause.academicEndYear = {
             [Op.lte]: academicEndYearOfSemester
-        }
+        };
     }
 
     const timetables = await Timetable.findAndCountAll({
-        include: [
-            {
-                model: Division,
+        include: [{
+            model: Division,
+            required: true,
+            duplicating: false,
+            include: [{
+                model: Semester,
                 required: true,
                 duplicating: false,
-                include: [
-                    {
-                        model: Semester,
+                where: {
+                    [Op.and]: [
+                        semesterFilterClause,
+                        academicStartYearOfSemesterFilterClause,
+                        academicEndYearOfSemesterFilterClause
+                    ]
+
+                },
+                include: [{
+                        model: Branch,
                         required: true,
-                        duplicating: false,
-                        where: {
-                            [Op.and]: [
-                                semesterFilterClause,
-                                academicStartYearOfSemesterFilterClause,
-                                academicEndYearOfSemesterFilterClause
-                            ]
-                        },
-                        include: [
-                            {
-                                model: Branch,
-                                required: true,
-                                duplicating: false
-                            },
-                            {
-                                model: Scheme,
-                                required: true,
-                                duplicating: false
-                            }
-                        ]
+                        duplicating: false
+                    },
+                    {
+                        model: Scheme,
+                        required: true,
+                        duplicating: false
                     }
                 ]
-            }
-        ],
+
+            }]
+
+        }],
+
         offset: offset,
         limit: parseInt(limit, 10)
     });
@@ -86,54 +92,54 @@ const getTimetables = asyncHandler(async (req, res) => {
     }));
 });
 
-//! Get timetable by id
 const getTimetableById = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const {
+        id
+    } = req.params;
 
     const timetable = await Timetable.findOne({
-        where: { id: id },
-        include: [
-            {
-                model: Division,
+        where: {
+            id: id
+        },
+        include: [{
+            model: Division,
+            required: true,
+            duplicating: false,
+            include: [{
+                model: Semester,
                 required: true,
                 duplicating: false,
-                include: [
-                    {
-                        model: Semester,
+                include: [{
+                        model: Branch,
                         required: true,
-                        duplicating: false,
-                        include: [
-                            {
-                                model: Branch,
-                                required: true,
-                                duplicating: false
-                            },
-                            {
-                                model: Scheme,
-                                required: true,
-                                duplicating: false
-                            }
-                        ]
+                        duplicating: false
+                    },
+                    {
+                        model: Scheme,
+                        required: true,
+                        duplicating: false
                     }
                 ]
-            }
-        ]
+
+            }]
+
+        }]
+
     });
 
     if (!timetable) throw new ApiError(httpStatus.NOT_FOUND, "Timetable not found");
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Timetable fetched successfully",
-                timetable
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Timetable fetched successfully",
+            timetable
+        )
+    );
 });
 
-//! Get timetables for logged-in student
 const getMyTimetables = asyncHandler(async (req, res) => {
     const studentId = req.student?.id;
 
@@ -142,7 +148,9 @@ const getMyTimetables = asyncHandler(async (req, res) => {
     }
 
     const studentDivisions = await StudentDivision.findAll({
-        where: { studentId },
+        where: {
+            studentId
+        },
         attributes: ['divisionId'],
         raw: true
     });
@@ -162,33 +170,33 @@ const getMyTimetables = asyncHandler(async (req, res) => {
                 [Op.in]: divisionIds
             }
         },
-        include: [
-            {
-                model: Division,
+        include: [{
+            model: Division,
+            required: true,
+            duplicating: false,
+            include: [{
+                model: Semester,
                 required: true,
                 duplicating: false,
-                include: [
-                    {
-                        model: Semester,
+                include: [{
+                        model: Branch,
                         required: true,
-                        duplicating: false,
-                        include: [
-                            {
-                                model: Branch,
-                                required: true,
-                                duplicating: false
-                            },
-                            {
-                                model: Scheme,
-                                required: true,
-                                duplicating: false
-                            }
-                        ]
+                        duplicating: false
+                    },
+                    {
+                        model: Scheme,
+                        required: true,
+                        duplicating: false
                     }
                 ]
-            }
-        ],
-        order: [['updatedAt', 'DESC']]
+
+            }]
+
+        }],
+
+        order: [
+            ['updatedAt', 'DESC']
+        ]
     });
 
     res.status(httpStatus.OK).json(new ApiResponse(httpStatus.OK, 'Timetables retrieved successfully.', {
@@ -197,7 +205,6 @@ const getMyTimetables = asyncHandler(async (req, res) => {
     }));
 });
 
-//* Add a timetable
 const addTimetable = asyncHandler(async (req, res) => {
     const {
         divisionId,
@@ -218,10 +225,13 @@ const addTimetable = asyncHandler(async (req, res) => {
     res.status(httpStatus.CREATED).json(new ApiResponse(httpStatus.CREATED, "Timetable added successfully", timetable));
 });
 
-//* Update timetable
 const updateTimetable = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { timetableVersion } = req.body;
+    const {
+        id
+    } = req.params;
+    const {
+        timetableVersion
+    } = req.body;
 
     const timetable = await Timetable.findByPk(id);
 
@@ -240,9 +250,10 @@ const updateTimetable = asyncHandler(async (req, res) => {
     res.status(httpStatus.OK).json(new ApiResponse(httpStatus.OK, "Timetable updated successfully", timetable));
 });
 
-//* Remove timetable
 const removeTimetable = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const {
+        id
+    } = req.params;
 
     const timetable = await Timetable.findByPk(id);
 
@@ -262,4 +273,4 @@ export {
     addTimetable,
     updateTimetable,
     removeTimetable
-}
+};

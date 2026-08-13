@@ -1,20 +1,26 @@
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getMessaging } from 'firebase-admin/messaging';
+import {
+    initializeApp,
+    cert,
+    getApps
+} from 'firebase-admin/app';
+import {
+    getMessaging
+} from 'firebase-admin/messaging';
 import fs from 'fs';
 import StudentFCMToken from '../db/models/studentFCMToken.model.js';
 
 const serviceAccount = JSON.parse(
-  fs.readFileSync(
-    new URL('../config/presencify-FCM-sdk-private-key.json', import.meta.url)
-  )
+    fs.readFileSync(
+        new URL('../config/presencify-FCM-sdk-private-key.json', import.meta.url)
+    )
 );
 
 const getApp = () => {
-  if (!getApps().length) {
-    initializeApp({
-      credential: cert(serviceAccount),
-    });
-  }
+    if (!getApps().length) {
+        initializeApp({
+            credential: cert(serviceAccount)
+        });
+    }
 };
 
 const sendNotification = async (fcmToken, title, body, data) => {
@@ -27,22 +33,24 @@ const sendNotification = async (fcmToken, title, body, data) => {
         data: data,
         token: fcmToken
     };
-    console.log(message)
+    console.log(message);
     try {
         const response = await getMessaging().send(message);
         console.log('Notification sent:', response);
     } catch (error) {
-        // if not registered means app is unintalled (bcz if the token had change then the app would have sent the updated token)
+
         if (error.errorInfo && error.errorInfo.code === 'messaging/invalid-argument') {
             await StudentFCMToken.destroy({
                 where: {
                     fcmToken: fcmToken
                 }
-            })
+            });
             console.log('Token not registered (hence removed from db):', error.errorInfo.code);
         }
         console.error('Error sending notification:', error);
     }
 };
 
-export { sendNotification }
+export {
+    sendNotification
+};

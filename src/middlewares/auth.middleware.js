@@ -1,39 +1,42 @@
-import { ApiError } from "../utils/ApiError.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import {
+    ApiError
+} from "../utils/ApiError.js";
+import {
+    asyncHandler
+} from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
 import Admin from "../db/models/admin.model.js";
 import Student from "../db/models/student.model.js";
 import Teacher from "../db/models/teacher.model.js";
-import { ROLES } from "../config/roles.js";
-import { StatusCodes } from "http-status-codes";
-import { logger } from "../config/logger.js";
+import {
+    ROLES
+} from "../config/roles.js";
+import {
+    StatusCodes
+} from "http-status-codes";
+import {
+    logger
+} from "../config/logger.js";
 const modelMap = {
     [ROLES.ADMIN]: Admin,
     [ROLES.TEACHER]: Teacher,
-    [ROLES.STUDENT]: Student,
+    [ROLES.STUDENT]: Student
 };
 
-/**
- * Middleware to verify JWT and authorize based on allowed roles.
- * Usage: verifyJWT([ROLES.ADMIN, ROLES.TEACHER]) or verifyJWT([ROLES.STUDENT])
- */
 const verifyJWT = (allowedRoles) =>
     asyncHandler(async (req, _, next) => {
 
         if (allowedRoles.length === 0) throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, "No roles provided");
 
-        //logger.debug(`Verifying JWT for roles: ${JSON.stringify(allowedRoles)}`);
-
-        // Check for token in cookies (with role-specific names) or Authorization header
         const token =
             req.cookies?.adminAccessToken ||
             req.cookies?.teacherAccessToken ||
             req.cookies?.studentAccessToken ||
             req.cookies?.accessToken ||
             req.header("Authorization")?.replace("Bearer ", "");
-        // console.log(token)
+
         if (!token) {
-            // //logger.warn(`No token provided for request ${req.method} ${req.originalUrl}`);
+
             throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized request: No token provided");
         }
 
@@ -46,11 +49,10 @@ const verifyJWT = (allowedRoles) =>
         }
 
         if (!decodedToken || !decodedToken.id || !decodedToken.role) {
-            //logger.warn(`Decoded token missing required fields: ${JSON.stringify(decodedToken)}`);
+
             throw new ApiError(StatusCodes.UNAUTHORIZED, "Invalid token");
         }
 
-        // Check if role is allowed  
         if (!allowedRoles.includes(decodedToken.role)) {
             logger.warn(`Forbidden: User role ${decodedToken.role} not in allowed roles ${JSON.stringify(allowedRoles)}`);
             throw new ApiError(StatusCodes.FORBIDDEN, "Forbidden: Insufficient permissions");
@@ -58,9 +60,10 @@ const verifyJWT = (allowedRoles) =>
 
         const UserModel = modelMap[decodedToken.role];
 
-        // Fetch user by ID without sensitive info
         const user = await UserModel.findByPk(decodedToken.id, {
-            attributes: { exclude: ["password", "refreshToken"] },
+            attributes: {
+                exclude: ["password", "refreshToken"]
+            }
         });
 
         if (!user) {
@@ -70,7 +73,6 @@ const verifyJWT = (allowedRoles) =>
             logger.info(`JWT verified for userId: ${decodedToken?.id}, role: ${decodedToken?.role}`);
         }
 
-        // Optional: auto-assign user id to req.body based on role
         if (req.method !== "GET") {
             if (decodedToken.role === ROLES.STUDENT) {
                 req.body.studentId = user.id;
@@ -92,4 +94,6 @@ const verifyJWT = (allowedRoles) =>
         next();
     });
 
-export { verifyJWT };
+export {
+    verifyJWT
+};

@@ -1,12 +1,18 @@
 import Branch from '../db/models/branch.model.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { ApiResponse } from '../utils/ApiResponse.js'
-import { ApiError } from '../utils/ApiError.js'
-import { Op } from 'sequelize'
+import {
+    asyncHandler
+} from '../utils/asyncHandler.js';
+import {
+    ApiResponse
+} from '../utils/ApiResponse.js';
+import {
+    ApiError
+} from '../utils/ApiError.js';
+import {
+    Op
+} from 'sequelize';
 import httpStatus from 'http-status';
 
-
-//* get all the branches
 const getBranches = asyncHandler(async (req, res) => {
 
     const {
@@ -18,53 +24,57 @@ const getBranches = asyncHandler(async (req, res) => {
     if (searchQuery) {
         whereClause.name = {
             [Op.iLike]: `%${searchQuery}%`
-        }
+        };
     }
 
     const branches = await Branch.findAll({
         where: whereClause
     });
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Branches retrieved successfully.",
-                branches
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Branches retrieved successfully.",
+            branches
+        )
+    );
 });
 
-
-//* add branch
 const addBranch = asyncHandler(async (req, res) => {
 
-    const { name, abbreviation } = req.body;
+    const {
+        name,
+        abbreviation
+    } = req.body;
 
     const branch = await Branch.create({
         name,
-        abbreviation,
+        abbreviation
     });
 
-    res
-        .status(httpStatus.CREATED)
-        .json(
-            new ApiResponse(
-                httpStatus.CREATED,
-                'Branch added successfully',
-                branch
-            )
+    res.
+    status(httpStatus.CREATED).
+    json(
+        new ApiResponse(
+            httpStatus.CREATED,
+            'Branch added successfully',
+            branch
         )
+    );
 
 });
 
-
-//* update branch
 const updateBranch = asyncHandler(async (req, res) => {
 
-    const { id } = req.params;
-    const { name, abbreviation } = req.body;
+    const {
+        id
+    } = req.params;
+    const {
+        name,
+        abbreviation
+    } = req.body;
 
     const branch = await Branch.findByPk(id);
 
@@ -77,22 +87,22 @@ const updateBranch = asyncHandler(async (req, res) => {
 
     await branch.save();
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Branch updated successfully",
-                branch
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Branch updated successfully",
+            branch
+        )
+    );
 });
 
-
-//* remove branch
 const removeBranch = asyncHandler(async (req, res) => {
 
-    const { id } = req.params;
+    const {
+        id
+    } = req.params;
 
     const branch = await Branch.findByPk(id);
 
@@ -102,20 +112,21 @@ const removeBranch = asyncHandler(async (req, res) => {
 
     await branch.destroy();
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Branch deleted successfully",
-                null
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Branch deleted successfully",
+            null
+        )
+    );
 });
 
-
-const getBranchById = asyncHandler(async (req, res) => {    
-    const { id } = req.params;
+const getBranchById = asyncHandler(async (req, res) => {
+    const {
+        id
+    } = req.params;
 
     const branch = await Branch.findByPk(id);
 
@@ -123,17 +134,16 @@ const getBranchById = asyncHandler(async (req, res) => {
         throw new ApiError(httpStatus.NOT_FOUND, "Branch not found");
     }
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Branch retrieved successfully",
-                branch
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Branch retrieved successfully",
+            branch
+        )
+    );
 });
-
 
 export {
     getBranches,

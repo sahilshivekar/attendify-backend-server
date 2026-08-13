@@ -1,16 +1,23 @@
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 
-// Mock modules before importing
 jest.unstable_mockModule('../../config/config.js', () => ({
     config: {
-        env: 'test' // Default to test environment
+        env: 'test'
     }
 }));
 
-// Dynamic imports after mocking
-const { errorConverter, errorHandler } = await import('../../middlewares/error.js');
-const { ApiError } = await import('../../utils/ApiError.js');
-const { config } = await import('../../config/config.js');
+const {
+    errorConverter,
+    errorHandler
+} = await import('../../middlewares/error.js');
+const {
+    ApiError
+} = await import('../../utils/ApiError.js');
+const {
+    config
+} = await import('../../config/config.js');
 const httpStatus = (await import('http-status')).default;
 const httpMocks = (await import('node-mocks-http')).default;
 
@@ -21,14 +28,11 @@ describe('Error Middleware', () => {
         req = httpMocks.createRequest();
         res = httpMocks.createResponse();
         next = jest.fn();
-        
-        // Reset all mocks
+
         jest.clearAllMocks();
-        
-        // Reset config to test environment
+
         config.env = 'test';
-        
-        // Add json method to response mock
+
         res.json = jest.fn().mockReturnThis();
         res.status = jest.fn().mockReturnThis();
         res.locals = {};
@@ -37,27 +41,27 @@ describe('Error Middleware', () => {
     describe('errorConverter', () => {
         it('passes through ApiError instances unchanged', async () => {
             const apiError = new ApiError(400, 'Bad Request', ['validation error'], 'stack trace');
-            
+
             const nextCalled = new Promise((resolve) => {
                 next.mockImplementation((err) => resolve(err));
             });
 
             errorConverter(apiError, req, res, next);
-            
+
             const result = await nextCalled;
-            expect(result).toBe(apiError); // Same instance
+            expect(result).toBe(apiError);
         });
 
         it('converts regular Error to ApiError with statusCode', async () => {
             const regularError = new Error('Something broke');
             regularError.statusCode = 422;
-            
+
             const nextCalled = new Promise((resolve) => {
                 next.mockImplementation((err) => resolve(err));
             });
 
             errorConverter(regularError, req, res, next);
-            
+
             const result = await nextCalled;
             expect(result).toBeInstanceOf(ApiError);
             expect(result.statusCode).toBe(422);
@@ -67,13 +71,13 @@ describe('Error Middleware', () => {
 
         it('converts regular Error to ApiError with default 500 statusCode', async () => {
             const regularError = new Error('Generic error');
-            
+
             const nextCalled = new Promise((resolve) => {
                 next.mockImplementation((err) => resolve(err));
             });
 
             errorConverter(regularError, req, res, next);
-            
+
             const result = await nextCalled;
             expect(result).toBeInstanceOf(ApiError);
             expect(result.statusCode).toBe(httpStatus.INTERNAL_SERVER_ERROR);
@@ -83,28 +87,30 @@ describe('Error Middleware', () => {
         it('converts Error without message to default HTTP status message', async () => {
             const regularError = new Error();
             regularError.statusCode = 404;
-            
+
             const nextCalled = new Promise((resolve) => {
                 next.mockImplementation((err) => resolve(err));
             });
 
             errorConverter(regularError, req, res, next);
-            
+
             const result = await nextCalled;
             expect(result).toBeInstanceOf(ApiError);
             expect(result.statusCode).toBe(404);
-            expect(result.message).toBe(httpStatus[404]); // 'Not Found'
+            expect(result.message).toBe(httpStatus[404]);
         });
 
         it('handles objects without statusCode or message', async () => {
-            const errorObject = { someProperty: 'value' };
-            
+            const errorObject = {
+                someProperty: 'value'
+            };
+
             const nextCalled = new Promise((resolve) => {
                 next.mockImplementation((err) => resolve(err));
             });
 
             errorConverter(errorObject, req, res, next);
-            
+
             const result = await nextCalled;
             expect(result).toBeInstanceOf(ApiError);
             expect(result.statusCode).toBe(httpStatus.INTERNAL_SERVER_ERROR);
@@ -120,31 +126,28 @@ describe('Error Middleware', () => {
 
             it('responds with full error details including stack trace', () => {
                 const apiError = new ApiError(400, 'Validation failed', ['field required'], 'dev stack trace');
-                
-                errorHandler(apiError, req, res, next); 
-                
+
+                errorHandler(apiError, req, res, next);
+
                 expect(res.status).toHaveBeenCalledWith(400);
-                
-                
-                // Check the actual ApiError passed to res.json()
+
                 const jsonCall = res.json.mock.calls[0][0];
                 expect(jsonCall.statusCode).toBe(400);
                 expect(jsonCall.message).toBe('Validation failed');
                 expect(jsonCall.stack).toBe('dev stack trace');
                 expect(jsonCall.success).toBe(false);
-                
+
                 expect(res.locals.errorMessage).toBe('Validation failed');
             });
 
             it('includes stack trace for operational errors in development', () => {
                 const operationalError = new ApiError(422, 'Business logic error');
                 operationalError.isOperational = true;
-                
+
                 errorHandler(operationalError, req, res, next);
-                
+
                 expect(res.status).toHaveBeenCalledWith(422);
-                
-                
+
                 const jsonCall = res.json.mock.calls[0][0];
                 expect(jsonCall.statusCode).toBe(422);
                 expect(jsonCall.message).toBe('Business logic error');
@@ -155,12 +158,11 @@ describe('Error Middleware', () => {
             it('includes stack trace for non-operational errors in development', () => {
                 const nonOperationalError = new ApiError(500, 'System error');
                 nonOperationalError.isOperational = false;
-                
+
                 errorHandler(nonOperationalError, req, res, next);
-                
+
                 expect(res.status).toHaveBeenCalledWith(500);
-                
-                
+
                 const jsonCall = res.json.mock.calls[0][0];
                 expect(jsonCall.statusCode).toBe(500);
                 expect(jsonCall.message).toBe('System error');
@@ -177,12 +179,11 @@ describe('Error Middleware', () => {
             it('responds with original error for operational errors', () => {
                 const operationalError = new ApiError(400, 'Bad request data');
                 operationalError.isOperational = true;
-                
+
                 errorHandler(operationalError, req, res, next);
-                
+
                 expect(res.status).toHaveBeenCalledWith(400);
-                
-                // Check the actual ApiError passed to res.json()
+
                 const jsonCall = res.json.mock.calls[0][0];
                 expect(jsonCall.statusCode).toBe(400);
                 expect(jsonCall.message).toBe('Bad request data');
@@ -195,33 +196,29 @@ describe('Error Middleware', () => {
             it('masks non-operational errors with generic 500 message', () => {
                 const nonOperationalError = new ApiError(500, 'Database connection failed');
                 nonOperationalError.isOperational = false;
-                
+
                 errorHandler(nonOperationalError, req, res, next);
-                
+
                 expect(res.status).toHaveBeenCalledWith(httpStatus.INTERNAL_SERVER_ERROR);
-                
-                
-                // Check the actual ApiError passed to res.json()
+
                 const jsonCall = res.json.mock.calls[0][0];
                 expect(jsonCall.statusCode).toBe(httpStatus.INTERNAL_SERVER_ERROR);
-                expect(jsonCall.message).toBe(httpStatus[httpStatus.INTERNAL_SERVER_ERROR]); // 'Internal Server Error'
+                expect(jsonCall.message).toBe(httpStatus[httpStatus.INTERNAL_SERVER_ERROR]);
                 expect(jsonCall.success).toBe(false);
                 expect(jsonCall.stack).not.toBeDefined();
                 expect(jsonCall.errors).not.toBeDefined();
-                expect(res.locals.errorMessage).toBe('Database connection failed'); // Original message in locals
+                expect(res.locals.errorMessage).toBe('Database connection failed');
             });
 
             it('masks undefined isOperational as non-operational (defaults to false)', () => {
                 const errorWithoutOperational = new ApiError(500, 'Some system error');
-                // Explicitly set isOperational to undefined to test the default behavior
+
                 errorWithoutOperational.isOperational = undefined;
-                
+
                 errorHandler(errorWithoutOperational, req, res, next);
-                
+
                 expect(res.status).toHaveBeenCalledWith(httpStatus.INTERNAL_SERVER_ERROR);
-                
-                
-                // Check the actual ApiError passed to res.json()
+
                 const jsonCall = res.json.mock.calls[0][0];
                 expect(jsonCall.statusCode).toBe(httpStatus.INTERNAL_SERVER_ERROR);
                 expect(jsonCall.message).toBe(httpStatus[httpStatus.INTERNAL_SERVER_ERROR]);
@@ -238,12 +235,11 @@ describe('Error Middleware', () => {
 
             it('responds with full error details like development', () => {
                 const testError = new ApiError(404, 'Resource not found');
-                
+
                 errorHandler(testError, req, res, next);
-                
+
                 expect(res.status).toHaveBeenCalledWith(404);
-                
-                
+
                 const jsonCall = res.json.mock.calls[0][0];
                 expect(jsonCall.statusCode).toBe(404);
                 expect(jsonCall.message).toBe('Resource not found');
@@ -256,15 +252,14 @@ describe('Error Middleware', () => {
             it('does not mask non-operational errors in test environment', () => {
                 const nonOperationalError = new ApiError(500, 'Test system error');
                 nonOperationalError.isOperational = false;
-                
+
                 errorHandler(nonOperationalError, req, res, next);
-                
+
                 expect(res.status).toHaveBeenCalledWith(500);
-                
-                
+
                 const jsonCall = res.json.mock.calls[0][0];
                 expect(jsonCall.statusCode).toBe(500);
-                expect(jsonCall.message).toBe('Test system error'); // Original message preserved in test
+                expect(jsonCall.message).toBe('Test system error');
                 expect(jsonCall.success).toBe(false);
                 expect(jsonCall.stack).toEqual(expect.any(String));
                 expect(jsonCall.errors).toBeDefined();
@@ -277,18 +272,16 @@ describe('Error Middleware', () => {
             const regularError = new Error('Integration test error');
             regularError.statusCode = 409;
             config.env = 'development';
-            
-            // First, convert the error
+
             const nextCalled = new Promise((resolve) => {
                 next.mockImplementation((err) => resolve(err));
             });
-            
+
             errorConverter(regularError, req, res, next);
             const convertedError = await nextCalled;
-            
-            // Then handle the converted error
+
             errorHandler(convertedError, req, res, next);
-            
+
             expect(convertedError).toBeInstanceOf(ApiError);
             expect(res.status).toHaveBeenCalledWith(409);
             expect(res.json).toHaveBeenCalledWith(

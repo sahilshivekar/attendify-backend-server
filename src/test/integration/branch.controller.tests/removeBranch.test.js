@@ -1,4 +1,6 @@
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.js';
 import setupTestDb from '../../util/setupTestDb.js';
@@ -15,13 +17,20 @@ import Course from '../../../db/models/course.model.js';
 import Room from '../../../db/models/room.model.js';
 import Timetable from '../../../db/models/timetable.model.js';
 import Class from '../../../db/models/class.model.js';
-import { Attendance, AttendanceStudent } from '../../../db/models/attendance.model.js';
+import {
+    Attendance,
+    AttendanceStudent
+} from '../../../db/models/attendance.model.js';
 import StudentSemester from '../../../db/models/studentSemester.model.js';
 import StudentDivision from '../../../db/models/studentDivision.model.js';
 import StudentBatch from '../../../db/models/studentBatch.model.js';
-import { faker } from '@faker-js/faker';
+import {
+    faker
+} from '@faker-js/faker';
 import httpStatus from 'http-status';
-import { ROLES } from '../../../config/roles.js';
+import {
+    ROLES
+} from '../../../config/roles.js';
 
 setupTestDb();
 
@@ -33,27 +42,25 @@ describe('Branch API - removeBranch', () => {
 
     beforeEach(async () => {
         try {
-            // Create admin and login
+
             await Admin.create({
                 email: 'admin@example.com',
                 username: 'adminuser',
-                password: 'Admin@12345',
+                password: 'Admin@12345'
             });
-            const adminLoginRes = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send({
-                    emailOrUsername: 'admin@example.com',
-                    password: 'Admin@12345',
-                });
+            const adminLoginRes = await request(app).
+            post('/api/v1/auth/admins/login').
+            send({
+                emailOrUsername: 'admin@example.com',
+                password: 'Admin@12345'
+            });
             adminToken = adminLoginRes.body.data.accessToken;
 
-            // Create branch to delete
             branchToDelete = await Branch.create({
                 name: 'Branch to Delete',
-                abbreviation: 'BTD',
+                abbreviation: 'BTD'
             });
 
-            // Create teacher
             await Teacher.create({
                 firstName: 'John',
                 lastName: 'Doe',
@@ -63,29 +70,27 @@ describe('Branch API - removeBranch', () => {
                 gender: 'Male',
                 role: 'Teacher'
             });
-            const teacherLoginRes = await request(app)
-                .post('/api/v1/auth/teachers/login')
-                .send({
-                    email: 'teacher@example.com',
-                    password: 'Teacher@123',
-                });
+            const teacherLoginRes = await request(app).
+            post('/api/v1/auth/teachers/login').
+            send({
+                email: 'teacher@example.com',
+                password: 'Teacher@123'
+            });
             teacherToken = teacherLoginRes.body.data.accessToken;
 
-            // Create dependencies for student
             const university = await University.create({
                 name: 'Test University',
-                abbreviation: 'TU',
+                abbreviation: 'TU'
             });
             const studentBranch = await Branch.create({
                 name: 'Computer Science',
-                abbreviation: 'CS',
+                abbreviation: 'CS'
             });
             const scheme = await Scheme.create({
                 name: 'CS 2026 Scheme',
-                universityId: university.id,
+                universityId: university.id
             });
 
-            // Create student
             await Student.create({
                 firstName: 'Jane',
                 lastName: 'Smith',
@@ -99,12 +104,12 @@ describe('Branch API - removeBranch', () => {
                 admissionType: 'FE',
                 gender: 'Male'
             });
-            const studentLoginRes = await request(app)
-                .post('/api/v1/auth/students/login')
-                .send({
-                    emailOrPRN: 'student1@example.com',
-                    password: 'Student@123',
-                });
+            const studentLoginRes = await request(app).
+            post('/api/v1/auth/students/login').
+            send({
+                emailOrPRN: 'student1@example.com',
+                password: 'Student@123'
+            });
             studentToken = studentLoginRes.body.data.accessToken;
         } catch (error) {
             console.error('Error in beforeEach:', error);
@@ -115,8 +120,8 @@ describe('Branch API - removeBranch', () => {
     describe('DELETE /api/v1/branches/:id', () => {
         describe('Authentication', () => {
             test('should return 401 if no token provided', async () => {
-                const response = await request(app)
-                    .delete(`/api/v1/branches/${branchToDelete.id}`);
+                const response = await request(app).
+                delete(`/api/v1/branches/${branchToDelete.id}`);
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
@@ -124,18 +129,18 @@ describe('Branch API - removeBranch', () => {
             });
 
             test('should return 401 if invalid token provided', async () => {
-                const response = await request(app)
-                    .delete(`/api/v1/branches/${branchToDelete.id}`)
-                    .set('Authorization', 'Bearer invalidtoken');
+                const response = await request(app).
+                delete(`/api/v1/branches/${branchToDelete.id}`).
+                set('Authorization', 'Bearer invalidtoken');
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
             });
 
             test('should return 403 if student tries to delete branch', async () => {
-                const response = await request(app)
-                    .delete(`/api/v1/branches/${branchToDelete.id}`)
-                    .set('Authorization', `Bearer ${studentToken}`);
+                const response = await request(app).
+                delete(`/api/v1/branches/${branchToDelete.id}`).
+                set('Authorization', `Bearer ${studentToken}`);
 
                 expect(response.status).toBe(httpStatus.FORBIDDEN);
                 expect(response.body.success).toBe(false);
@@ -145,9 +150,9 @@ describe('Branch API - removeBranch', () => {
 
         describe('Validation', () => {
             test('should return 400 if id is not a valid UUID', async () => {
-                const response = await request(app)
-                    .delete('/api/v1/branches/invalid-uuid')
-                    .set('Authorization', `Bearer ${adminToken}`);
+                const response = await request(app).
+                delete('/api/v1/branches/invalid-uuid').
+                set('Authorization', `Bearer ${adminToken}`);
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -157,21 +162,20 @@ describe('Branch API - removeBranch', () => {
 
         describe('Success Cases', () => {
             test('should delete branch successfully with admin token', async () => {
-                const response = await request(app)
-                    .delete(`/api/v1/branches/${branchToDelete.id}`)
-                    .set('Authorization', `Bearer ${adminToken}`);
+                const response = await request(app).
+                delete(`/api/v1/branches/${branchToDelete.id}`).
+                set('Authorization', `Bearer ${adminToken}`);
 
                 expect(response.status).toBe(httpStatus.OK);
 
-                // Verify branch is deleted from database
                 const deletedBranch = await Branch.findByPk(branchToDelete.id);
                 expect(deletedBranch).toBeNull();
             });
 
             test('should return 403 if teacher tries to delete branch', async () => {
-                const response = await request(app)
-                    .delete(`/api/v1/branches/${branchToDelete.id}`)
-                    .set('Authorization', `Bearer ${teacherToken}`);
+                const response = await request(app).
+                delete(`/api/v1/branches/${branchToDelete.id}`).
+                set('Authorization', `Bearer ${teacherToken}`);
 
                 expect(response.status).toBe(httpStatus.FORBIDDEN);
                 expect(response.body.success).toBe(false);
@@ -181,9 +185,9 @@ describe('Branch API - removeBranch', () => {
             test('should return 404 if branch does not exist', async () => {
                 const fakeId = faker.string.uuid();
 
-                const response = await request(app)
-                    .delete(`/api/v1/branches/${fakeId}`)
-                    .set('Authorization', `Bearer ${adminToken}`);
+                const response = await request(app).
+                delete(`/api/v1/branches/${fakeId}`).
+                set('Authorization', `Bearer ${adminToken}`);
 
                 expect(response.status).toBe(httpStatus.NOT_FOUND);
                 expect(response.body.success).toBe(false);

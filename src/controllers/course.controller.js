@@ -1,14 +1,24 @@
 import Course from '../db/models/course.model.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { ApiResponse } from '../utils/ApiResponse.js'
-import { ApiError } from '../utils/ApiError.js'
-import { Op } from 'sequelize'
+import {
+    asyncHandler
+} from '../utils/asyncHandler.js';
+import {
+    ApiResponse
+} from '../utils/ApiResponse.js';
+import {
+    ApiError
+} from '../utils/ApiError.js';
+import {
+    Op
+} from 'sequelize';
 import University from '../db/models/university.model.js';
 import Scheme from '../db/models/scheme.model.js';
 import BranchCourseSemester from '../db/models/branchCourseSemester.model.js';
 import Branch from '../db/models/branch.model.js';
 import sequelize from '../config/db.connection.js';
-import { parse } from 'path';
+import {
+    parse
+} from 'path';
 import fs from 'fs';
 import csvParser from 'csv-parser';
 import Semester from '../db/models/semester.model.js';
@@ -17,7 +27,6 @@ import Teacher from '../db/models/teacher.model.js';
 import httpStatus from 'http-status';
 import courseValidation from '../validators/course.validation.js';
 
-//* get all the courses
 const getCourses = asyncHandler(async (req, res) => {
     const {
         searchQuery,
@@ -35,21 +44,27 @@ const getCourses = asyncHandler(async (req, res) => {
     if (searchQuery) {
         whereClause.name = {
             [Op.iLike]: `%${searchQuery}%`
-        }
+        };
     }
 
     if (onlyOptional) {
-        whereClause.optionalCourse = { [Op.not]: null };
+        whereClause.optionalCourse = {
+            [Op.not]: null
+        };
     }
 
-    let branchClause = {}
+    let branchClause = {};
     if (branchId) {
-        branchClause = { branchId: branchId }
+        branchClause = {
+            branchId: branchId
+        };
     }
 
-    let semesterNumberClause = {}
+    let semesterNumberClause = {};
     if (semesterNumber) {
-        semesterNumberClause = { semesterNumber: semesterNumber }
+        semesterNumberClause = {
+            semesterNumber: semesterNumber
+        };
     }
 
     const branchCourseSemesterWhereClause = {
@@ -57,51 +72,58 @@ const getCourses = asyncHandler(async (req, res) => {
             branchClause,
             semesterNumberClause
         ]
-    }
-    let schemeClause = {}
+
+    };
+    let schemeClause = {};
     if (schemeId) {
-        schemeClause = { id: schemeId }
+        schemeClause = {
+            id: schemeId
+        };
     }
 
-    // Handle teacherIds - can be a single ID or comma-separated IDs
     let teacherClause = {};
     if (teacherIds) {
         const teacherIdArray = Array.isArray(teacherIds) ? teacherIds : teacherIds.split(',');
-        teacherClause = { teacherId: { [Op.in]: teacherIdArray } };
+        teacherClause = {
+            teacherId: {
+                [Op.in]: teacherIdArray
+            }
+        };
     }
 
     const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
-    // STEP 1: Get all matching course IDs with filters (lightweight query for counting and pagination)
     const allMatchingIds = await Course.findAll({
         attributes: ['id'],
         where: whereClause,
-        include: [
-            {
+        include: [{
                 model: BranchCourseSemester,
                 required: branchId || semesterNumber ? true : false,
                 where: branchCourseSemesterWhereClause,
-                attributes: [],
+                attributes: []
             },
             {
                 model: Scheme,
                 required: true,
                 where: schemeClause,
-                attributes: [],
+                attributes: []
             },
             {
                 model: TeacherTeachesCourse,
                 required: teacherIds ? true : false,
                 where: teacherClause,
-                attributes: [],
+                attributes: []
             }
         ],
-        order: [['name', 'ASC'], ['id', 'ASC']], // Add secondary sort for consistency
+
+        order: [
+            ['name', 'ASC'],
+            ['id', 'ASC']
+        ],
         subQuery: false,
         raw: true
     });
 
-    // Deduplicate IDs (JOINs may create duplicates when Course has multiple branches/teachers)
     const uniqueIdSet = new Set();
     const uniqueIds = [];
     for (const item of allMatchingIds) {
@@ -113,7 +135,6 @@ const getCourses = asyncHandler(async (req, res) => {
 
     const totalCount = uniqueIds.length;
 
-    // If getAll is false, apply pagination
     let paginatedIds;
     if (getAll === false && limit) {
         paginatedIds = uniqueIds.slice(offset, offset + parseInt(limit, 10));
@@ -121,13 +142,11 @@ const getCourses = asyncHandler(async (req, res) => {
         paginatedIds = uniqueIds;
     }
 
-    // If no results, return empty response
     if (paginatedIds.length === 0) {
         return res.status(httpStatus.OK).json(
             new ApiResponse(
                 httpStatus.OK,
-                "Courses retrieved successfully.",
-                {
+                "Courses retrieved successfully.", {
                     courses: [],
                     totalCount: totalCount
                 }
@@ -135,8 +154,7 @@ const getCourses = asyncHandler(async (req, res) => {
         );
     }
 
-    // STEP 2: Fetch full records with all includes using the paginated IDs
-    const courseIds = paginatedIds.map(c => c.id);
+    const courseIds = paginatedIds.map((c) => c.id);
 
     const courses = await Course.findAll({
         where: {
@@ -144,14 +162,13 @@ const getCourses = asyncHandler(async (req, res) => {
                 [Op.in]: courseIds
             }
         },
-        include: [
-            {
+        include: [{
                 model: BranchCourseSemester,
                 required: false,
-                separate: true, // Fetch in separate query to avoid JOIN duplicates
+                separate: true,
                 include: {
                     model: Branch,
-                    required: true,
+                    required: true
                 }
             },
             {
@@ -159,38 +176,39 @@ const getCourses = asyncHandler(async (req, res) => {
                 required: true,
                 include: {
                     model: University,
-                    required: true,
+                    required: true
                 }
             },
             {
                 model: TeacherTeachesCourse,
                 required: false,
-                separate: true, // Fetch in separate query to avoid JOIN duplicates
+                separate: true,
                 include: {
                     model: Teacher,
-                    required: true,
+                    required: true
                 }
             }
         ],
-        order: [['name', 'ASC'], ['id', 'ASC']] // Same order as step 1
+
+        order: [
+            ['name', 'ASC'],
+            ['id', 'ASC']
+        ]
     });
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Courses retrieved successfully.",
-                {
-                    courses: courses,
-                    totalCount: totalCount
-                }
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Courses retrieved successfully.", {
+                courses: courses,
+                totalCount: totalCount
+            }
+        )
+    );
 });
 
-
-//* add course
 const addCourse = asyncHandler(async (req, res) => {
     const {
         code,
@@ -200,7 +218,6 @@ const addCourse = asyncHandler(async (req, res) => {
         schemeId
     } = req.body;
 
-    // Only check for existence of related scheme, not input validation
     const scheme = await Scheme.findByPk(schemeId);
 
     if (!scheme) {
@@ -212,26 +229,27 @@ const addCourse = asyncHandler(async (req, res) => {
         name: name || "",
         courseType: courseType,
         optionalCourse: optionalCourse || null,
-        schemeId: schemeId || null,
+        schemeId: schemeId || null
     });
 
-    res
-        .status(httpStatus.CREATED)
-        .json(
-            new ApiResponse(
-                httpStatus.CREATED,
-                'Course added successfully',
-                course
-            )
+    res.
+    status(httpStatus.CREATED).
+    json(
+        new ApiResponse(
+            httpStatus.CREATED,
+            'Course added successfully',
+            course
         )
+    );
 });
 
 const addCourseToBranchWithSemesterNumber = asyncHandler(async (req, res) => {
-    const { courseId, branchId, semesterNumber } = req.body;
+    const {
+        courseId,
+        branchId,
+        semesterNumber
+    } = req.body;
 
-    // Remove input validation for semesterNumber range, handled by validator
-
-    // Only check for existence of related records
     const course = await Course.findByPk(courseId);
 
     if (!course) {
@@ -250,21 +268,21 @@ const addCourseToBranchWithSemesterNumber = asyncHandler(async (req, res) => {
         semesterNumber: semesterNumber
     });
 
-    res
-        .status(httpStatus.CREATED)
-        .json(
-            new ApiResponse(
-                httpStatus.CREATED,
-                "Course added successfully",
-                addedCourseToBranchEntry
-            )
-        );
+    res.
+    status(httpStatus.CREATED).
+    json(
+        new ApiResponse(
+            httpStatus.CREATED,
+            "Course added successfully",
+            addedCourseToBranchEntry
+        )
+    );
 });
 
 const removeCourseFromBranchWithSemesterNumber = asyncHandler(async (req, res) => {
-    const { branchCourseSemesterId } = req.params;
-
-    // Remove input validation for presence, handled by validator
+    const {
+        branchCourseSemesterId
+    } = req.params;
 
     const branchCourseSemester = await BranchCourseSemester.findByPk(branchCourseSemesterId);
 
@@ -274,23 +292,28 @@ const removeCourseFromBranchWithSemesterNumber = asyncHandler(async (req, res) =
 
     await branchCourseSemester.destroy();
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "BranchCourseSemester deleted successfully",
-                null
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "BranchCourseSemester deleted successfully",
+            null
+        )
+    );
 });
 
-//* update course
 const updateCourse = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { code, name, courseType, optionalCourse, schemeId } = req.body;
-
-    // Remove input validation for presence, handled by validator
+    const {
+        id
+    } = req.params;
+    const {
+        code,
+        name,
+        courseType,
+        optionalCourse,
+        schemeId
+    } = req.body;
 
     const course = await Course.findByPk(id);
 
@@ -306,22 +329,21 @@ const updateCourse = asyncHandler(async (req, res) => {
 
     await course.save();
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Course updated successfully",
-                course
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Course updated successfully",
+            course
+        )
+    );
 });
 
-//* remove course
 const removeCourse = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-
-    // Remove input validation for presence, handled by validator
+    const {
+        id
+    } = req.params;
 
     const course = await Course.findByPk(id);
 
@@ -331,33 +353,34 @@ const removeCourse = asyncHandler(async (req, res) => {
 
     await course.destroy();
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Course deleted successfully",
-                null
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Course deleted successfully",
+            null
+        )
+    );
 });
 
 const getCourseById = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-
-    // Remove input validation for presence, handled by validator
+    const {
+        id
+    } = req.params;
 
     const course = await Course.findOne({
-        where: { id: id },
-        include: [
-            {
+        where: {
+            id: id
+        },
+        include: [{
                 model: BranchCourseSemester,
                 required: false,
                 duplicating: false,
                 include: {
                     model: Branch,
                     required: true,
-                    duplicating: false,
+                    duplicating: false
                 }
             },
             {
@@ -367,7 +390,7 @@ const getCourseById = asyncHandler(async (req, res) => {
                 include: {
                     model: University,
                     required: true,
-                    duplicating: false,
+                    duplicating: false
                 }
             },
             {
@@ -377,36 +400,38 @@ const getCourseById = asyncHandler(async (req, res) => {
                 include: {
                     model: Teacher,
                     required: true,
-                    duplicating: false,
+                    duplicating: false
                 }
             }
         ]
-    })
+
+    });
 
     if (!course) {
         throw new ApiError(httpStatus.NOT_FOUND, "Course not found");
     }
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Course retrieved successfully",
-                course
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Course retrieved successfully",
+            course
+        )
+    );
 });
 
-//* bulk create courses
 const bulkCreateCourses = asyncHandler(async (req, res) => {
-    const { courses } = req.body;
+    const {
+        courses
+    } = req.body;
 
     const transaction = await sequelize.transaction();
 
     try {
-        // Check for duplicate course codes within request
-        const courseCodes = courses.map(course => course.code);
+
+        const courseCodes = courses.map((course) => course.code);
         const uniqueCodes = new Set(courseCodes);
         if (uniqueCodes.size !== courseCodes.length) {
             throw new ApiError(
@@ -415,16 +440,17 @@ const bulkCreateCourses = asyncHandler(async (req, res) => {
             );
         }
 
-        // Validate all schemes exist
-        const schemeIds = [...new Set(courses.map(course => course.schemeId))];
+        const schemeIds = [...new Set(courses.map((course) => course.schemeId))];
         const existingSchemes = await Scheme.findAll({
-            where: { id: schemeIds },
+            where: {
+                id: schemeIds
+            },
             attributes: ['id'],
             transaction
         });
 
-        const existingSchemeIds = existingSchemes.map(scheme => scheme.id);
-        const invalidSchemeIds = schemeIds.filter(id => !existingSchemeIds.includes(id));
+        const existingSchemeIds = existingSchemes.map((scheme) => scheme.id);
+        const invalidSchemeIds = schemeIds.filter((id) => !existingSchemeIds.includes(id));
 
         if (invalidSchemeIds.length > 0) {
             await transaction.rollback();
@@ -434,15 +460,16 @@ const bulkCreateCourses = asyncHandler(async (req, res) => {
             );
         }
 
-        // Check for duplicate course codes against database
         const existingCourses = await Course.findAll({
-            where: { code: courseCodes },
+            where: {
+                code: courseCodes
+            },
             attributes: ['code'],
             transaction
         });
 
         if (existingCourses.length > 0) {
-            const duplicateCodes = existingCourses.map(course => course.code);
+            const duplicateCodes = existingCourses.map((course) => course.code);
             await transaction.rollback();
             throw new ApiError(
                 httpStatus.CONFLICT,
@@ -450,7 +477,6 @@ const bulkCreateCourses = asyncHandler(async (req, res) => {
             );
         }
 
-        // Create courses
         const createdCourses = await Course.bulkCreate(courses, {
             transaction,
             validate: true,
@@ -460,15 +486,16 @@ const bulkCreateCourses = asyncHandler(async (req, res) => {
 
         await transaction.commit();
 
-        res
-            .status(httpStatus.CREATED)
-            .json(
-                new ApiResponse(
-                    httpStatus.CREATED,
-                    `${createdCourses.length} courses created successfully`,
-                    { courses: createdCourses }
-                )
-            );
+        res.
+        status(httpStatus.CREATED).
+        json(
+            new ApiResponse(
+                httpStatus.CREATED,
+                `${createdCourses.length} courses created successfully`, {
+                    courses: createdCourses
+                }
+            )
+        );
 
     } catch (error) {
         if (!transaction.finished) {
@@ -478,7 +505,6 @@ const bulkCreateCourses = asyncHandler(async (req, res) => {
     }
 });
 
-//* bulk create courses from CSV
 const bulkCreateCoursesFromCSV = asyncHandler(async (req, res) => {
     const csvFilePath = req?.file?.path;
 
@@ -494,11 +520,11 @@ const bulkCreateCoursesFromCSV = asyncHandler(async (req, res) => {
 
     const parseCSV = () => new Promise((resolve, reject) => {
         const rows = [];
-        fs.createReadStream(csvFilePath)
-            .pipe(csvParser())
-            .on('data', (row) => rows.push(row))
-            .on('end', () => resolve(rows))
-            .on('error', (err) => reject(err));
+        fs.createReadStream(csvFilePath).
+        pipe(csvParser()).
+        on('data', (row) => rows.push(row)).
+        on('end', () => resolve(rows)).
+        on('error', (err) => reject(err));
     });
 
     let rows;
@@ -519,12 +545,24 @@ const bulkCreateCoursesFromCSV = asyncHandler(async (req, res) => {
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         const rowNumber = i + 2;
-        const { error, value } = courseValidation.csvCourseRowSchema.validate(row, { abortEarly: false });
+        const {
+            error,
+            value
+        } = courseValidation.csvCourseRowSchema.validate(row, {
+            abortEarly: false
+        });
         if (error) {
-            const msgs = error.details.map(d => d.message).join('; ');
-            validationErrors.push({ row: rowNumber, code: row.code || 'N/A', errors: msgs });
+            const msgs = error.details.map((d) => d.message).join('; ');
+            validationErrors.push({
+                row: rowNumber,
+                code: row.code || 'N/A',
+                errors: msgs
+            });
         } else {
-            validatedCourses.push({ ...value, rowNumber });
+            validatedCourses.push({
+                ...value,
+                rowNumber
+            });
         }
     }
 
@@ -540,36 +578,48 @@ const bulkCreateCoursesFromCSV = asyncHandler(async (req, res) => {
     const transaction = await sequelize.transaction();
     let committed = false;
     try {
-        const codes = validatedCourses.map(c => c.code);
-        const schemeIds = [...new Set(validatedCourses.map(c => c.schemeId))];
+        const codes = validatedCourses.map((c) => c.code);
+        const schemeIds = [...new Set(validatedCourses.map((c) => c.schemeId))];
 
-        // Duplicate codes within CSV
         const codeSet = new Set();
         const duplicateCodes = [];
         for (const c of validatedCourses) {
-            if (codeSet.has(c.code)) duplicateCodes.push({ row: c.rowNumber, code: c.code });
+            if (codeSet.has(c.code)) duplicateCodes.push({
+                row: c.rowNumber,
+                code: c.code
+            });
             codeSet.add(c.code);
         }
         if (duplicateCodes.length > 0) {
             throw new ApiError(httpStatus.BAD_REQUEST, 'Duplicate course codes found within CSV file', duplicateCodes);
         }
 
-        // Validate schemes exist
-        const existingSchemes = await Scheme.findAll({ where: { id: schemeIds }, attributes: ['id'], transaction });
-        const existingSchemeIds = existingSchemes.map(s => s.id);
-        const invalidSchemeIds = schemeIds.filter(id => !existingSchemeIds.includes(id));
+        const existingSchemes = await Scheme.findAll({
+            where: {
+                id: schemeIds
+            },
+            attributes: ['id'],
+            transaction
+        });
+        const existingSchemeIds = existingSchemes.map((s) => s.id);
+        const invalidSchemeIds = schemeIds.filter((id) => !existingSchemeIds.includes(id));
         if (invalidSchemeIds.length > 0) {
             throw new ApiError(httpStatus.NOT_FOUND, `The following scheme IDs do not exist: ${invalidSchemeIds.join(', ')}`);
         }
 
-        // Existing codes in DB
-        const existingCourses = await Course.findAll({ where: { code: codes }, attributes: ['code'], transaction });
+        const existingCourses = await Course.findAll({
+            where: {
+                code: codes
+            },
+            attributes: ['code'],
+            transaction
+        });
         if (existingCourses.length > 0) {
-            const dupCodes = existingCourses.map(c => c.code);
+            const dupCodes = existingCourses.map((c) => c.code);
             throw new ApiError(httpStatus.CONFLICT, `Course codes already exist: ${dupCodes.join(', ')}`);
         }
 
-        const toCreate = validatedCourses.map(c => ({
+        const toCreate = validatedCourses.map((c) => ({
             code: c.code,
             name: c.name,
             type: c.type,
@@ -591,8 +641,10 @@ const bulkCreateCoursesFromCSV = asyncHandler(async (req, res) => {
         res.status(httpStatus.CREATED).json(
             new ApiResponse(
                 httpStatus.CREATED,
-                `${created.length} courses created successfully from CSV`,
-                { courses: created, createdCount: created.length }
+                `${created.length} courses created successfully from CSV`, {
+                    courses: created,
+                    createdCount: created.length
+                }
             )
         );
     } catch (error) {
@@ -601,23 +653,27 @@ const bulkCreateCoursesFromCSV = asyncHandler(async (req, res) => {
         throw error;
     }
 });
-//* bulk delete courses
+
 const bulkDeleteCourses = asyncHandler(async (req, res) => {
-    const { courseIds } = req.body;
+    const {
+        courseIds
+    } = req.body;
 
     const transaction = await sequelize.transaction();
 
     try {
-        // Verify all courses exist
+
         const existingCourses = await Course.findAll({
-            where: { id: courseIds },
+            where: {
+                id: courseIds
+            },
             attributes: ['id'],
             transaction
         });
 
         if (existingCourses.length !== courseIds.length) {
-            const existingIds = existingCourses.map(course => course.id);
-            const nonExistentIds = courseIds.filter(id => !existingIds.includes(id));
+            const existingIds = existingCourses.map((course) => course.id);
+            const nonExistentIds = courseIds.filter((id) => !existingIds.includes(id));
             await transaction.rollback();
             throw new ApiError(
                 httpStatus.NOT_FOUND,
@@ -625,15 +681,16 @@ const bulkDeleteCourses = asyncHandler(async (req, res) => {
             );
         }
 
-        // Check if any courses are referenced in BranchCourseSemester
         const referencedCourses = await BranchCourseSemester.findAll({
-            where: { courseId: courseIds },
+            where: {
+                courseId: courseIds
+            },
             attributes: ['courseId'],
             transaction
         });
 
         if (referencedCourses.length > 0) {
-            const referencedIds = [...new Set(referencedCourses.map(ref => ref.courseId))];
+            const referencedIds = [...new Set(referencedCourses.map((ref) => ref.courseId))];
             await transaction.rollback();
             throw new ApiError(
                 httpStatus.CONFLICT,
@@ -641,23 +698,25 @@ const bulkDeleteCourses = asyncHandler(async (req, res) => {
             );
         }
 
-        // Delete courses
         const deletedCount = await Course.destroy({
-            where: { id: courseIds },
+            where: {
+                id: courseIds
+            },
             transaction
         });
 
         await transaction.commit();
 
-        res
-            .status(httpStatus.OK)
-            .json(
-                new ApiResponse(
-                    httpStatus.OK,
-                    `${deletedCount} courses deleted successfully`,
-                    { deletedCount }
-                )
-            );
+        res.
+        status(httpStatus.OK).
+        json(
+            new ApiResponse(
+                httpStatus.OK,
+                `${deletedCount} courses deleted successfully`, {
+                    deletedCount
+                }
+            )
+        );
 
     } catch (error) {
         if (!transaction.finished) {
@@ -678,4 +737,4 @@ export {
     bulkCreateCourses,
     bulkDeleteCourses,
     bulkCreateCoursesFromCSV
-};          
+};

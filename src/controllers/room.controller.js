@@ -1,13 +1,29 @@
-import { Op, col, where as sqWhere, cast } from 'sequelize';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { ApiResponse } from '../utils/ApiResponse.js';
-import { ApiError } from '../utils/ApiError.js';
+import {
+    Op,
+    col,
+    where as sqWhere,
+    cast
+} from 'sequelize';
+import {
+    asyncHandler
+} from '../utils/asyncHandler.js';
+import {
+    ApiResponse
+} from '../utils/ApiResponse.js';
+import {
+    ApiError
+} from '../utils/ApiError.js';
 import Room from '../db/models/room.model.js';
 import Class from '../db/models/class.model.js';
 import httpStatus from 'http-status';
 
 const addRoom = asyncHandler(async (req, res) => {
-    const { roomNumber, sittingCapacity, name = null, type = null } = req.body;
+    const {
+        roomNumber,
+        sittingCapacity,
+        name = null,
+        type = null
+    } = req.body;
 
     const room = await Room.create({
         roomNumber,
@@ -39,64 +55,110 @@ const getRooms = asyncHandler(async (req, res) => {
 
     const where = {};
     if (searchQuery) {
-        where[Op.or] = [
-            { roomNumber: { [Op.iLike]: `%${searchQuery}%` } },
-            { name: { [Op.iLike]: `%${searchQuery}%` } },
-            // Cast enum column to text for ILIKE search
-            sqWhere(cast(col('room_type'), 'TEXT'), { [Op.iLike]: `%${searchQuery}%` })
+        where[Op.or] = [{
+                roomNumber: {
+                    [Op.iLike]: `%${searchQuery}%`
+                }
+            },
+            {
+                name: {
+                    [Op.iLike]: `%${searchQuery}%`
+                }
+            },
+
+            sqWhere(cast(col('room_type'), 'TEXT'), {
+                [Op.iLike]: `%${searchQuery}%`
+            })
         ];
+
     }
     if (type) {
         where.type = type;
     }
     if (minCapacity) {
-        where.sittingCapacity = { ...where.sittingCapacity, [Op.gte]: parseInt(minCapacity, 10) };
+        where.sittingCapacity = {
+            ...where.sittingCapacity,
+            [Op.gte]: parseInt(minCapacity, 10)
+        };
     }
     if (maxCapacity) {
-        where.sittingCapacity = { ...where.sittingCapacity, [Op.lte]: parseInt(maxCapacity, 10) };
+        where.sittingCapacity = {
+            ...where.sittingCapacity,
+            [Op.lte]: parseInt(maxCapacity, 10)
+        };
     }
 
-    // Find rooms that are busy during the specified time range
     if (freeBetweenStartTime && freeBetweenEndTime && dayOfWeek) {
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-        
-        // Find all active classes that overlap with the requested time range on the specified day
+        const today = new Date().toISOString().split('T')[0];
+
         const busyClasses = await Class.findAll({
             where: {
                 [Op.and]: [
-                    // Class must be active today
-                    { activeFrom: { [Op.lte]: today } },
-                    { activeTill: { [Op.gte]: today } },
-                    // Class must be on the specified day of week
-                    { dayOfWeek: dayOfWeek },
-                    // Time overlap: class time intersects with requested time
+
                     {
-                        [Op.or]: [
-                            { startTime: { [Op.between]: [freeBetweenStartTime, freeBetweenEndTime] } },
-                            { endTime: { [Op.between]: [freeBetweenStartTime, freeBetweenEndTime] } },
-                            { startTime: { [Op.lte]: freeBetweenStartTime }, endTime: { [Op.gte]: freeBetweenEndTime } }
+                        activeFrom: {
+                            [Op.lte]: today
+                        }
+                    },
+                    {
+                        activeTill: {
+                            [Op.gte]: today
+                        }
+                    },
+
+                    {
+                        dayOfWeek: dayOfWeek
+                    },
+
+                    {
+                        [Op.or]: [{
+                                startTime: {
+                                    [Op.between]: [freeBetweenStartTime, freeBetweenEndTime]
+                                }
+                            },
+                            {
+                                endTime: {
+                                    [Op.between]: [freeBetweenStartTime, freeBetweenEndTime]
+                                }
+                            },
+                            {
+                                startTime: {
+                                    [Op.lte]: freeBetweenStartTime
+                                },
+                                endTime: {
+                                    [Op.gte]: freeBetweenEndTime
+                                }
+                            }
                         ]
+
                     }
                 ]
+
             },
             attributes: ['roomId'],
             raw: true
         });
 
-        // Extract busy room IDs
-        const busyRoomIds = busyClasses.map(c => c.roomId);
+        const busyRoomIds = busyClasses.map((c) => c.roomId);
 
-        // Exclude busy rooms from results
         if (busyRoomIds.length > 0) {
-            where.id = { [Op.notIn]: busyRoomIds };
+            where.id = {
+                [Op.notIn]: busyRoomIds
+            };
         }
     }
 
     const rooms = await Room.findAndCountAll({
         where,
-        order: [[sortBy, sortOrder]],
-        ...(limit && getAll === false ? { limit } : {}),
-        ...(limit && getAll === false ? { offset } : {})
+        order: [
+            [sortBy, sortOrder]
+        ],
+        ...(limit && getAll === false ? {
+            limit
+        } : {}),
+        ...(limit && getAll === false ? {
+            offset
+        } : {})
     });
 
     res.status(httpStatus.OK).json(new ApiResponse(httpStatus.OK, "Rooms retrieved successfully.", {
@@ -106,26 +168,35 @@ const getRooms = asyncHandler(async (req, res) => {
 });
 
 const getRoomById = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const {
+        id
+    } = req.params;
 
     const room = await Room.findByPk(id);
 
     if (!room) throw new ApiError(httpStatus.NOT_FOUND, "Room not found");
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Room fetched successfully",
-                room
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Room fetched successfully",
+            room
+        )
+    );
 });
 
 const updateRoom = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { roomNumber, sittingCapacity, name, type } = req.body;
+    const {
+        id
+    } = req.params;
+    const {
+        roomNumber,
+        sittingCapacity,
+        name,
+        type
+    } = req.body;
 
     const room = await Room.findByPk(id);
 
@@ -142,7 +213,9 @@ const updateRoom = asyncHandler(async (req, res) => {
 });
 
 const removeRoom = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const {
+        id
+    } = req.params;
 
     const room = await Room.findByPk(id);
 
@@ -154,8 +227,15 @@ const removeRoom = asyncHandler(async (req, res) => {
 });
 
 const getRoomShedule = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { startDate, endDate, startTime, endTime } = req.query;
+    const {
+        id
+    } = req.params;
+    const {
+        startDate,
+        endDate,
+        startTime,
+        endTime
+    } = req.query;
 
     const room = await Room.findByPk(id);
     if (!room) throw new ApiError(httpStatus.NOT_FOUND, 'Room not found');
@@ -163,19 +243,41 @@ const getRoomShedule = asyncHandler(async (req, res) => {
     const classes = await Class.findAll({
         where: {
             roomId: id,
-            [Op.and]: [
-                { activeFrom: { [Op.lte]: endDate } },
-                { activeTill: { [Op.gte]: startDate } },
-                { startTime: { [Op.lte]: endTime } },
-                { endTime: { [Op.gte]: startTime } }
+            [Op.and]: [{
+                    activeFrom: {
+                        [Op.lte]: endDate
+                    }
+                },
+                {
+                    activeTill: {
+                        [Op.gte]: startDate
+                    }
+                },
+                {
+                    startTime: {
+                        [Op.lte]: endTime
+                    }
+                },
+                {
+                    endTime: {
+                        [Op.gte]: startTime
+                    }
+                }
             ]
+
         },
-        order: [['dayOfWeek', 'ASC'], ['startTime', 'ASC']]
+        order: [
+            ['dayOfWeek', 'ASC'],
+            ['startTime', 'ASC']
+        ]
     });
 
-    res
-        .status(httpStatus.OK)
-        .json(new ApiResponse(httpStatus.OK, 'Room schedule fetched successfully', { room, classes }));
+    res.
+    status(httpStatus.OK).
+    json(new ApiResponse(httpStatus.OK, 'Room schedule fetched successfully', {
+        room,
+        classes
+    }));
 });
 
 export {
@@ -185,4 +287,4 @@ export {
     getRoomShedule,
     updateRoom,
     removeRoom
-}
+};

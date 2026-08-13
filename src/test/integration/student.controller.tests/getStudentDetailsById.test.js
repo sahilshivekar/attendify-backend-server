@@ -16,7 +16,7 @@ describe('Student API - GET /api/v1/students/:id', () => {
 
     beforeEach(async () => {
         try {
-            // Create Admin
+
             const adminData = {
                 username: 'admin',
                 firstName: 'Admin',
@@ -26,23 +26,21 @@ describe('Student API - GET /api/v1/students/:id', () => {
                 role: 'Admin',
                 university: {
                     universityName: 'Test University',
-                    password: 'Admin@12345',
+                    password: 'Admin@12345'
                 }
             };
 
             await Admin.create(adminData);
 
-            // Login Admin
-            const adminLoginRes = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send({
-                    emailOrUsername: 'admin@test.com',
-                    password: 'Admin@12345'
-                });
+            const adminLoginRes = await request(app).
+            post('/api/v1/auth/admins/login').
+            send({
+                emailOrUsername: 'admin@test.com',
+                password: 'Admin@12345'
+            });
 
             adminToken = adminLoginRes.body.data.accessToken;
 
-            // Create University
             const university = await University.create({
                 name: 'Test University',
                 abbreviation: 'TU',
@@ -53,7 +51,6 @@ describe('Student API - GET /api/v1/students/:id', () => {
                 websiteUrl: 'https://testuniversity.com'
             });
 
-            // Create Branch
             const branch = await Branch.create({
                 name: 'Computer Science',
                 abbreviation: 'CS',
@@ -63,7 +60,6 @@ describe('Student API - GET /api/v1/students/:id', () => {
                 isActive: true
             });
 
-            // Create Scheme
             const scheme = await Scheme.create({
                 name: 'Test Scheme 2025',
                 schemeCode: 'TS2025',
@@ -76,7 +72,6 @@ describe('Student API - GET /api/v1/students/:id', () => {
                 isActive: true
             });
 
-            // Create Student
             student = await Student.create({
                 prn: 'TEST123456',
                 firstName: 'John',
@@ -99,28 +94,28 @@ describe('Student API - GET /api/v1/students/:id', () => {
 
     describe('Authentication Tests', () => {
         test('should return 401 without token', async () => {
-            const res = await request(app)
-                .get(`/api/v1/students/${student.id}`)
-                .expect(httpStatus.UNAUTHORIZED);
+            const res = await request(app).
+            get(`/api/v1/students/${student.id}`).
+            expect(httpStatus.UNAUTHORIZED);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Unauthorized request: No token provided');
         });
 
         test('should return 401 with invalid token', async () => {
-            const res = await request(app)
-                .get(`/api/v1/students/${student.id}`)
-                .set('Authorization', 'Bearer invalidtoken')
-                .expect(httpStatus.UNAUTHORIZED);
+            const res = await request(app).
+            get(`/api/v1/students/${student.id}`).
+            set('Authorization', 'Bearer invalidtoken').
+            expect(httpStatus.UNAUTHORIZED);
 
             expect(res.body.success).toBe(false);
         });
 
         test('should allow Admin to access student details', async () => {
-            const res = await request(app)
-                .get(`/api/v1/students/${student.id}`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            get(`/api/v1/students/${student.id}`).
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.OK);
 
             expect(res.body.success).toBe(true);
         });
@@ -128,22 +123,21 @@ describe('Student API - GET /api/v1/students/:id', () => {
 
     describe('Validation Tests', () => {
         test('should return 400 for invalid UUID format', async () => {
-            const res = await request(app)
-                .get('/api/v1/students/invalid-uuid')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            get('/api/v1/students/invalid-uuid').
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Student ID must be a valid UUID');
         });
 
         test('should handle empty student ID path gracefully', async () => {
-            const res = await request(app)
-                .get('/api/v1/students/')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            get('/api/v1/students/').
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.OK);
 
-            // This hits the GET /students route which returns student list
             expect(res.body.success).toBe(true);
         });
     });
@@ -151,11 +145,11 @@ describe('Student API - GET /api/v1/students/:id', () => {
     describe('Business Logic Tests', () => {
         test('should return 404 for non-existent student', async () => {
             const nonExistentId = 'b84c9e52-c8b4-4a19-8b1d-123456789abc';
-            
-            const res = await request(app)
-                .get(`/api/v1/students/${nonExistentId}`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.NOT_FOUND);
+
+            const res = await request(app).
+            get(`/api/v1/students/${nonExistentId}`).
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.NOT_FOUND);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Student not found');
@@ -164,10 +158,10 @@ describe('Student API - GET /api/v1/students/:id', () => {
 
     describe('Success Tests', () => {
         test('should return valid student data with associations', async () => {
-            const res = await request(app)
-                .get(`/api/v1/students/${student.id}`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            get(`/api/v1/students/${student.id}`).
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.OK);
 
             expect(res.body.success).toBe(true);
             expect(res.body.message).toBe('Student fetched successfully');
@@ -182,8 +176,7 @@ describe('Student API - GET /api/v1/students/:id', () => {
             expect(res.body.data).toHaveProperty('admissionType', student.admissionType);
             expect(res.body.data).toHaveProperty('schemeId', student.schemeId);
             expect(res.body.data).toHaveProperty('branchId', student.branchId);
-            
-            // Check associations  
+
             expect(res.body.data).toHaveProperty('Branch');
             expect(res.body.data.Branch).toHaveProperty('name');
             expect(res.body.data).toHaveProperty('Scheme');
@@ -191,10 +184,10 @@ describe('Student API - GET /api/v1/students/:id', () => {
         });
 
         test('should not expose sensitive fields like password', async () => {
-            const res = await request(app)
-                .get(`/api/v1/students/${student.id}`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            get(`/api/v1/students/${student.id}`).
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.OK);
 
             expect(res.body.success).toBe(true);
             expect(res.body.data).not.toHaveProperty('password');
@@ -202,10 +195,10 @@ describe('Student API - GET /api/v1/students/:id', () => {
         });
 
         test('should return correct student associations', async () => {
-            const res = await request(app)
-                .get(`/api/v1/students/${student.id}`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            get(`/api/v1/students/${student.id}`).
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.OK);
 
             expect(res.body.success).toBe(true);
             expect(res.body.data.Branch).toHaveProperty('name', 'Computer Science');
@@ -215,10 +208,10 @@ describe('Student API - GET /api/v1/students/:id', () => {
         });
 
         test('should return proper API response structure', async () => {
-            const res = await request(app)
-                .get(`/api/v1/students/${student.id}`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            get(`/api/v1/students/${student.id}`).
+            set('Authorization', `Bearer ${adminToken}`).
+            expect(httpStatus.OK);
 
             expect(res.body).toHaveProperty('success', true);
             expect(res.body).toHaveProperty('message', 'Student fetched successfully');

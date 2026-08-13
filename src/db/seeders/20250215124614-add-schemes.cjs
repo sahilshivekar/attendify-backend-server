@@ -1,14 +1,16 @@
 'use strict';
 
-const { v4: uuidv4 } = require('uuid'); // Import the uuid function
+const {
+    v4: uuidv4
+} = require('uuid');
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
-        // Find the University of Mumbai to get its actual UUID
+
         const universities = await queryInterface.sequelize.query(
-            `SELECT university_id FROM universities WHERE university_name = 'University of Mumbai';`,
-            { type: queryInterface.sequelize.QueryTypes.SELECT }
+            `SELECT university_id FROM universities WHERE university_name = 'University of Mumbai';`, {
+                type: queryInterface.sequelize.QueryTypes.SELECT
+            }
         );
 
         const universityOfMumbaiId = universities[0]?.university_id;
@@ -17,18 +19,17 @@ module.exports = {
             throw new Error('Could not find the University of Mumbai to link schemes to.');
         }
 
-        await queryInterface.bulkInsert('schemes', [
-            {
+        await queryInterface.bulkInsert('schemes', [{
                 scheme_id: uuidv4(),
                 scheme_name: "REV-2019 'C' Scheme",
-                university_id: universityOfMumbaiId, // Use the fetched UUID
+                university_id: universityOfMumbaiId,
                 created_at: new Date(),
                 updated_at: new Date()
             },
             {
                 scheme_id: uuidv4(),
                 scheme_name: "NEP-2020 Scheme",
-                university_id: universityOfMumbaiId, // Use the fetched UUID
+                university_id: universityOfMumbaiId,
                 created_at: new Date(),
                 updated_at: new Date()
             }
@@ -42,4 +43,4 @@ module.exports = {
             }
         });
     }
-}
+};

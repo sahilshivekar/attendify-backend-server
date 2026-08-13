@@ -1,47 +1,63 @@
 import Admin from '../db/models/admin.model.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { ApiResponse } from '../utils/ApiResponse.js'
-import { ApiError } from '../utils/ApiError.js'
-import { Op } from 'sequelize'
+import {
+    asyncHandler
+} from '../utils/asyncHandler.js';
+import {
+    ApiResponse
+} from '../utils/ApiResponse.js';
+import {
+    ApiError
+} from '../utils/ApiError.js';
+import {
+    Op
+} from 'sequelize';
 import httpStatus from 'http-status';
 
-
-//* Add new admin
 const addAdmin = asyncHandler(async (req, res) => {
 
-    const { email, username, password } = req.body;
+    const {
+        email,
+        username,
+        password
+    } = req.body;
 
     await Admin.create({
         email,
         username,
-        password,
+        password
     });
 
-    const newAdmin = await Admin.findOne({ where: { email } })
+    const newAdmin = await Admin.findOne({
+        where: {
+            email
+        }
+    });
 
     if (!newAdmin) {
-        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Some issue occuered while adding admin")
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Some issue occuered while adding admin");
     }
 
-    res
-        .status(httpStatus.CREATED)
-        .json(
-            new ApiResponse(
-                httpStatus.CREATED,
-                'Admin added successfully',
-                newAdmin
-            )
+    res.
+    status(httpStatus.CREATED).
+    json(
+        new ApiResponse(
+            httpStatus.CREATED,
+            'Admin added successfully',
+            newAdmin
         )
+    );
 
 });
 
-//* Change admin details (only email and password)
 const updateAdminDetails = asyncHandler(async (req, res) => {
 
-    const { email, username } = req.body;
+    const {
+        email,
+        username
+    } = req.body;
 
     if (req.admin.username == username && req.admin.email == email) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "No changes detected. The username and email are the same as the current ones.")
+        throw new ApiError(httpStatus.BAD_REQUEST, "No changes detected. The username and email are the same as the current ones.");
     }
 
     const admin = await Admin.findByPk(req.admin.id);
@@ -50,21 +66,17 @@ const updateAdminDetails = asyncHandler(async (req, res) => {
     admin.email = email.toLowerCase();
     await admin.save();
 
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Admin details updated successfully",
-                admin
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Admin details updated successfully",
+            admin
+        )
+    );
 });
 
-
-
-//* Remove admin
-//* after this must remove the tokens stored on the device (for web in cookies and for android in sharedprefrences or datastore)
 const removeAdmin = asyncHandler(async (req, res) => {
 
     const admin = await Admin.findByPk(req.admin.id);
@@ -75,21 +87,19 @@ const removeAdmin = asyncHandler(async (req, res) => {
 
     await admin.destroy();
 
-    res
-        .status(httpStatus.OK)
-        .clearCookie("adminAccessToken")
-        .clearCookie("adminRefreshToken")
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Admin account deleted successfully",
-                "If you are not accessing this api from a browser then you must manually remove the tokens stored"
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    clearCookie("adminAccessToken").
+    clearCookie("adminRefreshToken").
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Admin account deleted successfully",
+            "If you are not accessing this api from a browser then you must manually remove the tokens stored"
+        )
+    );
 });
 
-
-//* show all the admins
 const getAdmins = asyncHandler(async (req, res) => {
     const {
         searchQuery,
@@ -105,8 +115,7 @@ const getAdmins = asyncHandler(async (req, res) => {
 
     if (searchQuery) {
         whereClause = {
-            [Op.or]: [
-                {
+            [Op.or]: [{
                     email: {
                         [Op.like]: `%${searchQuery}%`
                     }
@@ -117,13 +126,14 @@ const getAdmins = asyncHandler(async (req, res) => {
                     }
                 }
             ]
+
         };
     }
 
-    // Determine sorting order, defaults value are specified in the validators
-    const orderClause = [[sortBy, sortOrder]];
+    const orderClause = [
+        [sortBy, sortOrder]
+    ];
 
-    // Fetch admins from the database
     const admins = await Admin.findAll({
         where: whereClause,
         order: orderClause,
@@ -131,27 +141,23 @@ const getAdmins = asyncHandler(async (req, res) => {
         limit: limit
     });
 
-    // Return the list of admins
-    res
-        .status(httpStatus.OK)
-        .json(
-            new ApiResponse(
-                httpStatus.OK,
-                "Admins retrieved successfully.",
-                admins
-            )
-        );
+    res.
+    status(httpStatus.OK).
+    json(
+        new ApiResponse(
+            httpStatus.OK,
+            "Admins retrieved successfully.",
+            admins
+        )
+    );
 });
-
-
-
 
 const getAdminDetails = asyncHandler(async (req, res) => {
 
     const admin = await Admin.scope("withPassword").findByPk(req.admin.id);
 
     if (!admin) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Admin not found")
+        throw new ApiError(httpStatus.NOT_FOUND, "Admin not found");
     }
 
     res.status(httpStatus.OK).json(
@@ -160,7 +166,7 @@ const getAdminDetails = asyncHandler(async (req, res) => {
             "Admin details retrieved successfully",
             admin
         )
-    )
+    );
 });
 
 export {
@@ -168,5 +174,5 @@ export {
     updateAdminDetails,
     removeAdmin,
     getAdmins,
-    getAdminDetails,
+    getAdminDetails
 };

@@ -1,4 +1,6 @@
-import { jest } from '@jest/globals';
+import {
+    jest
+} from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.js';
 import setupTestDb from '../../util/setupTestDb.js';
@@ -15,13 +17,20 @@ import Course from '../../../db/models/course.model.js';
 import Room from '../../../db/models/room.model.js';
 import Timetable from '../../../db/models/timetable.model.js';
 import Class from '../../../db/models/class.model.js';
-import { Attendance, AttendanceStudent } from '../../../db/models/attendance.model.js';
+import {
+    Attendance,
+    AttendanceStudent
+} from '../../../db/models/attendance.model.js';
 import StudentSemester from '../../../db/models/studentSemester.model.js';
 import StudentDivision from '../../../db/models/studentDivision.model.js';
 import StudentBatch from '../../../db/models/studentBatch.model.js';
-import { faker } from '@faker-js/faker';
+import {
+    faker
+} from '@faker-js/faker';
 import httpStatus from 'http-status';
-import { ROLES } from '../../../config/roles.js';
+import {
+    ROLES
+} from '../../../config/roles.js';
 
 setupTestDb();
 
@@ -32,21 +41,20 @@ describe('Branch API - addBranch', () => {
 
     beforeEach(async () => {
         try {
-            // Create admin and login
+
             await Admin.create({
                 email: 'admin@example.com',
                 username: 'adminuser',
-                password: 'Admin@12345',
+                password: 'Admin@12345'
             });
-            const adminLoginRes = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send({
-                    emailOrUsername: 'admin@example.com',
-                    password: 'Admin@12345',
-                });
+            const adminLoginRes = await request(app).
+            post('/api/v1/auth/admins/login').
+            send({
+                emailOrUsername: 'admin@example.com',
+                password: 'Admin@12345'
+            });
             adminToken = adminLoginRes.body.data.accessToken;
 
-            // Create teacher
             await Teacher.create({
                 firstName: 'John',
                 lastName: 'Doe',
@@ -56,29 +64,27 @@ describe('Branch API - addBranch', () => {
                 gender: 'Male',
                 role: 'Teacher'
             });
-            const teacherLoginRes = await request(app)
-                .post('/api/v1/auth/teachers/login')
-                .send({
-                    email: 'teacher@example.com',
-                    password: 'Teacher@123',
-                });
+            const teacherLoginRes = await request(app).
+            post('/api/v1/auth/teachers/login').
+            send({
+                email: 'teacher@example.com',
+                password: 'Teacher@123'
+            });
             teacherToken = teacherLoginRes.body.data.accessToken;
 
-            // Create dependencies for student
             const university = await University.create({
                 name: 'Test University',
-                abbreviation: 'TU',
+                abbreviation: 'TU'
             });
             const branch = await Branch.create({
                 name: 'Computer Science',
-                abbreviation: 'CS',
+                abbreviation: 'CS'
             });
             const scheme = await Scheme.create({
                 name: 'CS 2026 Scheme',
-                universityId: university.id,
+                universityId: university.id
             });
 
-            // Create student
             await Student.create({
                 firstName: 'Jane',
                 lastName: 'Smith',
@@ -92,12 +98,12 @@ describe('Branch API - addBranch', () => {
                 admissionType: 'FE',
                 gender: 'Male'
             });
-            const studentLoginRes = await request(app)
-                .post('/api/v1/auth/students/login')
-                .send({
-                    emailOrPRN: 'student1@example.com',
-                    password: 'Student@123',
-                });
+            const studentLoginRes = await request(app).
+            post('/api/v1/auth/students/login').
+            send({
+                emailOrPRN: 'student1@example.com',
+                password: 'Student@123'
+            });
             studentToken = studentLoginRes.body.data.accessToken;
         } catch (error) {
             console.error('Error in beforeEach:', error);
@@ -108,12 +114,12 @@ describe('Branch API - addBranch', () => {
     describe('POST /api/v1/branches', () => {
         describe('Authentication', () => {
             test('should return 401 if no token provided', async () => {
-                const response = await request(app)
-                    .post('/api/v1/branches')
-                    .send({
-                        name: 'Test Branch',
-                        abbreviation: 'TB'
-                    });
+                const response = await request(app).
+                post('/api/v1/branches').
+                send({
+                    name: 'Test Branch',
+                    abbreviation: 'TB'
+                });
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
@@ -121,26 +127,26 @@ describe('Branch API - addBranch', () => {
             });
 
             test('should return 401 if invalid token provided', async () => {
-                const response = await request(app)
-                    .post('/api/v1/branches')
-                    .set('Authorization', 'Bearer invalidtoken')
-                    .send({
-                        name: 'Test Branch',
-                        abbreviation: 'TB'
-                    });
+                const response = await request(app).
+                post('/api/v1/branches').
+                set('Authorization', 'Bearer invalidtoken').
+                send({
+                    name: 'Test Branch',
+                    abbreviation: 'TB'
+                });
 
                 expect(response.status).toBe(httpStatus.UNAUTHORIZED);
                 expect(response.body.success).toBe(false);
             });
 
             test('should return 403 if student tries to add branch', async () => {
-                const response = await request(app)
-                    .post('/api/v1/branches')
-                    .set('Authorization', `Bearer ${studentToken}`)
-                    .send({
-                        name: 'Test Branch',
-                        abbreviation: 'TB'
-                    });
+                const response = await request(app).
+                post('/api/v1/branches').
+                set('Authorization', `Bearer ${studentToken}`).
+                send({
+                    name: 'Test Branch',
+                    abbreviation: 'TB'
+                });
 
                 expect(response.status).toBe(httpStatus.FORBIDDEN);
                 expect(response.body.success).toBe(false);
@@ -150,12 +156,12 @@ describe('Branch API - addBranch', () => {
 
         describe('Validation', () => {
             test('should return 400 if name is missing', async () => {
-                const response = await request(app)
-                    .post('/api/v1/branches')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send({
-                        abbreviation: 'TB'
-                    });
+                const response = await request(app).
+                post('/api/v1/branches').
+                set('Authorization', `Bearer ${adminToken}`).
+                send({
+                    abbreviation: 'TB'
+                });
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -163,13 +169,13 @@ describe('Branch API - addBranch', () => {
             });
 
             test('should return 400 if abbreviation is empty', async () => {
-                const response = await request(app)
-                    .post('/api/v1/branches')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send({
-                        name: 'Test Branch',
-                        abbreviation: ''
-                    });
+                const response = await request(app).
+                post('/api/v1/branches').
+                set('Authorization', `Bearer ${adminToken}`).
+                send({
+                    name: 'Test Branch',
+                    abbreviation: ''
+                });
 
                 expect(response.status).toBe(httpStatus.BAD_REQUEST);
                 expect(response.body.success).toBe(false);
@@ -184,10 +190,10 @@ describe('Branch API - addBranch', () => {
                     abbreviation: 'EE'
                 };
 
-                const response = await request(app)
-                    .post('/api/v1/branches')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(branchData);
+                const response = await request(app).
+                post('/api/v1/branches').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(branchData);
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);
@@ -196,7 +202,6 @@ describe('Branch API - addBranch', () => {
                 expect(response.body.data.name).toBe(branchData.name);
                 expect(response.body.data.abbreviation).toBe(branchData.abbreviation);
 
-                // Verify in database
                 const createdBranch = await Branch.findByPk(response.body.data.id);
                 expect(createdBranch).toBeTruthy();
                 expect(createdBranch.name).toBe(branchData.name);
@@ -209,10 +214,10 @@ describe('Branch API - addBranch', () => {
                     abbreviation: 'CE'
                 };
 
-                const response = await request(app)
-                    .post('/api/v1/branches')
-                    .set('Authorization', `Bearer ${teacherToken}`)
-                    .send(branchData);
+                const response = await request(app).
+                post('/api/v1/branches').
+                set('Authorization', `Bearer ${teacherToken}`).
+                send(branchData);
 
                 expect(response.status).toBe(httpStatus.FORBIDDEN);
                 expect(response.body.success).toBe(false);
@@ -225,10 +230,10 @@ describe('Branch API - addBranch', () => {
                     abbreviation: 'TB'
                 };
 
-                const response = await request(app)
-                    .post('/api/v1/branches')
-                    .set('Authorization', `Bearer ${adminToken}`)
-                    .send(branchData);
+                const response = await request(app).
+                post('/api/v1/branches').
+                set('Authorization', `Bearer ${adminToken}`).
+                send(branchData);
 
                 expect(response.status).toBe(httpStatus.CREATED);
                 expect(response.body.success).toBe(true);

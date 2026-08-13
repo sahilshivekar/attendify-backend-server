@@ -2,7 +2,9 @@ import request from 'supertest';
 import app from '../../../app.js';
 import setupTestDb from '../../util/setupTestDb.js';
 import Admin from '../../../db/models/admin.model.js';
-import { faker } from '@faker-js/faker';
+import {
+    faker
+} from '@faker-js/faker';
 import httpStatus from 'http-status';
 
 setupTestDb();
@@ -11,12 +13,12 @@ describe('Admin Auth - login', () => {
     let existingAdmin;
 
     beforeEach(async () => {
-        // Create an existing admin for testing
+
         existingAdmin = await Admin.create({
             email: faker.internet.email().toLowerCase(),
             username: faker.internet.username().toLowerCase(),
             password: 'TestPass123!',
-            isVerified: true,
+            isVerified: true
         });
     });
 
@@ -24,13 +26,13 @@ describe('Admin Auth - login', () => {
         test('should login successfully with valid email and password', async () => {
             const loginData = {
                 emailOrUsername: existingAdmin.email,
-                password: 'TestPass123!',
+                password: 'TestPass123!'
             };
 
-            const res = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send(loginData)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            post('/api/v1/auth/admins/login').
+            send(loginData).
+            expect(httpStatus.OK);
 
             expect(res.body.success).toBe(true);
             expect(res.body.message).toBe('Login Successful');
@@ -40,22 +42,21 @@ describe('Admin Auth - login', () => {
             expect(res.body.data.admin.email).toBe(existingAdmin.email);
             expect(res.body.data.admin.username).toBe(existingAdmin.username);
 
-            // Verify cookies are set
             expect(res.headers['set-cookie']).toBeDefined();
-            expect(res.headers['set-cookie'].some(cookie => cookie.includes('adminAccessToken='))).toBe(true);
-            expect(res.headers['set-cookie'].some(cookie => cookie.includes('adminRefreshToken='))).toBe(true);
+            expect(res.headers['set-cookie'].some((cookie) => cookie.includes('adminAccessToken='))).toBe(true);
+            expect(res.headers['set-cookie'].some((cookie) => cookie.includes('adminRefreshToken='))).toBe(true);
         });
 
         test('should login successfully with valid username and password', async () => {
             const loginData = {
                 emailOrUsername: existingAdmin.username,
-                password: 'TestPass123!',
+                password: 'TestPass123!'
             };
 
-            const res = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send(loginData)
-                .expect(httpStatus.OK);
+            const res = await request(app).
+            post('/api/v1/auth/admins/login').
+            send(loginData).
+            expect(httpStatus.OK);
 
             expect(res.body.success).toBe(true);
             expect(res.body.message).toBe('Login Successful');
@@ -65,13 +66,13 @@ describe('Admin Auth - login', () => {
         test('should return 401 for invalid email', async () => {
             const loginData = {
                 emailOrUsername: 'nonexistent@example.com',
-                password: 'TestPass123!',
+                password: 'TestPass123!'
             };
 
-            const res = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send(loginData)
-                .expect(httpStatus.UNAUTHORIZED);
+            const res = await request(app).
+            post('/api/v1/auth/admins/login').
+            send(loginData).
+            expect(httpStatus.UNAUTHORIZED);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toBe('Invalid email or username');
@@ -80,13 +81,13 @@ describe('Admin Auth - login', () => {
         test('should return 401 for invalid username', async () => {
             const loginData = {
                 emailOrUsername: 'nonexistentuser',
-                password: 'TestPass123!',
+                password: 'TestPass123!'
             };
 
-            const res = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send(loginData)
-                .expect(httpStatus.UNAUTHORIZED);
+            const res = await request(app).
+            post('/api/v1/auth/admins/login').
+            send(loginData).
+            expect(httpStatus.UNAUTHORIZED);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toBe('Invalid email or username');
@@ -95,13 +96,13 @@ describe('Admin Auth - login', () => {
         test('should return 401 for invalid password', async () => {
             const loginData = {
                 emailOrUsername: existingAdmin.email,
-                password: 'WrongPassword123!',
+                password: 'WrongPassword123!'
             };
 
-            const res = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send(loginData)
-                .expect(httpStatus.UNAUTHORIZED);
+            const res = await request(app).
+            post('/api/v1/auth/admins/login').
+            send(loginData).
+            expect(httpStatus.UNAUTHORIZED);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toBe('Invalid password');
@@ -109,13 +110,13 @@ describe('Admin Auth - login', () => {
 
         test('should return 400 for missing emailOrUsername', async () => {
             const loginData = {
-                password: 'TestPass123!',
+                password: 'TestPass123!'
             };
 
-            const res = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send(loginData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            post('/api/v1/auth/admins/login').
+            send(loginData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toBe('Email or username is required');
@@ -123,13 +124,13 @@ describe('Admin Auth - login', () => {
 
         test('should return 400 for missing password', async () => {
             const loginData = {
-                emailOrUsername: existingAdmin.email,
+                emailOrUsername: existingAdmin.email
             };
 
-            const res = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send(loginData)
-                .expect(httpStatus.BAD_REQUEST);
+            const res = await request(app).
+            post('/api/v1/auth/admins/login').
+            send(loginData).
+            expect(httpStatus.BAD_REQUEST);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toBe('Password is required');
@@ -138,13 +139,13 @@ describe('Admin Auth - login', () => {
         test('should return 400 for invalid email format', async () => {
             const loginData = {
                 emailOrUsername: 'invalid-email',
-                password: 'TestPass123!',
+                password: 'TestPass123!'
             };
 
-            const res = await request(app)
-                .post('/api/v1/auth/admins/login')
-                .send(loginData)
-                .expect(httpStatus.UNAUTHORIZED);
+            const res = await request(app).
+            post('/api/v1/auth/admins/login').
+            send(loginData).
+            expect(httpStatus.UNAUTHORIZED);
 
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('email');
