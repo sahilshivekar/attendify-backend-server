@@ -5,6 +5,7 @@ export default {
   forceExit: true,
   detectOpenHandles: true,
   testMatch: [
-    '**/src/test/**/*.test.js'
+    '**/src/test/**/*.test.js',
+    '**/src/modules/**/*.test.js'
   ]
 };

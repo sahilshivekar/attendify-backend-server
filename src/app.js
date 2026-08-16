@@ -73,26 +73,26 @@ if (config.env === 'production') {
     logger.info('Rate limiter enabled for /api/v1/auth endpoints');
 }
 
-import adminAuthRouter from "./routes/adminAuth.routes.js";
-import studentAuthRouter from "./routes/studentAuth.routes.js";
-import teacherAuthRouter from "./routes/teacherAuth.routes.js";
+import adminAuthRouter from "./modules/adminAuth/adminAuth.routes.js";
+import studentAuthRouter from "./modules/studentAuth/studentAuth.routes.js";
+import teacherAuthRouter from "./modules/teacherAuth/teacherAuth.routes.js";
 
-import adminRouter from "./routes/admin.routes.js";
-import universityRouter from "./routes/university.routes.js";
-import schemeRouter from "./routes/scheme.routes.js";
-import courseRouter from "./routes/course.routes.js";
-import branchRouter from "./routes/branch.routes.js";
-import semesterRouter from "./routes/semester.routes.js";
-import teacherRouter from "./routes/teacher.routes.js";
-import studentRouter from "./routes/student.routes.js";
-import divisionRouter from "./routes/division.routes.js";
-import batchRouter from "./routes/batch.routes.js";
-import timetableRouter from "./routes/timetable.routes.js";
-import roomRouter from "./routes/room.routes.js";
-import classRouter from "./routes/class.routes.js";
-import attendanceRouter from "./routes/attendance.routes.js";
-import dropoutRouter from "./routes/dropout.routes.js";
-import studentFCMTokenRouter from "./routes/studentFCMToken.routes.js";
+import adminRouter from "./modules/admin/admin.routes.js";
+import universityRouter from "./modules/university/university.routes.js";
+import schemeRouter from "./modules/scheme/scheme.routes.js";
+import courseRouter from "./modules/course/course.routes.js";
+import branchRouter from "./modules/branch/branch.routes.js";
+import semesterRouter from "./modules/semester/semester.routes.js";
+import teacherRouter from "./modules/teacher/teacher.routes.js";
+import studentRouter from "./modules/student/student.routes.js";
+import divisionRouter from "./modules/division/division.routes.js";
+import batchRouter from "./modules/batch/batch.routes.js";
+import timetableRouter from "./modules/timetable/timetable.routes.js";
+import roomRouter from "./modules/room/room.routes.js";
+import classRouter from "./modules/class/class.routes.js";
+import attendanceRouter from "./modules/attendance/attendance.routes.js";
+import dropoutRouter from "./modules/dropout/dropout.routes.js";
+import studentFCMTokenRouter from "./modules/studentFCMToken/studentFCMToken.routes.js";
 
 app.use("/api/v1/auth/admins", adminAuthRouter);
 app.use("/api/v1/auth/students", studentAuthRouter);

@@ -1,3 +1,0 @@
-prn,firstName,middleName,lastName,email,phoneNumber,gender,dob,schemeId,admissionYear,admissionType,branchId,parentEmail
-STU001,John,Michael,Doe,john.doe@example.com,+919876543210,Male,1999-01-15,9db22d02-af06-4e6e-be35-1be12b14ef2d,2024,FE,298b4e39-95a5-4836-9c30-990d7f443057,parent.doe@example.com
-STU002,Jane,,Smith,jane.smith@example.com,+919876543211,Female,2000-05-20,9db22d02-af06-4e6e-be35-1be12b14ef2d,2024,DSE,298b4e39-95a5-4836-9c30-990d7f443057,
