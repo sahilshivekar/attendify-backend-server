@@ -159,9 +159,7 @@ Admin.prototype.generateAccessToken = function () {
     return jwt.sign({
             id: this.id,
             username: this.username,
-            email: this.email,
             role: ROLES.ADMIN,
-            nonce: Math.random().toString(36)
         },
         process.env.JWT_ACCESS_TOKEN_SECRET, {
             expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRY
@@ -173,9 +171,7 @@ Admin.prototype.generateRefreshToken = function () {
     return jwt.sign({
             id: this.id,
             username: this.username,
-            email: this.email,
             role: ROLES.ADMIN,
-            nonce: Math.random().toString(36)
         },
         process.env.JWT_REFRESH_TOKEN_SECRET, {
             expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRY
