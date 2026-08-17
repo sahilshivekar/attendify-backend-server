@@ -20,9 +20,11 @@
 
 - **`src/app.js`**: Initialize Express, register middleware, and define routes.
 - **`src/server.js`**: Start the HTTP server and initialize WebSocket connections.
-- **`src/routes/`**: Map API endpoints to their corresponding controller functions.
-- **`src/validators/`**: Implement all request input validation using Joi. Maintain one validation file per controller.
-- **`src/controllers/`**: House the business logic for handling API requests.
+- **`src/modules/`**: Follows a feature-based modular architecture. Each feature (e.g., `admin`, `attendance`, `student`) has its own directory containing:
+  - `[feature].routes.js`: API endpoint mappings.
+  - `[feature].controller.js`: Business logic and request handling.
+  - `[feature].validation.js`: Joi validation schemas for the feature.
+  - `tests/`: Integration tests for the specific feature.
 - **`src/middlewares/`**:
   - `auth.middleware.js`: Verify JWTs and perform role-based authorization.
   - `error.js`: Handle centralized error conversion and response formatting.
@@ -70,13 +72,12 @@
 ## Testing Guidelines
 
 - **Scope**:
-  - Write **unit tests** for Express middlewares in `src/test/unit/`.
-  - Write **integration tests** for API endpoints in `src/test/integration/`.
-- **Structure**: - For integration tests, create a directory for each controller (e.g., `admin.controller.tests/`). 
-  - Inside, create a separate test file for each controller function (e.g., `addAdmin.test.js`). 
+  - Write **integration tests** for API endpoints inside the corresponding module's `tests` directory (`src/modules/[feature]/tests/`).
+- **Structure**:
+  - Inside each module's `tests/` directory, create a separate test file for each controller function (e.g., `addAdmin.test.js`). 
   - If you need to create a instances for testing purpose in beforeEach() of any of these models:
   [Admin, Teacher, Student, University, Branch, Scheme, Semester, Division, Batch, Course, Room, Timetable, Class, Attendance, AttendanceStudent, StudentSemester, StudentDivision, StudentBatch]
-  then copy paste them directly from src\test\integration\attendance.controller.tests\addStudentsAttendance.test.js, this will save time to read whole files of models. If the model creation is not done in this file then you have to search it in models 
+  then copy paste them directly from `src/modules/attendance/tests/addStudentsAttendance.test.js`. This will save time to read whole files of models. If the model creation is not done in this file then you have to search it in models 
   - Always wrap the beforeEach() part code in try catch blog to know the errors
 - **Data Management**:
   - Use the `setupTestDb.js` utility, which cleans the test database before each test run.
